@@ -11,19 +11,6 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-*.hprof
-*.orig
-
-# Local / secrets (commit `.env.example` with placeholders instead)
-.env
-.env.*
-!.env.example
-
-# Flutter version manager (if used)
-.fvm/
 
 # IntelliJ related
 *.iml
