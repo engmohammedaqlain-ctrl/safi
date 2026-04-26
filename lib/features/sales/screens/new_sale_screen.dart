@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'sales_screen.dart';
+import 'sales_pos_catalog.dart';
 
-/// شاشة بيع مخصصة للإنتاج: عنوان واضح ونفس واجهة نقطة البيع
+/// شاشة بيع: شبكة المنتجات (لوحة دفتر النقدية تبقى في التبويب الرئيسي)
 class NewSaleScreen extends StatelessWidget {
   const NewSaleScreen({super.key});
 
@@ -12,7 +12,7 @@ class NewSaleScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('بيع جديد'),
       ),
-      body: const SalesScreen(bottomInset: 20),
+      body: const SalesPosCatalog(bottomInset: 20),
     );
   }
 }

@@ -17,14 +17,14 @@ class AddProductScreen extends StatefulWidget {
 
 class _AddProductScreenState extends State<AddProductScreen> {
   final _name = TextEditingController();
-  final _barcode = TextEditingController();
+  final _internalCode = TextEditingController();
   final _qty = TextEditingController(text: '0');
   final _price = TextEditingController();
 
   @override
   void dispose() {
     _name.dispose();
-    _barcode.dispose();
+    _internalCode.dispose();
     _qty.dispose();
     _price.dispose();
     super.dispose();
@@ -58,12 +58,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: _barcode,
+                  controller: _internalCode,
                   textInputAction: TextInputAction.next,
                   keyboardType: TextInputType.text,
                   decoration: const InputDecoration(
-                    labelText: 'الباركود (اختياري)',
-                    prefixIcon: Icon(LucideIcons.scanLine, size: 20),
+                    labelText: 'رمز داخلي (اختياري)',
+                    prefixIcon: Icon(LucideIcons.hash, size: 20),
                   ),
                 ),
                 const SizedBox(height: 12),

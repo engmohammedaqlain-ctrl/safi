@@ -36,20 +36,23 @@ class InventoryScreen extends ConsumerWidget {
       children: [
         Text('إدارة المخزون', style: AppTextStyles.headlineSmall),
         const SizedBox(height: 6),
-        Text('إضافة منتجات، باركود، وتنبيهات النفاذ', style: AppTextStyles.bodySmall),
+        Text('إضافة منتجات، رموز داخلية، وتنبيهات النفاذ', style: AppTextStyles.bodySmall),
         const SizedBox(height: AppSpacing.lg),
         Row(
           children: [
             Expanded(
               child: TextField(
                 decoration: const InputDecoration(
-                  hintText: 'بحث باسم أو باركود...',
+                  hintText: 'بحث باسم أو رمز...',
                   prefixIcon: Icon(LucideIcons.search, color: AppColors.textMuted),
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            SafiIconButton(onPressed: () {}, icon: LucideIcons.scanLine),
+            SafiIconButton(
+              onPressed: () {},
+              icon: LucideIcons.listFilter,
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),

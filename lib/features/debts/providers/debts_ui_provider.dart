@@ -46,9 +46,9 @@ class DebtorUi {
 
 Color urgencyToColor(DebtUrgency u) {
   return switch (u) {
-    DebtUrgency.low => AppColors.neonGreen,
-    DebtUrgency.medium => AppColors.warningAmber,
-    DebtUrgency.high => AppColors.electricRed,
+    DebtUrgency.low => AppColors.flowIn,
+    DebtUrgency.medium => AppColors.warning,
+    DebtUrgency.high => AppColors.flowOut,
   };
 }
 

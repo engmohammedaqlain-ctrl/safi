@@ -36,7 +36,7 @@ class AppTheme {
         scrolledUnderElevation: 0.5,
         centerTitle: false,
         titleTextStyle: TextStyle(
-          color: AppColors.textPrimary,
+          color: AppColors.primary,
           fontSize: 20,
           fontWeight: FontWeight.w800,
         ),
@@ -64,7 +64,7 @@ class AppTheme {
         backgroundColor: AppColors.backgroundSecondary,
         indicatorColor: AppColors.primary.withValues(alpha: 0.12),
         elevation: 0,
-        height: 64,
+        height: 56,
         labelTextStyle: WidgetStatePropertyAll(AppTextStyles.labelSmall),
         iconTheme: const WidgetStatePropertyAll(IconThemeData(size: 22)),
       ),

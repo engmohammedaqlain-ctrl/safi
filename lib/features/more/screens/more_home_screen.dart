@@ -84,7 +84,7 @@ class MoreHomeScreen extends StatelessWidget {
               _MoreNavTile(
                 icon: LucideIcons.package,
                 title: 'المخزون',
-                subtitle: 'منتجات، باركود، تنبيهات',
+                subtitle: 'منتجات ورصيد وتنبيهات',
                 onTap: () => _push(
                   context,
                   const InventoryScreen(bottomContentPadding: 32),

@@ -20,7 +20,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _i = 0;
 
   static const _steps = [
-    'أضف أول منتج (باركود أو يدوي)',
+    'أضف أول منتج (اسم ورمز داخلي اختياري)',
     'سجّل أول بيعة',
     'أضف زبون مدين',
     'جرّب رسالة تحصيل ذكية',

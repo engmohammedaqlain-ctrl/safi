@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../providers/debts_ui_provider.dart';
 import '../screens/customer_detail_screen.dart';
@@ -15,7 +15,7 @@ class DebtorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = urgencyToColor(debtor.urgency);
+    final urgencyColor = urgencyToColor(debtor.urgency);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -27,36 +27,68 @@ class DebtorCard extends StatelessWidget {
             ),
           );
         },
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-        child: GlassCard(
+        borderRadius: AppRadius.rlg,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundSecondary,
+            borderRadius: AppRadius.rlg,
+            border: Border.all(
+              color: AppColors.outlineSoft,
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(debtor.name, style: AppTextStyles.titleSmall),
+                    child: Text(
+                      debtor.name,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                   ),
-                  StatusPill(label: debtor.status, color: c),
+                  const SizedBox(width: 8),
+                  StatusPill(label: debtor.status, color: urgencyColor),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Icon(
-                    LucideIcons.chevronLeft,
-                    size: 16,
-                    color: AppColors.textMuted,
-                  ),
-                  const SizedBox(width: 4),
                   Text(
                     'تفاصيل',
-                    style: AppTextStyles.labelSmall,
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    LucideIcons.chevronLeft,
+                    size: 16,
+                    color: AppColors.textSecondary,
                   ),
                   const Spacer(),
                   Text(
                     '₪ ${debtor.amount}',
-                    style: AppTextStyles.numberLarge.copyWith(color: c),
+                    style: AppTextStyles.numberMedium.copyWith(
+                      color: const Color(0xFF1F1528),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                    ),
                   ),
                 ],
               ),

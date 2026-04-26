@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -39,7 +38,7 @@ class MetricStatCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(data.icon, color: AppColors.electricBlue, size: 20),
+                Icon(data.icon, color: AppColors.primary, size: 20),
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -72,55 +71,6 @@ class MetricStatCard extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// زر عريض لمسح الباركود
-class BarcodeCtaButton extends StatelessWidget {
-  const BarcodeCtaButton({super.key, this.onPressed});
-
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(20),
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.electricBlue.withValues(alpha: 0.45),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  LucideIcons.scanLine,
-                  color: Colors.white,
-                  size: 24,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'مسح الباركود',
-                  style: AppTextStyles.titleSmall.copyWith(color: Colors.white),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

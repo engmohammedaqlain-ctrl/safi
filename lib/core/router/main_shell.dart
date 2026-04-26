@@ -13,8 +13,8 @@ import '../../features/sales/screens/sales_screen.dart';
 import '../../features/debts/screens/debts_screen.dart';
 
 const _shellTitles = <String>[
-  'الديون',
-  'كاشير وباركود',
+  'دفتر الديون',
+  'دفتر النقدية',
   'المزيد',
 ];
 
@@ -37,13 +37,16 @@ class MainShell extends ConsumerWidget {
         automaticallyImplyLeading: false,
         title: Text(
           _shellTitles[index],
-          style: AppTextStyles.titleLarge,
+          style: AppTextStyles.titleLarge.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         actions: [
           Padding(
             padding: const EdgeInsetsDirectional.only(end: 4),
             child: Badge(
-              backgroundColor: AppColors.error,
+              backgroundColor: AppColors.plum,
               smallSize: 7,
               largeSize: 20,
               label: const Text('2', style: TextStyle(fontSize: 10, height: 1)),
@@ -106,8 +109,8 @@ class MainShell extends ConsumerWidget {
                     label: 'ديون',
                   ),
                   NavigationDestination(
-                    icon: Icon(LucideIcons.scanLine),
-                    label: 'كاشير',
+                    icon: Icon(LucideIcons.wallet2),
+                    label: 'نقدية',
                   ),
                   NavigationDestination(
                     icon: Icon(LucideIcons.menu),

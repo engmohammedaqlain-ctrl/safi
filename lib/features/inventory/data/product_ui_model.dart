@@ -10,7 +10,7 @@ class ProductUi {
     required this.name,
     required this.price,
     required this.stock,
-    this.barcode,
+    this.internalCode,
     this.badge,
     this.badgeColor,
     this.dotColor,
@@ -21,7 +21,7 @@ class ProductUi {
   final String name;
   final String price;
   final String stock;
-  final String? barcode;
+  final String? internalCode;
   final String? badge;
   final Color? badgeColor;
   final Color? dotColor;
@@ -38,9 +38,9 @@ String _stockStatusLabel(String stock) {
 
 Color _stockStatusColor(String stock) {
   final n = int.tryParse(stock) ?? 0;
-  if (n <= 0) return AppColors.error;
+  if (n <= 0) return AppColors.flowOut;
   if (n < 6) return AppColors.warning;
-  return AppColors.success;
+  return AppColors.flowIn;
 }
 
 extension ProductUiLabels on ProductUi {

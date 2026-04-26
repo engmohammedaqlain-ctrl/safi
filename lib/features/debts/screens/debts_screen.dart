@@ -46,16 +46,17 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
+        AppSpacing.md,
         AppSpacing.lg,
-        AppSpacing.lg,
-        20,
+        24,
       ),
       children: [
         Text(
           'ملخص',
           style: AppTextStyles.labelSmall.copyWith(
-            color: AppColors.textMuted,
-            letterSpacing: 0.4,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.35,
           ),
         ),
         const SizedBox(height: 10),
@@ -64,20 +65,21 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
           debtorCount: my.debtorCount,
           overdueCount: my.overdueCount,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         _PrimaryActions(
           onAddDebt: () => push(const AddDebtScreen()),
           onPayment: () => push(const RecordPaymentScreen()),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 22),
         Text(
           'قائمة العملاء',
-          style: AppTextStyles.labelSmall.copyWith(
-            color: AppColors.textMuted,
-            letterSpacing: 0.4,
+          style: AppTextStyles.titleSmall.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.1,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         TextField(
           controller: _search,
           onChanged: (v) => setState(() => _q = v),
@@ -86,23 +88,31 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
             hintText: 'ابحث بالاسم أو رقم الجوال',
             filled: true,
             fillColor: AppColors.backgroundSecondary,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
             prefixIcon: const Icon(
               LucideIcons.search,
               color: AppColors.textMuted,
               size: 20,
             ),
             border: OutlineInputBorder(
-              borderRadius: AppRadius.rlg,
-              borderSide: BorderSide.none,
+              borderRadius: AppRadius.rfull,
+              borderSide: BorderSide(
+                color: AppColors.textMuted.withValues(alpha: 0.15),
+              ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: AppRadius.rlg,
-              borderSide: BorderSide(color: AppColors.outlineSoft, width: 1),
+              borderRadius: AppRadius.rfull,
+              borderSide: BorderSide(
+                color: AppColors.textMuted.withValues(alpha: 0.2),
+                width: 1,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: AppRadius.rlg,
-              borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
+              borderRadius: AppRadius.rfull,
+              borderSide: BorderSide(
+                color: AppColors.primary.withValues(alpha: 0.45),
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -139,21 +149,49 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: Center(
-        child: Text(
-          hasQuery ? 'لا يوجد عميل يطابق البحث' : 'لا بيانات لعرضها',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEECEF),
+              borderRadius: AppRadius.rlg,
+            ),
+            child: const Icon(
+              LucideIcons.users,
+              size: 36,
+              color: AppColors.textSecondary,
+            ),
           ),
-        ),
+          const SizedBox(height: 16),
+          Text(
+            hasQuery ? 'لا يوجد عميل يطابق البحث' : 'لا يوجد عملاء بعد',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.titleSmall.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hasQuery
+                ? 'جرّب كلمات أوسع أو أعد المحاولة'
+                : 'سجّل ديناً أو دفعة من الأعلى لبدء المتابعة',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textMuted,
+              height: 1.5,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// شريط مؤشرات — بدون جِلاء ثقيل، ظلال خفيفة وتسلسل بصري واضح
+/// ثلاث بطاقات موازية — مثل واجهات دفاتر الديون الاحترافية
 class _MetricsStrip extends StatelessWidget {
   const _MetricsStrip({
     required this.totalLabel,
@@ -174,7 +212,6 @@ class _MetricsStrip extends StatelessWidget {
             label: 'إجمالي الديون',
             value: totalLabel,
             icon: LucideIcons.coins,
-            accent: AppColors.error,
           ),
         ),
         const SizedBox(width: 8),
@@ -183,7 +220,6 @@ class _MetricsStrip extends StatelessWidget {
             label: 'العملاء',
             value: '$debtorCount',
             icon: LucideIcons.users,
-            accent: AppColors.primary,
           ),
         ),
         const SizedBox(width: 8),
@@ -192,7 +228,6 @@ class _MetricsStrip extends StatelessWidget {
             label: 'متأخر',
             value: '$overdueCount',
             icon: LucideIcons.clock3,
-            accent: AppColors.warningAmber,
           ),
         ),
       ],
@@ -205,22 +240,23 @@ class _MetricCell extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    required this.accent,
   });
 
   final String label;
   final String value;
   final IconData icon;
-  final Color accent;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
       decoration: BoxDecoration(
         color: AppColors.backgroundSecondary,
         borderRadius: AppRadius.rlg,
-        border: Border.all(color: AppColors.outlineSoft),
+        border: Border.all(
+          color: AppColors.textMuted.withValues(alpha: 0.12),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -234,15 +270,30 @@ class _MetricCell extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: accent),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEDEBF0),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             value,
             textAlign: TextAlign.center,
-            style: AppTextStyles.titleMedium.copyWith(
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.titleSmall.copyWith(
               color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -254,6 +305,7 @@ class _MetricCell extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.textSecondary,
+              height: 1.2,
             ),
           ),
         ],
@@ -271,40 +323,110 @@ class _PrimaryActions extends StatelessWidget {
   final VoidCallback onAddDebt;
   final VoidCallback onPayment;
 
+  static const _tileRadius = 18.0;
+  static const _tileH = 100.0;
+
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: FilledButton.icon(
-            onPressed: onAddDebt,
-            icon: const Icon(LucideIcons.userPlus, size: 18),
-            label: const Text('تسجيل دين'),
-            style: FilledButton.styleFrom(
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: AppRadius.rmd,
-              ),
-            ),
+          child: _CtaBlock(
+            height: _tileH,
+            radius: _tileRadius,
+            background: AppColors.primary,
+            onTap: onAddDebt,
+            icon: LucideIcons.userPlus,
+            label: 'تسجيل دين',
+            subtitle: 'دين جديد',
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Expanded(
-          child: FilledButton.tonalIcon(
-            onPressed: onPayment,
-            icon: const Icon(LucideIcons.banknote, size: 18),
-            label: const Text('تسجيل دفعة'),
-            style: FilledButton.styleFrom(
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: AppRadius.rmd,
-              ),
-            ),
+          child: _CtaBlock(
+            height: _tileH,
+            radius: _tileRadius,
+            background: AppColors.primaryDark,
+            onTap: onPayment,
+            icon: LucideIcons.banknote,
+            label: 'تسجيل دفعة',
+            subtitle: 'سداد أو تخفيض',
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CtaBlock extends StatelessWidget {
+  const _CtaBlock({
+    required this.height,
+    required this.radius,
+    required this.background,
+    required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+  });
+
+  final double height;
+  final double radius;
+  final Color background;
+  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(radius),
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: height,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 32,
+                  color: AppColors.onPrimary,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.onPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    height: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.onPrimary.withValues(alpha: 0.9),
+                    fontSize: 11,
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 
-/// بطاقة سطحية بيضاء بحد أزرق خفيف — مظهر بسيط ونظيف (بدل الزجاج الداكن)
+/// بطاقة سطحية — حواف أرجوانية خفيفة وظل ناعم
 class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,

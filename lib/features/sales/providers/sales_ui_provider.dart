@@ -11,7 +11,7 @@ final quickProductsProvider = Provider<List<ProductUi>>((ref) {
       name: 'زيت دوار الشمس',
       price: '37',
       stock: '28',
-      barcode: '6291041500214',
+      internalCode: 'SKU-1001',
       dotColor: AppColors.electricBlue,
     ),
     ProductUi(

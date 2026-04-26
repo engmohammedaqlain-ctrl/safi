@@ -108,9 +108,9 @@ class ProductDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 _InfoLine(
-                  icon: LucideIcons.scanLine,
-                  label: 'الباركود',
-                  value: product.barcode ?? 'غير مضبوط',
+                  icon: LucideIcons.hash,
+                  label: 'الرمز الداخلي',
+                  value: product.internalCode ?? '—',
                 ),
                 if (product.badge != null) ...[
                   const SizedBox(height: 8),

@@ -122,7 +122,7 @@ class SafiIconButton extends StatelessWidget {
   const SafiIconButton({
     super.key,
     required this.onPressed,
-    this.icon = LucideIcons.scanLine,
+    this.icon = LucideIcons.slidersHorizontal,
   });
 
   final VoidCallback onPressed;
