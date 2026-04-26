@@ -88,9 +88,9 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
               Material(
                 color: AppColors.backgroundSecondary,
                 shape: RoundedRectangleBorder(
-                  side: const BorderSide(
-                    color: AppColors.outlineSoft,
-                    width: 1,
+                  side: BorderSide(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    width: 1.2,
                   ),
                   borderRadius: AppRadius.rmd,
                 ),
@@ -297,16 +297,9 @@ class _MetricCell extends StatelessWidget {
         color: AppColors.backgroundSecondary,
         borderRadius: AppRadius.rlg,
         border: Border.all(
-          color: AppColors.textMuted.withValues(alpha: 0.12),
-          width: 1,
+          color: AppColors.primary.withValues(alpha: 0.12),
+          width: 1.2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -446,7 +439,8 @@ class _SecondaryAction extends StatelessWidget {
               color: const Color(0xFFEDEBF0),
               borderRadius: AppRadius.rmd,
               border: Border.all(
-                color: AppColors.textMuted.withValues(alpha: 0.15),
+                color: AppColors.primary.withValues(alpha: 0.12),
+                width: 1,
               ),
             ),
             child: Icon(icon, color: AppColors.textSecondary, size: 22),

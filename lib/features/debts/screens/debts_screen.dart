@@ -94,8 +94,8 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
             enabledBorder: OutlineInputBorder(
               borderRadius: AppRadius.rfull,
               borderSide: BorderSide(
-                color: AppColors.textMuted.withValues(alpha: 0.2),
-                width: 1,
+                color: AppColors.primary.withValues(alpha: 0.12),
+                width: 1.2,
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -245,16 +245,9 @@ class _MetricCell extends StatelessWidget {
         color: AppColors.backgroundSecondary,
         borderRadius: AppRadius.rlg,
         border: Border.all(
-          color: AppColors.textMuted.withValues(alpha: 0.12),
-          width: 1,
+          color: AppColors.primary.withValues(alpha: 0.12),
+          width: 1.2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

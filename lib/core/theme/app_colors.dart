@@ -5,9 +5,7 @@ class AppColors {
   AppColors._();
 
   // ─── أساسيات السطح ───
-  static const Color background = Color(
-    0xFFF7F7F9,
-  ); // رمادي-أبيض محايد (لا بنفسجي)
+  static const Color background = Color(0xFFFFFFFF);
   static const Color backgroundSecondary = Color(0xFFFFFFFF);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceVariant = Color(0xFFF3F0F7); // بنفسجي خفيف جداً
@@ -64,10 +62,7 @@ class AppColors {
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [
-      Color(0xFFFFFFFF),
-      Color(0xFFF4F2F8), // نهاية رمادية بنفسجية خفيفة
-    ],
+    colors: [Color(0xFFFFFFFF), Color(0xFFFFFFFF)],
   );
 
   static const LinearGradient primaryGradient = LinearGradient(

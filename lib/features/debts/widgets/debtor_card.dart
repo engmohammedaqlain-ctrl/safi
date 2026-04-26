@@ -34,16 +34,9 @@ class DebtorCard extends StatelessWidget {
             color: AppColors.backgroundSecondary,
             borderRadius: AppRadius.rlg,
             border: Border.all(
-              color: AppColors.outlineSoft,
-              width: 1,
+              color: AppColors.primary.withValues(alpha: 0.12),
+              width: 1.2,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

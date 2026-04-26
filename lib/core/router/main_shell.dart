@@ -5,18 +5,13 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/animated_page_switcher.dart';
-import '../widgets/glass_card.dart';
 import 'nav_provider.dart';
 import '../../features/more/screens/more_home_screen.dart';
 import '../../features/more/screens/notifications_screen.dart';
 import '../../features/sales/screens/sales_screen.dart';
 import '../../features/debts/screens/debts_screen.dart';
 
-const _shellTitles = <String>[
-  'دفتر الديون',
-  'دفتر النقدية',
-  'المزيد',
-];
+const _shellTitles = <String>['دفتر الديون', 'دفتر النقدية', 'المزيد'];
 
 class MainShell extends ConsumerWidget {
   const MainShell({super.key});
@@ -40,16 +35,27 @@ class MainShell extends ConsumerWidget {
           style: AppTextStyles.titleLarge.copyWith(
             color: AppColors.primary,
             fontWeight: FontWeight.w800,
+            fontSize: 20, // Smaller header font as requested
           ),
         ),
+        shape: const Border(
+          bottom: BorderSide(color: AppColors.outlineSoft, width: 1),
+        ),
+        elevation: 0,
+        backgroundColor: AppColors.background,
         actions: [
           Padding(
             padding: const EdgeInsetsDirectional.only(end: 4),
             child: Badge(
-              backgroundColor: AppColors.plum,
-              smallSize: 7,
-              largeSize: 20,
-              label: const Text('2', style: TextStyle(fontSize: 10, height: 1)),
+              backgroundColor: AppColors.primary,
+              alignment: const AlignmentDirectional(
+                20,
+                -18,
+              ), // Better positioning
+              label: const Text(
+                '2',
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+              ),
               child: IconButton(
                 tooltip: 'الإشعارات',
                 onPressed: () {
@@ -69,56 +75,44 @@ class MainShell extends ConsumerWidget {
       ),
       // TextField (بحث وغيره) يتطلّب سلف Material — الشفاف يحافظ على مظهر التدرج
       body: Material(
-        color: Colors.transparent,
-        child: DecoratedBox(
-          decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-          child: SafeArea(
-            top: false,
-            child: AnimatedPageSwitcher(
-              pageKey: index,
-              child: pages[index],
-            ),
-          ),
+        color: AppColors.background,
+        child: SafeArea(
+          top: false,
+          child: AnimatedPageSwitcher(pageKey: index, child: pages[index]),
         ),
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AppColors.backgroundSecondary,
           border: Border(
-            top: BorderSide(color: AppColors.outlineSoft),
+            top: BorderSide(color: AppColors.outlineSoft, width: 1),
           ),
         ),
         child: SafeArea(
           top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-            child: GlassCard(
-              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-              background: AppColors.backgroundSecondary,
-              child: NavigationBar(
-                height: 56,
-                backgroundColor: Colors.transparent,
-                selectedIndex: index,
-                indicatorColor: AppColors.primary.withValues(alpha: 0.12),
-                onDestinationSelected: (i) {
-                  ref.read(navIndexProvider.notifier).goTo(i);
-                },
-                destinations: const [
-                  NavigationDestination(
-                    icon: Icon(LucideIcons.wallet),
-                    label: 'ديون',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(LucideIcons.wallet2),
-                    label: 'نقدية',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(LucideIcons.menu),
-                    label: 'المزيد',
-                  ),
-                ],
+          child: NavigationBar(
+            height: 65,
+            backgroundColor: AppColors.backgroundSecondary,
+            elevation: 0,
+            selectedIndex: index,
+            indicatorColor: AppColors.primary.withValues(alpha: 0.1),
+            onDestinationSelected: (i) {
+              ref.read(navIndexProvider.notifier).goTo(i);
+            },
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(LucideIcons.wallet, size: 22),
+                label: 'ديون',
               ),
-            ),
+              NavigationDestination(
+                icon: Icon(LucideIcons.wallet2, size: 22),
+                label: 'نقدية',
+              ),
+              NavigationDestination(
+                icon: Icon(LucideIcons.menu, size: 22),
+                label: 'المزيد',
+              ),
+            ],
           ),
         ),
       ),
