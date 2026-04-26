@@ -419,38 +419,41 @@ class OtpCodeFieldState extends State<OtpCodeField> {
                     width: isFocused ? 1.8 : 1.2,
                   ),
                 ),
-                child: TextField(
-                  controller: _controllers[i],
-                  focusNode: _focusNodes[i],
-                  onChanged: (s) => _onFieldChanged(i, s),
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  maxLength: 1,
-                  showCursor: false,
-                  autofillHints: i == 0
-                      ? const [AutofillHints.oneTimeCode]
-                      : const [],
-                  textInputAction: i == OtpCodeField.otpLength - 1
-                      ? TextInputAction.done
-                      : TextInputAction.next,
-                  style: AppTextStyles.numberLarge.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    height: 1.0,
-                    color: AppColors.primary,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(1),
-                  ],
-                  decoration: const InputDecoration(
-                    counterText: '',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 10),
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
+                child: Center(
+                  child: TextField(
+                    controller: _controllers[i],
+                    focusNode: _focusNodes[i],
+                    onChanged: (s) => _onFieldChanged(i, s),
+                    textAlign: TextAlign.center,
+                    textAlignVertical: TextAlignVertical.center,
+                    keyboardType: TextInputType.number,
+                    maxLength: 1,
+                    showCursor: false,
+                    autofillHints: i == 0
+                        ? const [AutofillHints.oneTimeCode]
+                        : const [],
+                    textInputAction: i == OtpCodeField.otpLength - 1
+                        ? TextInputAction.done
+                        : TextInputAction.next,
+                    style: AppTextStyles.numberLarge.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      height: 1.0,
+                      color: AppColors.primary,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(1),
+                    ],
+                    decoration: const InputDecoration(
+                      counterText: '',
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      filled: false,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                    ),
                   ),
                 ),
               ),
