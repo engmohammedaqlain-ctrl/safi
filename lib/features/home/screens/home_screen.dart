@@ -10,7 +10,10 @@ import '../../../core/widgets/metric_stat_card.dart';
 import '../providers/home_ui_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.bottomContentPadding = 100});
+
+  /// هامش سفلي: أكبر داخل الـ MainShell (فوق التبويب)، أصغر عند فتحها من «المزيد».
+  final double bottomContentPadding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,11 +23,11 @@ class HomeScreen extends ConsumerWidget {
     final crossAxis = w > 800 ? 3 : (w > 500 ? 2 : 1);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
         AppSpacing.md,
         AppSpacing.lg,
-        100,
+        bottomContentPadding,
       ),
       children: [
         Text('لوحة التحكم', style: AppTextStyles.headlineSmall),

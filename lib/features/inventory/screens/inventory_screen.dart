@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -6,20 +7,31 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/safi_button.dart';
+import '../data/inventory_ui_provider.dart';
+import '../data/product_ui_model.dart';
 import 'add_product_screen.dart';
 import 'delete_products_screen.dart';
+import 'product_detail_screen.dart';
 
-class InventoryScreen extends StatelessWidget {
-  const InventoryScreen({super.key});
+class InventoryScreen extends ConsumerWidget {
+  const InventoryScreen({super.key, this.bottomContentPadding = 32});
+
+  final double bottomContentPadding;
 
   @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final catalog = ref.watch(inventoryCatalogProvider);
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+        child: ListView(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
         AppSpacing.md,
         AppSpacing.lg,
-        100,
+        bottomContentPadding,
       ),
       children: [
         Text('إدارة المخزون', style: AppTextStyles.headlineSmall),
@@ -111,58 +123,76 @@ class InventoryScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        for (final p in _mock)
+        for (final p in catalog)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: GlassCard(
-              child: Row(
-                children: [
-                  Icon(p.icon, color: AppColors.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(p.name, style: AppTextStyles.titleSmall),
-                        Text(
-                          'المخزون: ${p.qty} · ₪ ${p.price}',
-                          style: AppTextStyles.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Flexible(
-                    child: Text(
-                      p.badge,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: p.badgeColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            child: _ProductRowCard(product: p),
           ),
       ],
+        ),
+      ),
     );
   }
 }
 
-class _Mock {
-  const _Mock(this.name, this.qty, this.price, this.badge, this.badgeColor, this.icon);
-  final String name;
-  final String qty;
-  final String price;
-  final String badge;
-  final Color badgeColor;
-  final IconData icon;
-}
+class _ProductRowCard extends StatelessWidget {
+  const _ProductRowCard({required this.product});
 
-const _mock = <_Mock>[
-  _Mock('زيت دوار الشمس', '28', '37', 'طبيعي', AppColors.success, LucideIcons.package),
-  _Mock('أرز بسمتي', '4', '29', 'منخفض', AppColors.warning, LucideIcons.package),
-  _Mock('حليب', '0', '6', 'نافد', AppColors.error, LucideIcons.alertCircle),
-];
+  final ProductUi product;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => ProductDetailScreen(product: product),
+            ),
+          );
+        },
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
+        child: GlassCard(
+          child: Row(
+            children: [
+              Icon(product.icon, color: AppColors.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(product.name, style: AppTextStyles.titleSmall),
+                    Text(
+                      'المخزون: ${product.stock} · ₪ ${product.price}',
+                      style: AppTextStyles.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              if (product.badge != null)
+                Flexible(
+                  child: Text(
+                    product.badge!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: product.badgeColor,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 4),
+              const Icon(
+                LucideIcons.chevronLeft,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

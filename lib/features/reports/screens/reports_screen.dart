@@ -10,18 +10,20 @@ import '../../../core/widgets/glass_card.dart';
 import '../providers/reports_ui_provider.dart';
 
 class ReportsScreen extends ConsumerWidget {
-  const ReportsScreen({super.key});
+  const ReportsScreen({super.key, this.bottomContentPadding = 100});
+
+  final double bottomContentPadding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final spots = ref.watch(pnlSpotsProvider);
     final bars = ref.watch(salesBarsProvider);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
         AppSpacing.md,
         AppSpacing.lg,
-        100,
+        bottomContentPadding,
       ),
       children: [
         SingleChildScrollView(

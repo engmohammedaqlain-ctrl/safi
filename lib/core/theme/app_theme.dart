@@ -8,7 +8,7 @@ import 'app_text_styles.dart';
 class AppTheme {
   AppTheme._();
 
-  /// الثيم الافتراضي — فاتح أبيض وأزرق
+  /// الثيم الافتراضي — فاتح، هوية PRD (أرجواني)
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,

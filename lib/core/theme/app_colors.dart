@@ -4,27 +4,27 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ─── الخلفيات / الأسطح ───
-  static const Color background = Color(0xFFF5F8FC);
+  // ─── الخلفيات / الأسطح (متوافق مع PRD: bgLight) ───
+  static const Color background = Color(0xFFF8F8FA);
   static const Color backgroundSecondary = Color(0xFFFFFFFF);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFE8F1FA);
+  static const Color surfaceVariant = Color(0xFFEDEAFB);
 
   // حدود وظلال خفيفة
-  static const Color outline = Color(0xFFBBDEFB);
-  static const Color outlineSoft = Color(0xFFE3F2FD);
+  static const Color outline = Color(0xFFD4D0F0);
+  static const Color outlineSoft = Color(0xFFEEEEF4);
   static const Color divider = Color(0xFFE0E7EF);
 
-  // ─── الأزرق (الهوية) ───
-  static const Color primary = Color(0xFF1565C0);
-  static const Color primaryLight = Color(0xFF1976D2);
-  static const Color primaryDark = Color(0xFF0D47A1);
+  // ─── الهوية (PRD: أرجواني هادئ 0xFF7B68EE) ───
+  static const Color primary = Color(0xFF7B68EE);
+  static const Color primaryLight = Color(0xFF9285F0);
+  static const Color primaryDark = Color(0xFF5B4AC7);
   static const Color onPrimary = Color(0xFFFFFFFF);
 
   // توافق مع الأسماء القديمة
   static const Color electricBlue = primary;
-  static const Color glass = Color(0xFFE3F2FD);
-  static const Color glassBorder = Color(0xFF90CAF9);
+  static const Color glass = Color(0xFFF0EEFF);
+  static const Color glassBorder = Color(0xFFC9C0F5);
 
   // ─── دلالي ───
   static const Color success = Color(0xFF2E7D32);
@@ -48,7 +48,7 @@ class AppColors {
     end: Alignment.bottomCenter,
     colors: [
       Color(0xFFFFFFFF),
-      Color(0xFFF0F6FF),
+      Color(0xFFF8F8FC),
     ],
   );
 
@@ -56,8 +56,8 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF1976D2),
-      Color(0xFF1565C0),
+      Color(0xFF9285F0),
+      Color(0xFF7B68EE),
     ],
   );
 
