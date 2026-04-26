@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/ai_insight_card.dart';
@@ -12,7 +14,6 @@ import '../providers/home_ui_provider.dart';
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key, this.bottomContentPadding = 100});
 
-  /// هامش سفلي: أكبر داخل الـ MainShell (فوق التبويب)، أصغر عند فتحها من «المزيد».
   final double bottomContentPadding;
 
   @override
@@ -22,79 +23,110 @@ class HomeScreen extends ConsumerWidget {
     final w = MediaQuery.sizeOf(context).width;
     final crossAxis = w > 800 ? 3 : (w > 500 ? 2 : 1);
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.lg,
-        bottomContentPadding,
+    return Scaffold(
+      appBar: AppBar(title: const Text('لوحة التحكم')),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.md,
+          AppSpacing.lg,
+          bottomContentPadding,
+        ),
+        children: [
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: metrics.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxis,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              mainAxisExtent: 148,
+            ),
+            itemBuilder: (context, i) => MetricStatCard(data: metrics[i]),
+          ),
+          const SizedBox(height: 16),
+
+          // ── رؤية ذكية ──
+          AiInsightCard(message: insight),
+          const SizedBox(height: 20),
+
+          // ── آخر العمليات ──
+          Text(
+            'آخر العمليات',
+            style: AppTextStyles.titleSmall.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.1,
+            ),
+          ),
+          const SizedBox(height: 10),
+          GlassCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _TxRow(
+                  icon: LucideIcons.shoppingBag,
+                  label: 'بيع — نقد',
+                  value: '₪ 86',
+                  color: AppColors.success,
+                ),
+                const Divider(height: 1, indent: 52),
+                _TxRow(
+                  icon: LucideIcons.wallet,
+                  label: 'دفعة دين',
+                  value: '₪ 350',
+                  color: AppColors.success,
+                ),
+                const Divider(height: 1, indent: 52),
+                _TxRow(
+                  icon: LucideIcons.shoppingCart,
+                  label: 'مشتريات',
+                  value: '₪ 1,200',
+                  color: AppColors.error,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      children: [
-        Text('لوحة التحكم', style: AppTextStyles.headlineSmall),
-        const SizedBox(height: 6),
-        Text('نظرة سريعة على يومك', style: AppTextStyles.bodySmall),
-        const SizedBox(height: AppSpacing.lg),
-        AiInsightCard(message: insight),
-        const SizedBox(height: AppSpacing.lg),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: metrics.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxis,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            mainAxisExtent: 158,
-          ),
-          itemBuilder: (context, i) => MetricStatCard(data: metrics[i]),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        GlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('آخر العمليات', style: AppTextStyles.titleSmall),
-              const SizedBox(height: 10),
-              const _TransactionRow(
-                label: 'بيع — نقد',
-                value: '₪ 86',
-              ),
-              Divider(height: 20, color: AppColors.textMuted.withValues(alpha: 0.2)),
-              const _TransactionRow(
-                label: 'دفعة دين',
-                value: '₪ 350',
-              ),
-              Divider(height: 20, color: AppColors.textMuted.withValues(alpha: 0.2)),
-              const _TransactionRow(
-                label: 'مشتريات',
-                value: '₪ 1,200',
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
 
-class _TransactionRow extends StatelessWidget {
-  const _TransactionRow({required this.label, required this.value});
+class _TxRow extends StatelessWidget {
+  const _TxRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
+  final IconData icon;
   final String label;
   final String value;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(label, style: AppTextStyles.bodyMedium),
-        ),
-        Text(
-          value,
-          style: AppTextStyles.numberMedium,
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: AppRadius.rmd,
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label, style: AppTextStyles.bodyMedium)),
+          Text(value, style: AppTextStyles.numberMedium.copyWith(color: color)),
+        ],
+      ),
     );
   }
 }

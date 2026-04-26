@@ -8,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../cash_flow/screens/cash_entry_screen.dart';
 import '../../cash_flow/screens/cash_flow_screen.dart';
+import '../../cash_flow/screens/financial_accounts_screen.dart';
 import '../providers/cashbook_ui_provider.dart';
 import 'new_sale_screen.dart';
 
@@ -23,7 +24,6 @@ class SalesScreen extends ConsumerStatefulWidget {
 
 class _SalesScreenState extends ConsumerState<SalesScreen> {
   bool _hide = false;
-  bool _showDrawerHint = true;
 
   @override
   Widget build(BuildContext context) {
@@ -52,16 +52,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
               bottomPad,
             ),
             children: [
-              // ── ملخص ──
-              Text(
-                'ملخص',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.35,
-                ),
-              ),
-              const SizedBox(height: 10),
+              // ── شريط الأرقام الثلاثة — مطابق للديون ──
 
               // ── شريط الأرقام الثلاثة — مطابق للديون ──
               Row(
@@ -91,7 +82,85 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+
+              // ── إدارة المحافظ والحسابات ──
+              Material(
+                color: AppColors.backgroundSecondary,
+                shape: RoundedRectangleBorder(
+                  side: const BorderSide(
+                    color: AppColors.outlineSoft,
+                    width: 1,
+                  ),
+                  borderRadius: AppRadius.rmd,
+                ),
+                child: InkWell(
+                  onTap: () => push(const FinancialAccountsScreen()),
+                  borderRadius: AppRadius.rmd,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                LucideIcons.wallet,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'إدارة الحسابات والمحافظ',
+                                  style: AppTextStyles.labelMedium.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'البنوك، الكاش، المحافظ الإلكترونية',
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const Icon(
+                          LucideIcons.chevronLeft,
+                          color: AppColors.textMuted,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 18),
+
+              // ── زر نقطة البيع POS (مهم جداً) ──
+              _CtaBlock(
+                background: AppColors.aiPurple,
+                onTap: () => push(const NewSaleScreen()),
+                icon: LucideIcons.shoppingCart,
+                label: 'نقطة البيع (POS)',
+                subtitle: 'الكاشير وإدارة الطلبات السريعة',
+              ),
+              const SizedBox(height: 12),
 
               // ── زرّا الإجراء الرئيسيان — مطابق للديون ──
               Row(
@@ -184,13 +253,6 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: () => push(const NewSaleScreen()),
-                icon: const Icon(LucideIcons.shoppingCart, size: 18),
-                style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-                label: const Text('فتح نقطة بيع المنتجات'),
-              ),
               const SizedBox(height: 18),
 
               // ── المعاملات ──
@@ -210,10 +272,6 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             ],
           ),
         ),
-        if (_showDrawerHint)
-          _DrawerHintBar(
-            onClose: () => setState(() => _showDrawerHint = false),
-          ),
       ],
     );
   }
@@ -272,10 +330,10 @@ class _MetricCell extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.labelSmall.copyWith(
+            style: AppTextStyles.labelLarge.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
-              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              fontSize: 14,
             ),
           ),
           const SizedBox(height: 2),
@@ -294,6 +352,8 @@ class _MetricCell extends StatelessWidget {
     );
   }
 }
+
+// (SubAccountCell was removed because accounts are now managed via FinancialAccountsScreen)
 
 // ── زر CTA كبير ملوّن — نفس _CtaBlock في الديون ──
 class _CtaBlock extends StatelessWidget {
@@ -320,40 +380,38 @@ class _CtaBlock extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: SizedBox(
-          height: 100,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 32, color: AppColors.onPrimary),
-                const SizedBox(height: 8),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: AppColors.onPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    height: 1.1,
-                  ),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 110),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 32, color: AppColors.onPrimary),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: AppColors.onPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  height: 1.1,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.onPrimary.withValues(alpha: 0.85),
-                    fontSize: 11,
-                    height: 1.1,
-                  ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.onPrimary.withValues(alpha: 0.85),
+                  fontSize: 11,
+                  height: 1.1,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -394,13 +452,18 @@ class _SecondaryAction extends StatelessWidget {
             child: Icon(icon, color: AppColors.textSecondary, size: 22),
           ),
           const SizedBox(height: 6),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.25,
-              fontWeight: FontWeight.w600,
+          Container(
+            height: 38,
+            alignment: Alignment.topCenter,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.25,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -468,58 +531,6 @@ class _EmptyStateCard extends StatelessWidget {
             child: const Text('تسجيل أول وارد'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ── شريط تحذير الدرج ──
-class _DrawerHintBar extends StatelessWidget {
-  const _DrawerHintBar({required this.onClose});
-
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.warningLight,
-      child: SafeArea(
-        top: false,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: AppColors.warning.withValues(alpha: 0.35)),
-            ),
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: onClose,
-                icon: const Icon(LucideIcons.x, size: 20),
-                color: AppColors.warning,
-                tooltip: 'إغلاق',
-              ),
-              Expanded(
-                child: Text(
-                  'لا يمكنك إغلاق الدرج بدون عمليات',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.warning,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const Icon(
-                LucideIcons.alertCircle,
-                color: AppColors.warning,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

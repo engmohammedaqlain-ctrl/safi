@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/account_selector.dart';
 import '../../../core/widgets/safi_button.dart';
 
-/// قيد مالي: وارد أو صادر
 class CashEntryScreen extends StatefulWidget {
   const CashEntryScreen({super.key, this.initialIncome = true});
 
@@ -22,6 +23,7 @@ class _CashEntryScreenState extends State<CashEntryScreen> {
   final _amount = TextEditingController();
   final _label = TextEditingController();
   final _note = TextEditingController();
+  String? _paymentMethodId;
 
   @override
   void initState() {
@@ -40,88 +42,146 @@ class _CashEntryScreenState extends State<CashEntryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('قيد مالي'),
-      ),
+      appBar: AppBar(title: Text(_income ? '+ دخل جديد' : '- مصروف جديد')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          Text(
-            'سجّل وارد (بيع نقد) أو صادر (مصروف) ليظهر في التدفق المالي.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
+          // ── نوع القيد ──
+          Row(
+            children: [
+              Expanded(
+                child: _TypeChip(
+                  label: '+ دخل',
+                  icon: LucideIcons.trendingUp,
+                  selected: _income,
+                  color: AppColors.success,
+                  onTap: () => setState(() => _income = true),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _TypeChip(
+                  label: '- مصروف',
+                  icon: LucideIcons.trendingDown,
+                  selected: !_income,
+                  color: AppColors.error,
+                  onTap: () => setState(() => _income = false),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          GlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment<bool>(
-                      value: true,
-                      label: Text('وارد'),
-                      icon: Icon(LucideIcons.trendingUp, size: 18),
-                    ),
-                    ButtonSegment<bool>(
-                      value: false,
-                      label: Text('صادر'),
-                      icon: Icon(LucideIcons.trendingDown, size: 18),
-                    ),
-                  ],
-                  selected: {_income},
-                  onSelectionChanged: (s) {
-                    setState(() => _income = s.first);
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _label,
-                  decoration: const InputDecoration(
-                    labelText: 'البند (مثال: دفعة نقد، إيجار)',
-                    prefixIcon: Icon(LucideIcons.pencil, size: 20),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _amount,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'المبلغ (₪)',
-                    prefixIcon: Icon(LucideIcons.coins, size: 20),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _note,
-                  maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: 'ملاحظة',
-                    alignLabelWithHint: true,
-                    prefixIcon: Icon(LucideIcons.fileText, size: 20),
-                  ),
-                ),
-              ],
+
+          // ── حقول النموذج ──
+          TextField(
+            controller: _label,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: 'البند (مثال: بيع نقد، إيجار)',
+              prefixIcon: Icon(LucideIcons.pencil, size: 20),
             ),
           ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+            ],
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: 'المبلغ',
+              prefixIcon: const Icon(LucideIcons.coins, size: 20),
+              suffixText: _income ? '+ ₪' : '- ₪',
+              suffixStyle: TextStyle(
+                color: _income ? AppColors.success : AppColors.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _note,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'ملاحظة (اختياري)',
+              alignLabelWithHint: true,
+              prefixIcon: Icon(LucideIcons.fileText, size: 20),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('أين تمت الحركة؟', style: AppTextStyles.titleSmall),
+          const SizedBox(height: 8),
+          AccountSelector(
+            selectedAccountId: _paymentMethodId,
+            onChanged: (acc) => setState(() => _paymentMethodId = acc.id),
+          ),
           const SizedBox(height: AppSpacing.xl),
+
           SafiButton(
-            label: 'حفظ القيد',
+            label: _income ? 'حفظ الوارد' : 'حفظ المصروف',
             icon: LucideIcons.check,
             onPressed: () {
               if (_amount.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('أدخل المبلغ')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('أدخل المبلغ')));
                 return;
               }
               Navigator.pop(context, true);
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TypeChip extends StatelessWidget {
+  const _TypeChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: 0.1)
+              : AppColors.backgroundSecondary,
+          borderRadius: AppRadius.rlg,
+          border: Border.all(
+            color: selected ? color : AppColors.outline.withValues(alpha: 0.6),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: selected ? color : AppColors.textMuted, size: 22),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: AppTextStyles.labelLarge.copyWith(
+                color: selected ? color : AppColors.textMuted,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

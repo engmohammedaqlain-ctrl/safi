@@ -5,15 +5,14 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/account_selector.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/safi_button.dart';
 import '../providers/debts_ui_provider.dart';
 
-/// تسجيل دين جديد. [forCustomer] عند فتح الشاشة من ملف الزبون — لا حاجة لإعادة إدخال الاسم.
 class AddDebtScreen extends ConsumerStatefulWidget {
   const AddDebtScreen({super.key, this.forCustomer});
 
-  /// عند الضبط: يُربط الدين بهذا العميل ويُقفل حقل اسم العميل
   final DebtorUi? forCustomer;
 
   @override
@@ -21,168 +20,145 @@ class AddDebtScreen extends ConsumerStatefulWidget {
 }
 
 class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
-  final _name = TextEditingController();
-  final _phone = TextEditingController();
+  final _customerNameCtrl = TextEditingController();
+  final _customerPhoneCtrl = TextEditingController();
   final _amount = TextEditingController();
   final _note = TextEditingController();
 
-  bool _lockCustomer = false;
   DebtorUi? _pickedFromList;
+  bool _isNewCustomer = false;
+  String? _paymentMethodId;
 
   @override
   void initState() {
     super.initState();
     final c = widget.forCustomer;
     if (c != null) {
-      _name.text = c.name;
-      _phone.text = c.phone;
-      _lockCustomer = true;
+      _pickedFromList = c;
     }
   }
 
   @override
   void dispose() {
-    _name.dispose();
-    _phone.dispose();
+    _customerNameCtrl.dispose();
+    _customerPhoneCtrl.dispose();
     _amount.dispose();
     _note.dispose();
     super.dispose();
   }
 
-  void _selectDebtor(DebtorUi d) {
-    setState(() {
-      _pickedFromList = d;
-      _name.text = d.name;
-      _phone.text = d.phone;
-      _lockCustomer = true;
-    });
-  }
-
-  void _clearPickUseManual() {
-    setState(() {
-      _pickedFromList = null;
-      if (widget.forCustomer == null) {
-        _name.clear();
-        _phone.clear();
-        _lockCustomer = false;
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final all = ref.watch(debtorsUiProvider);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('تسجيل دين'),
-      ),
+      appBar: AppBar(title: const Text('تسجيل دين/سلف')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          Text(
-            _lockCustomer
-                ? 'الدين سيُسجّل للعميل المحدد أدناه.'
-                : 'اختر عميلاً مسجّلاً أو أدخل بيانات عميل جديد لربط الدين.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (widget.forCustomer == null) ...[
-            Text('ربط بعميل', style: AppTextStyles.titleSmall),
-            const SizedBox(height: 6),
-            GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  InputDecorator(
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(LucideIcons.users, size: 20),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<DebtorUi>(
-                        isExpanded: true,
-                        value: _pickedFromList,
-                        hint: const Text('اختر من عملائك المسجّلين (اختياري)'),
-                        items: all
-                            .map(
-                              (d) => DropdownMenuItem<DebtorUi>(
-                                value: d,
-                                child: Text(
-                                  d.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (d) {
-                          if (d != null) _selectDebtor(d);
-                        },
-                      ),
-                    ),
-                  ),
-                  if (_pickedFromList != null)
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton(
-                        onPressed: _clearPickUseManual,
-                        child: const Text('ليس مُدرجاً؟ إدخال عميل جديد'),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          if (_lockCustomer) ...[
-            Text('العميل', style: AppTextStyles.titleSmall),
-            const SizedBox(height: 6),
+          // ── قسم العميل ──
+          Text('تفاصيل العميل', style: AppTextStyles.titleSmall),
+          const SizedBox(height: 6),
+
+          if (widget.forCustomer != null)
             GlassCard(
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: CircleAvatar(
                   backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                  child: Icon(LucideIcons.user, color: AppColors.primary),
+                  child: const Icon(LucideIcons.user, color: AppColors.primary),
                 ),
-                title: Text(_name.text, style: AppTextStyles.titleSmall),
-                subtitle: Text(
-                  _phone.text.isNotEmpty ? _phone.text : 'بدون رقم',
-                  style: AppTextStyles.bodySmall,
+                title: Text(
+                  widget.forCustomer!.name,
+                  style: AppTextStyles.titleSmall,
                 ),
-                trailing: widget.forCustomer == null
-                    ? TextButton(
-                        onPressed: _clearPickUseManual,
-                        child: const Text('تغيير'),
-                      )
-                    : null,
+                subtitle: const Text('سيتم تقييد الدين على هذا العميل'),
               ),
-            ),
-          ] else ...[
+            )
+          else if (_isNewCustomer)
             GlassCard(
               child: Column(
                 children: [
                   TextField(
-                    controller: _name,
+                    controller: _customerNameCtrl,
                     decoration: const InputDecoration(
-                      labelText: 'اسم العميل',
-                      prefixIcon: Icon(LucideIcons.user, size: 20),
+                      labelText: 'اسم العميل الجديد',
+                      prefixIcon: Icon(LucideIcons.userPlus, size: 20),
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
-                    controller: _phone,
+                    controller: _customerPhoneCtrl,
                     keyboardType: TextInputType.phone,
                     decoration: const InputDecoration(
                       labelText: 'رقم الجوال (اختياري)',
                       prefixIcon: Icon(LucideIcons.smartphone, size: 20),
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() {
+                        _isNewCustomer = false;
+                        _customerNameCtrl.clear();
+                        _customerPhoneCtrl.clear();
+                      }),
+                      icon: const Icon(LucideIcons.arrowRight, size: 16),
+                      label: const Text('عودة للبحث في العملاء'),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            GlassCard(
+              child: Column(
+                children: [
+                  InputDecorator(
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(LucideIcons.search, size: 20),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<DebtorUi>(
+                        isExpanded: true,
+                        value: _pickedFromList,
+                        hint: const Text('ابحث أو اختر عميلاً...'),
+                        items: all
+                            .map(
+                              (d) => DropdownMenuItem(
+                                value: d,
+                                child: Text(d.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (d) => setState(() => _pickedFromList = d),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() {
+                        _isNewCustomer = true;
+                        _pickedFromList = null;
+                      }),
+                      icon: const Icon(LucideIcons.plus, size: 16),
+                      label: const Text('إضافة عميل جديد'),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-          const SizedBox(height: AppSpacing.md),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // ── تفاصيل الدين ──
           Text('تفاصيل الدين', style: AppTextStyles.titleSmall),
           const SizedBox(height: 6),
           GlassCard(
@@ -203,7 +179,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                   controller: _note,
                   maxLines: 2,
                   decoration: const InputDecoration(
-                    labelText: 'ملاحظة (اختياري)',
+                    labelText: 'ملاحظة (سبب الدين/التفاصيل)',
                     alignLabelWithHint: true,
                     prefixIcon: Icon(LucideIcons.fileText, size: 20),
                   ),
@@ -211,16 +187,34 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
               ],
             ),
           ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // ── طريقة الخروج (من أين تم إخراج المبلغ) ──
+          Text(
+            'طريقة الدفع (في حال كانت سلفة)',
+            style: AppTextStyles.titleSmall,
+          ),
+          const SizedBox(height: 6),
+          AccountSelector(
+            selectedAccountId: _paymentMethodId,
+            onChanged: (acc) => setState(() => _paymentMethodId = acc.id),
+          ),
+
           const SizedBox(height: AppSpacing.xl),
           SafiButton(
-            label: 'حفظ الدين',
+            label: 'تأكيد الدين',
             icon: LucideIcons.check,
             onPressed: () {
-              if (_name.text.trim().isEmpty || _amount.text.trim().isEmpty) {
+              if (_pickedFromList == null &&
+                  _customerNameCtrl.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('الاسم والمبلغ مطلوبان'),
-                  ),
+                  const SnackBar(content: Text('الرجاء تحديد العميل')),
+                );
+                return;
+              }
+              if (_amount.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('الرجاء إدخال مبلغ الدين')),
                 );
                 return;
               }

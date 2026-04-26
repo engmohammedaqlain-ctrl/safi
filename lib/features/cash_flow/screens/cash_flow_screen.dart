@@ -24,16 +24,6 @@ class CashFlowScreen extends StatelessWidget {
         24,
       ),
       children: [
-        // ── ملخص ──
-        Text(
-          'ملخص',
-          style: AppTextStyles.labelSmall.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.35,
-          ),
-        ),
-        const SizedBox(height: 10),
         _MetricsStrip(),
         const SizedBox(height: 18),
 

@@ -37,10 +37,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
     final list = filterDebtors(all, _q);
 
     void push(Widget w) {
-      Navigator.push<void>(
-        context,
-        MaterialPageRoute<void>(builder: (_) => w),
-      );
+      Navigator.push<void>(context, MaterialPageRoute<void>(builder: (_) => w));
     }
 
     return ListView(
@@ -51,15 +48,6 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
         24,
       ),
       children: [
-        Text(
-          'ملخص',
-          style: AppTextStyles.labelSmall.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.35,
-          ),
-        ),
-        const SizedBox(height: 10),
         _MetricsStrip(
           totalLabel: my.totalDebtLabel,
           debtorCount: my.debtorCount,
@@ -88,7 +76,10 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
             hintText: 'ابحث بالاسم أو رقم الجوال',
             filled: true,
             fillColor: AppColors.backgroundSecondary,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 14,
+            ),
             prefixIcon: const Icon(
               LucideIcons.search,
               color: AppColors.textMuted,
@@ -277,11 +268,7 @@ class _MetricCell extends StatelessWidget {
                   color: const Color(0xFFEDEBF0),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  icon,
-                  size: 18,
-                  color: AppColors.textSecondary,
-                ),
+                child: Icon(icon, size: 18, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -315,10 +302,7 @@ class _MetricCell extends StatelessWidget {
 }
 
 class _PrimaryActions extends StatelessWidget {
-  const _PrimaryActions({
-    required this.onAddDebt,
-    required this.onPayment,
-  });
+  const _PrimaryActions({required this.onAddDebt, required this.onPayment});
 
   final VoidCallback onAddDebt;
   final VoidCallback onPayment;
@@ -393,11 +377,7 @@ class _CtaBlock extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  size: 32,
-                  color: AppColors.onPrimary,
-                ),
+                Icon(icon, size: 32, color: AppColors.onPrimary),
                 const SizedBox(height: 8),
                 Text(
                   label,

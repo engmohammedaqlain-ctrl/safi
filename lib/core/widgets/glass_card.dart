@@ -11,12 +11,14 @@ class GlassCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.borderRadius,
     this.background,
+    this.border,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final BorderRadius? borderRadius;
   final Color? background;
+  final BoxBorder? border;
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +30,7 @@ class GlassCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: background ?? AppColors.backgroundSecondary,
           borderRadius: br,
-          border: Border.all(
-            color: AppColors.outlineSoft,
-            width: 1,
-          ),
+          border: border ?? Border.all(color: AppColors.outlineSoft, width: 1),
           boxShadow: [
             BoxShadow(
               color: AppColors.primary.withValues(alpha: 0.06),

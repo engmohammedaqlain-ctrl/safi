@@ -5,11 +5,11 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/account_selector.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/safi_button.dart';
 import '../providers/debts_ui_provider.dart';
 
-/// تسجيل دفعة. [forCustomer] عند فتحها من صفحة الزبون — لا حاجة لكتابة الاسم.
 class RecordPaymentScreen extends ConsumerStatefulWidget {
   const RecordPaymentScreen({super.key, this.forCustomer});
 
@@ -21,146 +21,138 @@ class RecordPaymentScreen extends ConsumerStatefulWidget {
 }
 
 class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
-  final _customer = TextEditingController();
+  final _customerNameCtrl = TextEditingController();
   final _amount = TextEditingController();
   final _note = TextEditingController();
 
-  bool _lockCustomer = false;
   DebtorUi? _pickedFromList;
+  bool _isNewCustomer = false;
+  String? _paymentMethodId;
 
   @override
   void initState() {
     super.initState();
     final c = widget.forCustomer;
     if (c != null) {
-      _customer.text = c.name;
-      _lockCustomer = true;
+      _pickedFromList = c;
     }
   }
 
   @override
   void dispose() {
-    _customer.dispose();
+    _customerNameCtrl.dispose();
     _amount.dispose();
     _note.dispose();
     super.dispose();
   }
 
-  void _selectDebtor(DebtorUi d) {
-    setState(() {
-      _pickedFromList = d;
-      _customer.text = d.name;
-      _lockCustomer = true;
-    });
-  }
-
-  void _clearPickUseManual() {
-    setState(() {
-      _pickedFromList = null;
-      if (widget.forCustomer == null) {
-        _customer.clear();
-        _lockCustomer = false;
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final all = ref.watch(debtorsUiProvider);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('تسجيل دفعة'),
-      ),
+      appBar: AppBar(title: const Text('تسجيل دفعة')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          Text(
-            _lockCustomer
-                ? 'الدفعة تُسجّل لصالح نفس العميل المعروض.'
-                : 'اختر من عملائك أو اكتب اسم العميل.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (widget.forCustomer == null) ...[
-            Text('لأي عميل؟', style: AppTextStyles.titleSmall),
-            const SizedBox(height: 6),
-            GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  InputDecorator(
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(LucideIcons.users, size: 20),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<DebtorUi>(
-                        isExpanded: true,
-                        value: _pickedFromList,
-                        hint: const Text('اختر عميلاً مسجّلاً (اختياري)'),
-                        items: all
-                            .map(
-                              (d) => DropdownMenuItem<DebtorUi>(
-                                value: d,
-                                child: Text(
-                                  d.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (d) {
-                          if (d != null) _selectDebtor(d);
-                        },
-                      ),
-                    ),
-                  ),
-                  if (_pickedFromList != null)
-                    TextButton(
-                      onPressed: _clearPickUseManual,
-                      child: const Text('عميل غير مُدرج؟ أدخل الاسم يدوياً'),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          if (_lockCustomer) ...[
+          // ── قسم العميل ──
+          Text('تفاصيل العميل', style: AppTextStyles.titleSmall),
+          const SizedBox(height: 6),
+
+          if (widget.forCustomer != null)
+            // عميل مقفل من ملفه الشخصي
             GlassCard(
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: CircleAvatar(
                   backgroundColor: AppColors.success.withValues(alpha: 0.12),
-                  child: const Icon(
-                    LucideIcons.user,
-                    color: AppColors.success,
-                  ),
+                  child: const Icon(LucideIcons.user, color: AppColors.success),
                 ),
                 title: Text(
-                  _customer.text,
+                  widget.forCustomer!.name,
                   style: AppTextStyles.titleSmall,
                 ),
-                trailing: widget.forCustomer == null
-                    ? TextButton(
-                        onPressed: _clearPickUseManual,
-                        child: const Text('تغيير'),
-                      )
-                    : null,
+                subtitle: const Text('الدفعة ترتبط بهذا العميل تلقائياً'),
               ),
-            ),
-          ] else
+            )
+          else if (_isNewCustomer)
+            // إدخال عميل جديد
             GlassCard(
-              child: TextField(
-                controller: _customer,
-                decoration: const InputDecoration(
-                  labelText: 'اسم العميل',
-                  prefixIcon: Icon(LucideIcons.user, size: 20),
-                ),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _customerNameCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'اسم العميل الجديد',
+                      prefixIcon: Icon(LucideIcons.userPlus, size: 20),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() {
+                        _isNewCustomer = false;
+                        _customerNameCtrl.clear();
+                      }),
+                      icon: const Icon(LucideIcons.arrowRight, size: 16),
+                      label: const Text('عودة للبحث في العملاء'),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            // اختيار / بحث عن عميل موجود
+            GlassCard(
+              child: Column(
+                children: [
+                  InputDecorator(
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(LucideIcons.search, size: 20),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<DebtorUi>(
+                        isExpanded: true,
+                        value: _pickedFromList,
+                        hint: const Text('ابحث أو اختر عميلاً...'),
+                        items: all
+                            .map(
+                              (d) => DropdownMenuItem(
+                                value: d,
+                                child: Text(d.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (d) => setState(() => _pickedFromList = d),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() {
+                        _isNewCustomer = true;
+                        _pickedFromList = null;
+                      }),
+                      icon: const Icon(LucideIcons.plus, size: 16),
+                      label: const Text('إضافة عميل جديد'),
+                    ),
+                  ),
+                ],
               ),
             ),
-          const SizedBox(height: AppSpacing.md),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // ── تفاصيل الدفعة ──
+          Text('تفاصيل الدفعة', style: AppTextStyles.titleSmall),
+          const SizedBox(height: 6),
           GlassCard(
             child: Column(
               children: [
@@ -171,7 +163,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                   ),
                   decoration: const InputDecoration(
                     labelText: 'مبلغ الدفعة (₪)',
-                    prefixIcon: Icon(LucideIcons.wallet, size: 20),
+                    prefixIcon: Icon(LucideIcons.coins, size: 20),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -187,20 +179,33 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
               ],
             ),
           ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // ── طريقة الدفع ──
+          Text('كيف استلمت الدفعة؟', style: AppTextStyles.titleSmall),
+          const SizedBox(height: 6),
+          AccountSelector(
+            selectedAccountId: _paymentMethodId,
+            onChanged: (acc) => setState(() => _paymentMethodId = acc.id),
+          ),
+
           const SizedBox(height: AppSpacing.xl),
           SafiButton(
             label: 'تأكيد الدفعة',
             icon: LucideIcons.check,
             onPressed: () {
-              if (_customer.text.trim().isEmpty) {
+              if (_pickedFromList == null &&
+                  _customerNameCtrl.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('حدد العميل أو اسمه')),
+                  const SnackBar(
+                    content: Text('الرجاء اختيار أو إدخال اسم العميل'),
+                  ),
                 );
                 return;
               }
               if (_amount.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('أدخل مبلغ الدفعة')),
+                  const SnackBar(content: Text('الرجاء إدخال مبلغ الدفعة')),
                 );
                 return;
               }

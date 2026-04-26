@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
@@ -23,178 +24,225 @@ class InventoryScreen extends ConsumerWidget {
     final catalog = ref.watch(inventoryCatalogProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text('إدارة المخزون')),
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: ListView(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.lg,
-        bottomContentPadding,
-      ),
-      children: [
-        Text('إدارة المخزون', style: AppTextStyles.headlineSmall),
-        const SizedBox(height: 6),
-        Text('إضافة منتجات، رموز داخلية، وتنبيهات النفاذ', style: AppTextStyles.bodySmall),
-        const SizedBox(height: AppSpacing.lg),
-        Row(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            bottomContentPadding,
+          ),
           children: [
-            Expanded(
-              child: TextField(
-                decoration: const InputDecoration(
-                  hintText: 'بحث باسم أو رمز...',
-                  prefixIcon: Icon(LucideIcons.search, color: AppColors.textMuted),
-                ),
+            // ── شريط بحث سريع ──
+            GlassCard(
+              padding: EdgeInsets.zero,
+              child: Row(
+                children: [
+                  const SizedBox(width: 16),
+                  const Icon(
+                    LucideIcons.search,
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'بحث عن منتج...',
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(LucideIcons.listFilter, size: 20),
+                    color: AppColors.textSecondary,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            SafiIconButton(
-              onPressed: () {},
-              icon: LucideIcons.listFilter,
+            const SizedBox(height: AppSpacing.lg),
+
+            // ── الإجراءات الرئيسية ──
+            Row(
+              children: [
+                Expanded(
+                  child: SafiButton(
+                    label: 'إضافة منتج',
+                    icon: LucideIcons.plus,
+                    onPressed: () => Navigator.push<void>(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AddProductScreen(),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SafiButton(
+                    label: 'حظر / أرشفة',
+                    icon: LucideIcons.trash2,
+                    variant: SafiButtonVariant.outline,
+                    onPressed: () => Navigator.push<void>(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const DeleteProductsScreen(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // ── تنبيهات المخزون ──
+            _SectionLabel('تنبيهات'),
+            GlassCard(
+              padding: const EdgeInsets.all(12),
+              background: AppColors.warningLight,
+              border: Border.all(
+                color: AppColors.warning.withValues(alpha: 0.3),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.alertTriangle,
+                      color: AppColors.warning,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      '4 منتجات قاربت على النفاذ',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.warning,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: const Text('عرض'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // ── قائمة المنتجات ──
+            _SectionLabel('قائمة المنتجات (${catalog.length})'),
+            GlassCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (int i = 0; i < catalog.length; i++) ...[
+                    _ProductRowListTile(product: catalog[i]),
+                    if (i < catalog.length - 1)
+                      const Divider(height: 1, indent: 52),
+                  ],
+                ],
+              ),
             ),
           ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        LayoutBuilder(
-          builder: (context, c) {
-            final narrow = c.maxWidth < 380;
-            final add = SafiButton(
-              label: 'إضافة منتج',
-              icon: LucideIcons.plus,
-              onPressed: () {
-                Navigator.push<void>(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => const AddProductScreen(),
-                  ),
-                );
-              },
-            );
-            final del = SafiButton(
-              label: 'حذف / أرشفة',
-              icon: LucideIcons.trash2,
-              variant: SafiButtonVariant.outline,
-              onPressed: () {
-                Navigator.push<void>(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => const DeleteProductsScreen(),
-                  ),
-                );
-              },
-            );
-            if (narrow) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  add,
-                  const SizedBox(height: 8),
-                  del,
-                ],
-              );
-            }
-            return Row(
-              children: [
-                Expanded(child: add),
-                const SizedBox(width: 8),
-                Expanded(child: del),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        GlassCard(
-          background: AppColors.warning.withValues(alpha: 0.08),
-          child: Row(
-            children: [
-              const Icon(LucideIcons.alertTriangle, color: AppColors.warning),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '4 منتجات قاربت على النفاذ',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyLarge,
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: const Text('عرض'),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        for (final p in catalog)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _ProductRowCard(product: p),
-          ),
-      ],
         ),
       ),
     );
   }
 }
 
-class _ProductRowCard extends StatelessWidget {
-  const _ProductRowCard({required this.product});
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, right: 4),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.35,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductRowListTile extends StatelessWidget {
+  const _ProductRowListTile({required this.product});
 
   final ProductUi product;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          Navigator.push<void>(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => ProductDetailScreen(product: product),
-            ),
-          );
-        },
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-        child: GlassCard(
-          child: Row(
-            children: [
-              Icon(product.icon, color: AppColors.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(product.name, style: AppTextStyles.titleSmall),
-                    Text(
-                      'المخزون: ${product.stock} · ₪ ${product.price}',
-                      style: AppTextStyles.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              if (product.badge != null)
-                Flexible(
-                  child: Text(
-                    product.badge!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: product.badgeColor,
-                    ),
-                  ),
-                ),
-              const SizedBox(width: 4),
-              const Icon(
-                LucideIcons.chevronLeft,
-                size: 18,
-                color: AppColors.textMuted,
-              ),
-            ],
-          ),
+    return ListTile(
+      onTap: () => Navigator.push<void>(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => ProductDetailScreen(product: product),
         ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          borderRadius: AppRadius.rmd,
+        ),
+        child: Icon(product.icon, color: AppColors.primary, size: 20),
+      ),
+      title: Text(product.name, style: AppTextStyles.titleSmall),
+      subtitle: Text(
+        'المخزون: ${product.stock} · ₪ ${product.price}',
+        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (product.badge != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: product.badgeColor?.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                product.badge!,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: product.badgeColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+          const SizedBox(width: 8),
+          const Icon(
+            LucideIcons.chevronLeft,
+            size: 18,
+            color: AppColors.textMuted,
+          ),
+        ],
       ),
     );
   }
