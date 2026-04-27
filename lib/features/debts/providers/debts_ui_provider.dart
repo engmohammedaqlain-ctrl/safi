@@ -5,14 +5,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/bootstrap/startup_ledger_data.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../cash_flow/data/financial_account_model.dart';
 
 enum DebtUrgency { low, medium, high }
 
 enum TransactionType { gave, received }
 
-/// وسم عربي لوسيلة الدفع (كما في شاشة تسجيل الدين/الدفعة)
-String transactionPayMethodLabel(String? methodId) {
+/// وسم عربي لوسيلة الدفع: يطابق [FinancialAccount.id] أو القيم القديمة cash/wallet/bank
+String transactionPayMethodLabel(
+  String? methodId, {
+  List<FinancialAccount> accounts = const [],
+}) {
   if (methodId == null || methodId.isEmpty) return 'غير مُعرَّف';
+  for (final a in accounts) {
+    if (a.id == methodId) return a.name;
+  }
   return switch (methodId) {
     'cash' => 'كاش',
     'wallet' => 'محفظة',
@@ -31,6 +38,7 @@ class TransactionUi {
     required this.note,
     required this.date,
     this.payMethodId,
+    this.imagePath,
   });
 
   final String id;
@@ -40,8 +48,11 @@ class TransactionUi {
   final String note;
   final DateTime date;
 
-  /// مثل: cash, wallet, bank
+  /// [FinancialAccount.id] أو قيمة قديمة: cash, wallet, bank
   final String? payMethodId;
+
+  /// مسار صورة اختيارية
+  final String? imagePath;
 }
 
 /// أرقام ملخصة لرأس شاشة الديون

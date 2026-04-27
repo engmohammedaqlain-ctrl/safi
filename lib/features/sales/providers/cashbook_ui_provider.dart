@@ -38,6 +38,14 @@ class CashbookNotifier extends Notifier<List<CashbookEntry>> {
     state = [for (final x in state) if (x.id != id) x];
     _persist();
   }
+
+  void update(CashbookEntry updated) {
+    state = [
+      for (final x in state)
+        if (x.id == updated.id) updated else x,
+    ];
+    _persist();
+  }
 }
 
 final cashbookEntriesProvider =

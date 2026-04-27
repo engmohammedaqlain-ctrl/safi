@@ -486,7 +486,11 @@ class _SummaryMetricRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(width: 8),
         Text(
@@ -494,8 +498,9 @@ class _SummaryMetricRow extends StatelessWidget {
           textDirection: TextDirection.ltr,
           style: TextStyle(
             color: valueColor,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
           ),
         ),
       ],

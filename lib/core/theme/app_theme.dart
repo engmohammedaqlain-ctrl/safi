@@ -34,7 +34,7 @@ class AppTheme {
         backgroundColor: AppColors.backgroundSecondary,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
+        scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
           color: AppColors.primary,
@@ -43,6 +43,13 @@ class AppTheme {
         ),
         iconTheme: IconThemeData(color: AppColors.primary),
         foregroundColor: AppColors.textPrimary,
+        // فاصل سفلي رفيع تحت كل AppBar في التطبيق
+        shape: Border(
+          bottom: BorderSide(
+            color: AppColors.outlineSoft,
+            width: 1,
+          ),
+        ),
       ),
       textTheme: TextTheme(
         displayLarge: AppTextStyles.displayLarge,

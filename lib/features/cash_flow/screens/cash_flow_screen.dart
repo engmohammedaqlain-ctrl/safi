@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -8,6 +11,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../sales/models/cashbook_entry.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
+import 'cashbook_entry_detail_screen.dart';
 import 'cash_entry_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
 
@@ -53,8 +57,14 @@ class CashFlowScreen extends ConsumerWidget {
         const SizedBox(height: 10),
         _TransactionsList(
           entries: entries,
-          onDelete: (id) =>
-              ref.read(cashbookEntriesProvider.notifier).removeById(id),
+          onOpen: (e) {
+            Navigator.push<void>(
+              context,
+              AppPageRoute<void>(
+                builder: (_) => CashbookEntryDetailScreen(entry: e),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -301,10 +311,10 @@ String _dateLine(DateTime d) {
 }
 
 class _TransactionsList extends StatelessWidget {
-  const _TransactionsList({required this.entries, required this.onDelete});
+  const _TransactionsList({required this.entries, required this.onOpen});
 
   final List<CashbookEntry> entries;
-  final void Function(String id) onDelete;
+  final void Function(CashbookEntry e) onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -316,20 +326,9 @@ class _TransactionsList extends StatelessWidget {
         for (final t in entries)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: Dismissible(
-              key: ValueKey('cashflow_${t.id}'),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.only(left: 16),
-                color: AppColors.error,
-                child: const Icon(LucideIcons.trash2, color: Colors.white),
-              ),
-              onDismissed: (_) => onDelete(t.id),
-              child: _TransactionCard(
-                item: t,
-                onDelete: () => onDelete(t.id),
-              ),
+            child: _TransactionCard(
+              item: t,
+              onTap: () => onOpen(t),
             ),
           ),
       ],
@@ -338,9 +337,9 @@ class _TransactionsList extends StatelessWidget {
 }
 
 class _TransactionCard extends StatelessWidget {
-  const _TransactionCard({required this.item, required this.onDelete});
+  const _TransactionCard({required this.item, required this.onTap});
   final CashbookEntry item;
-  final VoidCallback onDelete;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -349,7 +348,10 @@ class _TransactionCard extends StatelessWidget {
     return Material(
       color: AppColors.backgroundSecondary,
       borderRadius: AppRadius.rlg,
-      child: Container(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.rlg,
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: AppRadius.rlg,
@@ -360,11 +362,6 @@ class _TransactionCard extends StatelessWidget {
         child: Row(
           textDirection: TextDirection.rtl,
           children: [
-            IconButton(
-              onPressed: onDelete,
-              icon: const Icon(LucideIcons.trash2, size: 18),
-              color: AppColors.textMuted,
-            ),
             Container(
               width: 36,
               height: 36,
@@ -372,13 +369,21 @@ class _TransactionCard extends StatelessWidget {
                 color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                item.isIncome
-                    ? LucideIcons.trendingUp
-                    : LucideIcons.trendingDown,
-                size: 18,
-                color: color,
-              ),
+              clipBehavior: Clip.antiAlias,
+              child: (!kIsWeb &&
+                      item.imagePath != null &&
+                      item.imagePath!.isNotEmpty)
+                  ? Image.file(
+                      File(item.imagePath!),
+                      fit: BoxFit.cover,
+                    )
+                  : Icon(
+                      item.isIncome
+                          ? LucideIcons.trendingUp
+                          : LucideIcons.trendingDown,
+                      size: 18,
+                      color: color,
+                    ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -392,6 +397,16 @@ class _TransactionCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (item.category != null && item.category!.isNotEmpty)
+                    Text(
+                      item.category!,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   Text(
                     _dateLine(item.date),
                     style: AppTextStyles.labelSmall.copyWith(
@@ -412,6 +427,7 @@ class _TransactionCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

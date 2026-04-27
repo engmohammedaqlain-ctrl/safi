@@ -121,6 +121,7 @@ class StartupLedgerData {
         'note': t.note,
         'date': t.date.toIso8601String(),
         'payMethodId': t.payMethodId,
+        'imagePath': t.imagePath,
       };
 
   static TransactionUi _transactionFromMap(Map<String, dynamic> m) {
@@ -135,6 +136,7 @@ class StartupLedgerData {
       note: m['note'] as String? ?? '',
       date: DateTime.parse(m['date'] as String),
       payMethodId: m['payMethodId'] as String?,
+      imagePath: m['imagePath'] as String?,
     );
   }
 }

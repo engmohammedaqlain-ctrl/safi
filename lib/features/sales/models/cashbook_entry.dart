@@ -8,6 +8,8 @@ class CashbookEntry {
     required this.date,
     this.note = '',
     this.accountId,
+    this.category,
+    this.imagePath,
   });
 
   final String id;
@@ -18,6 +20,12 @@ class CashbookEntry {
   final String note;
   final String? accountId;
 
+  /// تصنيف اختياري (معاملات دفتر النقدية)
+  final String? category;
+
+  /// مسار محلي لصورة مرفقة
+  final String? imagePath;
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,
@@ -26,6 +34,8 @@ class CashbookEntry {
         'date': date.toIso8601String(),
         'note': note,
         'accountId': accountId,
+        'category': category,
+        'imagePath': imagePath,
       };
 
   factory CashbookEntry.fromJson(Map<String, dynamic> m) {
@@ -37,6 +47,8 @@ class CashbookEntry {
       date: DateTime.parse(m['date'] as String),
       note: m['note'] as String? ?? '',
       accountId: m['accountId'] as String?,
+      category: m['category'] as String?,
+      imagePath: m['imagePath'] as String?,
     );
   }
 }

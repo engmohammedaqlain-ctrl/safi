@@ -1,12 +1,18 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../cash_flow/data/financial_account_model.dart';
+import '../../cash_flow/providers/accounts_provider.dart';
+import 'package:safi/core/router/app_page_route.dart';
 import '../providers/debts_ui_provider.dart';
 import '../widgets/calculator_keypad.dart';
 import 'transaction_success_screen.dart';
-import 'package:safi/core/router/app_page_route.dart';
 
 class AddDebtScreen extends ConsumerStatefulWidget {
   const AddDebtScreen({super.key, this.forCustomer});
@@ -28,6 +34,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
   final _noteCtrl = TextEditingController();
   DateTime _date = DateTime.now();
   String? _payMethod;
+  String? _imagePath;
 
   bool get _hasInput => _displayNum.isNotEmpty && _displayNum != '0';
 
@@ -110,7 +117,9 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
     if (_payMethod == null) {
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء تحديد مصدر الدفع: كاش، محفظة، أو بنك فلسطين')),
+        const SnackBar(
+          content: Text('الرجاء اختيار محفظة من القائمة'),
+        ),
       );
       return;
     }
@@ -124,6 +133,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
       note: _noteCtrl.text.trim(),
       date: _date,
       payMethodId: _payMethod,
+      imagePath: _imagePath,
     );
     ref.read(transactionsProvider.notifier).addTransaction(tx);
     ref.read(debtorsUiProvider.notifier).updateCustomerBalance(cid, amount);
@@ -142,9 +152,19 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
     );
   }
 
+  Future<void> _pickImage() async {
+    final x = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 2000,
+      imageQuality: 88,
+    );
+    if (x != null) setState(() => _imagePath = x.path);
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = widget.forCustomer;
+    final accounts = ref.watch(accountsProvider);
     final dateStr =
         '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
 
@@ -180,8 +200,10 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.max,
                       children: [
-                        const Spacer(),
+                        const SizedBox(height: 4),
 
                         // المبلغ الكبير
                           Align(
@@ -318,24 +340,58 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                             ),
                             const SizedBox(height: 6),
                             _chip(
-                              'إضافة صورة',
+                              _imagePath == null
+                                  ? 'إضافة صورة'
+                                  : 'تغيير الصورة',
                               LucideIcons.camera,
-                              () {},
+                              _pickImage,
                               labelLtr: false,
                             ),
+                            if (_imagePath != null) ...[
+                              const SizedBox(height: 6),
+                              if (!kIsWeb)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.file(
+                                    File(_imagePath!),
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                  ),
+                                )
+                              else
+                                Text(
+                                  'تم اختيار صورة',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                            ],
                             const SizedBox(height: 8),
-                            // طريقة الدفع
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              alignment: WrapAlignment.start,
-                              textDirection: TextDirection.rtl,
-                              children: [
-                                _payChip('كاش', 'cash'),
-                                _payChip('محفظة', 'wallet'),
-                                _payChip('بنك فلسطين', 'bank'),
-                              ],
-                            ),
+                            if (accounts.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Text(
+                                  'لا توجد محافظ. أضف من «المحافظ والبنوك»',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.orange.shade800,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              )
+                            else
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                alignment: WrapAlignment.start,
+                                textDirection: TextDirection.rtl,
+                                children: [
+                                  for (final a in accounts) _payChipForAccount(a),
+                                ],
+                              ),
                           ],
 
                         const SizedBox(height: 16),
@@ -418,7 +474,8 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
     );
   }
 
-  Widget _payChip(String label, String id) {
+  Widget _payChipForAccount(FinancialAccount a) {
+    final id = a.id;
     final sel = _payMethod == id;
     return Material(
       color: Colors.transparent,
@@ -427,6 +484,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          constraints: const BoxConstraints(maxWidth: 220),
           decoration: BoxDecoration(
             color: sel ? AppColors.primary : AppColors.surfaceVariant,
             borderRadius: BorderRadius.circular(20),
@@ -435,7 +493,9 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
             ),
           ),
           child: Text(
-            label,
+            a.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
               fontWeight: sel ? FontWeight.w600 : FontWeight.w500,

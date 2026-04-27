@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -5,21 +8,13 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
 import '../../cash_flow/screens/cash_entry_screen.dart';
+import '../../cash_flow/screens/cashbook_entry_detail_screen.dart';
 import '../../cash_flow/screens/cash_flow_screen.dart';
 import '../../cash_flow/screens/financial_accounts_screen.dart';
 import '../models/cashbook_entry.dart';
 import '../providers/cashbook_ui_provider.dart';
 import 'new_sale_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
-
-/// ظل ناعم موحّد مع بطاقة ملخص دفتر الديون
-List<BoxShadow> _kCardShadow() => [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.04),
-        blurRadius: 12,
-        offset: const Offset(0, 4),
-      ),
-    ];
 
 /// دفتر النقدية — نفس ألوان / ثيم صفحة الديون + تخطيط RTL
 class SalesScreen extends ConsumerWidget {
@@ -59,20 +54,40 @@ class SalesScreen extends ConsumerWidget {
               onIncome: () => push(const CashEntryScreen(initialIncome: true)),
               onExpense: () => push(const CashEntryScreen(initialIncome: false)),
             ),
-            const SizedBox(height: 20),
-
+            const SizedBox(height: 12),
             Row(
               textDirection: TextDirection.rtl,
               children: [
+                // RTL: من اليسار = تقارير، أرشيف، محافظ، نقطة بيع
                 Expanded(
-                  child: _QuickAction(
-                    icon: LucideIcons.inbox,
-                    label: 'أرشيف المعاملات',
-                    onTap: () => push(const CashFlowScreen()),
+                  child: _TopCardAction(
+                    icon: LucideIcons.shoppingCart,
+                    label: 'نقطة البيع',
+                    onTap: () => push(const NewSaleScreen()),
+                    compact: true,
                   ),
                 ),
+                const SizedBox(width: 2),
                 Expanded(
-                  child: _QuickAction(
+                  child: _TopCardAction(
+                    icon: LucideIcons.wallet,
+                    label: 'المحافظ',
+                    onTap: () => push(const FinancialAccountsScreen()),
+                    compact: true,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Expanded(
+                  child: _TopCardAction(
+                    icon: LucideIcons.inbox,
+                    label: 'الأرشيف',
+                    onTap: () => push(const CashFlowScreen()),
+                    compact: true,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Expanded(
+                  child: _TopCardAction(
                     icon: LucideIcons.barChart2,
                     label: 'التقارير',
                     onTap: () {
@@ -83,33 +98,12 @@ class SalesScreen extends ConsumerWidget {
                         ),
                       );
                     },
-                  ),
-                ),
-                Expanded(
-                  child: _QuickAction(
-                    icon: LucideIcons.briefcase,
-                    label: 'إنهاء الوردية',
-                    onTap: () => _confirmEndShift(context),
+                    compact: true,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-
-            _LinkRow(
-              icon: LucideIcons.wallet,
-              title: 'إدارة الحسابات والمحافظ',
-              subtitle: 'البنوك، الكاش، المحافظ الإلكترونية',
-              onTap: () => push(const FinancialAccountsScreen()),
-            ),
-            const SizedBox(height: 8),
-            _LinkRow(
-              icon: LucideIcons.shoppingCart,
-              title: 'نقطة البيع (POS)',
-              subtitle: 'الكاشير وإدارة الطلبات السريعة',
-              onTap: () => push(const NewSaleScreen()),
-            ),
-            const SizedBox(height: 24),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -136,37 +130,19 @@ class SalesScreen extends ConsumerWidget {
                   child: _CashbookTile(
                     entry: e,
                     hideAmount: hidden,
-                    onDelete: () {
-                      ref
-                          .read(cashbookEntriesProvider.notifier)
-                          .removeById(e.id);
+                    onOpen: () {
+                      Navigator.push<void>(
+                        context,
+                        AppPageRoute<void>(
+                          builder: (_) => CashbookEntryDetailScreen(entry: e),
+                        ),
+                      );
                     },
                   ),
                 ),
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _confirmEndShift(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('إنهاء الوردية'),
-        content: const Text('هل تريد إغلاق جلسة الوردية؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('تأكيد'),
-          ),
-        ],
       ),
     );
   }
@@ -205,50 +181,50 @@ class _BalanceCard extends StatelessWidget {
         color: Colors.white,
         border: Border.all(color: Colors.grey.shade200),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: _kCardShadow(),
+        boxShadow: const [],
       ),
-      // RTL: CrossAxisAlignment.start = محاذاة كل المحتوى من نفس الحافة اليمين
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(
-            width: double.infinity,
-            child: Text(
-              'الصافي',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+          // 1) ملخّص الصافي
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Text(
+                'الصافي',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
+              const SizedBox(height: 6),
+              _ShekelAmountLine(
+                amount: balanceAmount,
+                valueColor: incomeColor,
+                numberStyle: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  height: 1.1,
+                ),
+                alignEnd: false,
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          _ShekelAmountLine(
-            amount: balanceAmount,
-            valueColor: incomeColor,
-            numberStyle: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              height: 1.1,
-            ),
-            alignEnd: true,
-          ),
-          const SizedBox(height: 10),
-          _MetricLine(
-            label: 'الدخل',
-            amount: incomeAmount,
-            valueColor: incomeColor,
-          ),
-          const SizedBox(height: 4),
-          _MetricLine(
-            label: 'المصروف',
-            amount: expenseAmount,
-            valueColor: expenseValColor,
+          const SizedBox(height: 12),
+          // 2) تفصيل دخل / مصروف
+          _CardIncomeExpenseRow(
+            incomeAmount: incomeAmount,
+            expenseAmount: expenseAmount,
+            incomeColor: incomeColor,
+            expenseColor: expenseValColor,
           ),
           const SizedBox(height: 16),
+          // 3) تسجيل دخل / مصروف
           Row(
             textDirection: TextDirection.rtl,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(
                 child: _SoftCta(
@@ -275,41 +251,61 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-/// سطر: «الدخل:» ثم [رقم][₪] بترتيب LTR واضح
-class _MetricLine extends StatelessWidget {
-  const _MetricLine({
-    required this.label,
-    required this.amount,
-    required this.valueColor,
+/// صف دخل/مصروف داخل بطاقة الصافي — متماثل ومركز
+class _CardIncomeExpenseRow extends StatelessWidget {
+  const _CardIncomeExpenseRow({
+    required this.incomeAmount,
+    required this.expenseAmount,
+    required this.incomeColor,
+    required this.expenseColor,
   });
 
-  final String label;
-  final String amount;
-  final Color valueColor;
+  final String incomeAmount;
+  final String expenseAmount;
+  final Color incomeColor;
+  final Color expenseColor;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        textDirection: TextDirection.rtl,
+    Widget cell(String label, String amount, Color c) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            '$label: ',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            label,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          const SizedBox(height: 4),
           _ShekelAmountLine(
             amount: amount,
-            valueColor: valueColor,
+            valueColor: c,
             numberStyle: const TextStyle(
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: FontWeight.w800,
             ),
             alignEnd: false,
           ),
         ],
-      ),
+      );
+    }
+
+    return Row(
+      textDirection: TextDirection.rtl,
+      children: [
+        Expanded(child: cell('الدخل', incomeAmount, incomeColor)),
+        Container(
+          width: 1,
+          height: 40,
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          color: Colors.grey.shade200,
+        ),
+        Expanded(child: cell('المصروف', expenseAmount, expenseColor)),
+      ],
     );
   }
 }
@@ -392,128 +388,75 @@ class _SoftCta extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  إجراء سريع — مطابق لـ _ActionButton في debts_screen
+//  أيقونات أعلى بطاقة الصافي (مضغوطة)
 // ════════════════════════════════════════════════════════════════
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
+class _TopCardAction extends StatelessWidget {
+  const _TopCardAction({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.compact = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: AppColors.primary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+    final box = compact ? 36.0 : 44.0;
+    final iconSize = compact ? 19.0 : 22.0;
+    final fontSize = compact ? 8.5 : 10.0;
+    const actionWidth = 88.0;
 
-// ════════════════════════════════════════════════════════════════
-//  صف رابط
-// ════════════════════════════════════════════════════════════════
-class _LinkRow extends StatelessWidget {
-  const _LinkRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Container(
+          width: box,
+          height: box,
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey.shade200),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: _kCardShadow(),
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  textDirection: TextDirection.rtl,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                LucideIcons.chevronLeft,
-                color: Colors.grey.shade400,
-                size: 18,
-              ),
-            ],
+          child: Icon(icon, size: iconSize, color: AppColors.primary),
+        ),
+        SizedBox(height: compact ? 3 : 4),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.rtl,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+            height: 1.15,
           ),
         ),
+      ],
+    );
+
+    return Material(
+      color: Colors.transparent,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: compact
+            ? Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: content,
+              )
+            : SizedBox(
+                width: actionWidth,
+                child: content,
+              ),
       ),
     );
   }
@@ -534,12 +477,12 @@ class _CashbookTile extends StatelessWidget {
   const _CashbookTile({
     required this.entry,
     required this.hideAmount,
-    required this.onDelete,
+    required this.onOpen,
   });
 
   final CashbookEntry entry;
   final bool hideAmount;
-  final VoidCallback onDelete;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -549,7 +492,9 @@ class _CashbookTile extends StatelessWidget {
         : formatShekelAmount(entry.amount);
     return Material(
       color: Colors.white,
-      child: Container(
+      child: InkWell(
+        onTap: onOpen,
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         decoration: BoxDecoration(
           border: Border(
@@ -559,34 +504,6 @@ class _CashbookTile extends StatelessWidget {
         child: Row(
           textDirection: TextDirection.rtl,
           children: [
-            IconButton(
-              onPressed: () {
-                showDialog<void>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('حذف المعاملة؟'),
-                    content: const Text('لن يُسترجع المبلغ من الصافي.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('إلغاء'),
-                      ),
-                      FilledButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          onDelete();
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                        ),
-                        child: const Text('حذف'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              icon: Icon(LucideIcons.trash2, size: 18, color: Colors.grey.shade500),
-            ),
             Container(
               width: 40,
               height: 40,
@@ -594,11 +511,21 @@ class _CashbookTile extends StatelessWidget {
                 color: c.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                entry.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
-                color: c,
-                size: 20,
-              ),
+              clipBehavior: Clip.antiAlias,
+              child: (!kIsWeb &&
+                      entry.imagePath != null &&
+                      entry.imagePath!.isNotEmpty)
+                  ? Image.file(
+                      File(entry.imagePath!),
+                      fit: BoxFit.cover,
+                    )
+                  : Icon(
+                      entry.isIncome
+                          ? LucideIcons.trendingUp
+                          : LucideIcons.trendingDown,
+                      color: c,
+                      size: 20,
+                    ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -615,6 +542,17 @@ class _CashbookTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (entry.category != null && entry.category!.isNotEmpty)
+                    Text(
+                      entry.category!,
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   Text(
                     _formatCashDate(entry.date),
                     style: TextStyle(
@@ -636,6 +574,7 @@ class _CashbookTile extends StatelessWidget {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -655,7 +594,6 @@ class _EmptyTransactions extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
-        boxShadow: _kCardShadow(),
       ),
       child: Column(
         children: [

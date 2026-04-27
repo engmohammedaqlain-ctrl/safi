@@ -1,8 +1,13 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../cash_flow/data/financial_account_model.dart';
+import '../../cash_flow/providers/accounts_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/debt_category_model.dart';
 import '../providers/debt_categories_provider.dart';
@@ -56,25 +61,14 @@ class CustomerDetailScreen extends ConsumerWidget {
             onTap: () {
               _showCustomerInfo(context, ref, currentDebtor);
             },
-            child: Column(
-              children: [
-                Text(
-                  currentDebtor.name,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  currentDebtor.isSupplier
-                      ? 'عرض معلومات المورد'
-                      : 'عرض معلومات العميل',
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ],
+            child: Text(
+              currentDebtor.name,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),
@@ -620,6 +614,14 @@ IconData _payMethodIcon(String? id) {
   };
 }
 
+IconData _payMethodIconFor(String? id, List<FinancialAccount> accounts) {
+  if (id == null || id.isEmpty) return LucideIcons.circleDot;
+  for (final a in accounts) {
+    if (a.id == id) return a.type.icon;
+  }
+  return _payMethodIcon(id);
+}
+
 class _TransactionDetailSheet extends ConsumerWidget {
   const _TransactionDetailSheet({
     required this.debtor,
@@ -632,12 +634,16 @@ class _TransactionDetailSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tx = transaction;
+    final accounts = ref.watch(accountsProvider);
     final isGave = tx.type == TransactionType.gave;
     final accent = isGave ? const Color(0xFFE65100) : const Color(0xFF2E7D32);
     final typeLabel = isGave ? 'أعطيت' : 'أخذت';
     final sign = isGave ? '+' : '−';
     final amt = tx.amount.toStringAsFixed(1);
-    final method = transactionPayMethodLabel(tx.payMethodId);
+    final method = transactionPayMethodLabel(
+      tx.payMethodId,
+      accounts: accounts,
+    );
     final when = _formatSheetHeaderDate(tx.date);
     final bal = debtor.amount.replaceAll('₪', '').trim();
     final balColor = (double.tryParse(bal) ?? 0) > 0
@@ -753,7 +759,7 @@ class _TransactionDetailSheet extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          _payMethodIcon(tx.payMethodId),
+                          _payMethodIconFor(tx.payMethodId, accounts),
                           size: 18,
                           color: AppColors.primary,
                         ),
@@ -783,6 +789,20 @@ class _TransactionDetailSheet extends ConsumerWidget {
                   ),
                 ),
               ],
+              if (tx.imagePath != null &&
+                  tx.imagePath!.isNotEmpty &&
+                  !kIsWeb) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    File(tx.imagePath!),
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               Row(
                 children: [
@@ -799,6 +819,9 @@ class _TransactionDetailSheet extends ConsumerWidget {
                         ];
                         if (tx.note.isNotEmpty) {
                           lines.add('ملاحظة: ${tx.note}');
+                        }
+                        if (tx.imagePath != null && tx.imagePath!.isNotEmpty) {
+                          lines.add('صورة: مرفقة');
                         }
                         Clipboard.setData(ClipboardData(text: lines.join('\n')));
                         Navigator.pop(context);
