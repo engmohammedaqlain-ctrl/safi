@@ -94,27 +94,18 @@ class _MainShellState extends ConsumerState<MainShell> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         titleSpacing: 16,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: AppColors.outlineSoft),
+        ),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           textDirection: TextDirection.rtl,
           children: [
-            // RTL: start=يمين → أول مُعرَف: العين
-            Consumer(
-              builder: (context, ref, _) {
-                final hidden = ref.watch(hideBalanceProvider);
-                return GestureDetector(
-                  onTap: () =>
-                      ref.read(hideBalanceProvider.notifier).toggle(),
-                  child: _TopBarIcon(
-                    icon: hidden ? LucideIcons.eyeOff : LucideIcons.eye,
-                    color: AppColors.primary,
-                    bgColor: AppColors.primary.withValues(alpha: 0.1),
-                  ),
-                );
-              },
-            ),
-            // ثانياً: الاسم + الدفتر (جهة يسار الشاشة)
+            // أول مُعرَف = يمين الشاشة: الاسم + أيقونة الدفتر
             Row(
               mainAxisSize: MainAxisSize.min,
               textDirection: TextDirection.rtl,
@@ -134,6 +125,21 @@ class _MainShellState extends ConsumerState<MainShell> {
                   },
                 ),
               ],
+            ),
+            // ثانياً = يسار الشاشة: زر إخفاء الأرقام
+            Consumer(
+              builder: (context, ref, _) {
+                final hidden = ref.watch(hideBalanceProvider);
+                return GestureDetector(
+                  onTap: () =>
+                      ref.read(hideBalanceProvider.notifier).toggle(),
+                  child: _TopBarIcon(
+                    icon: hidden ? LucideIcons.eyeOff : LucideIcons.eye,
+                    color: AppColors.primary,
+                    bgColor: AppColors.primary.withValues(alpha: 0.1),
+                  ),
+                );
+              },
             ),
           ],
         ),

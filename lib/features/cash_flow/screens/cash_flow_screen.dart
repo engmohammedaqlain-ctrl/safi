@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../sales/models/cashbook_entry.dart';
+import '../../sales/providers/cashbook_ui_provider.dart';
 import 'cash_entry_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
 
-class CashFlowScreen extends StatelessWidget {
+class CashFlowScreen extends ConsumerWidget {
   const CashFlowScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     void push(Widget w) {
       Navigator.push<void>(context, AppPageRoute<void>(builder: (_) => w));
     }
+
+    final summary = ref.watch(cashbookSummaryProvider);
+    final entries = ref.watch(cashbookEntriesProvider);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
@@ -25,17 +31,17 @@ class CashFlowScreen extends StatelessWidget {
         24,
       ),
       children: [
-        _MetricsStrip(),
+        _MetricsStrip(
+          balance: formatShekelAmount(summary.balance),
+          income: formatShekelAmount(summary.income),
+          expense: formatShekelAmount(summary.expense),
+        ),
         const SizedBox(height: 18),
-
-        // ── أزرار الإجراءات ──
         _PrimaryActions(
           onIncome: () => push(const CashEntryScreen(initialIncome: true)),
           onExpense: () => push(const CashEntryScreen(initialIncome: false)),
         ),
         const SizedBox(height: 22),
-
-        // ── آخر المعاملات ──
         Text(
           'آخر المعاملات',
           style: AppTextStyles.titleSmall.copyWith(
@@ -45,7 +51,11 @@ class CashFlowScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        _TransactionsList(),
+        _TransactionsList(
+          entries: entries,
+          onDelete: (id) =>
+              ref.read(cashbookEntriesProvider.notifier).removeById(id),
+        ),
       ],
     );
   }
@@ -53,14 +63,24 @@ class CashFlowScreen extends StatelessWidget {
 
 // ── شريط الأرقام الثلاث (مثل دفتر الديون) ──
 class _MetricsStrip extends StatelessWidget {
+  const _MetricsStrip({
+    required this.balance,
+    required this.income,
+    required this.expense,
+  });
+
+  final String balance;
+  final String income;
+  final String expense;
+
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
           child: _MetricCell(
-            label: 'الرصيد',
-            value: 'MAD 0.0',
+            label: 'الصافي',
+            value: '$balance ₪',
             icon: LucideIcons.wallet,
           ),
         ),
@@ -68,7 +88,7 @@ class _MetricsStrip extends StatelessWidget {
         Expanded(
           child: _MetricCell(
             label: 'الدخل',
-            value: 'MAD 0.0',
+            value: '$income ₪',
             icon: LucideIcons.trendingUp,
           ),
         ),
@@ -76,7 +96,7 @@ class _MetricsStrip extends StatelessWidget {
         Expanded(
           child: _MetricCell(
             label: 'المصروف',
-            value: 'MAD 0.0',
+            value: '$expense ₪',
             icon: LucideIcons.trendingDown,
           ),
         ),
@@ -272,99 +292,127 @@ class _CtaBlock extends StatelessWidget {
 }
 
 // ── قائمة المعاملات ——————————————————————————————————————
+String _dateLine(DateTime d) {
+  final now = DateTime.now();
+  if (d.year == now.year && d.month == now.month && d.day == now.day) {
+    return 'اليوم ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  }
+  return '${d.day}/${d.month}/${d.year}';
+}
+
 class _TransactionsList extends StatelessWidget {
+  const _TransactionsList({required this.entries, required this.onDelete});
+
+  final List<CashbookEntry> entries;
+  final void Function(String id) onDelete;
+
   @override
   Widget build(BuildContext context) {
-    // بيانات تجريبية — ستُربط بـ Firebase لاحقاً
-    final items = <_TxItem>[];
-
-    if (items.isEmpty) {
+    if (entries.isEmpty) {
       return _EmptyState();
     }
-
     return Column(
-      children: items
-          .map(
-            (t) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _TransactionCard(item: t),
+      children: [
+        for (final t in entries)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Dismissible(
+              key: ValueKey('cashflow_${t.id}'),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 16),
+                color: AppColors.error,
+                child: const Icon(LucideIcons.trash2, color: Colors.white),
+              ),
+              onDismissed: (_) => onDelete(t.id),
+              child: _TransactionCard(
+                item: t,
+                onDelete: () => onDelete(t.id),
+              ),
             ),
-          )
-          .toList(),
+          ),
+      ],
     );
   }
 }
 
-class _TxItem {
-  const _TxItem({
-    required this.label,
-    required this.amount,
-    required this.isIncome,
-    required this.date,
-  });
-  final String label;
-  final String amount;
-  final bool isIncome;
-  final String date;
-}
-
 class _TransactionCard extends StatelessWidget {
-  const _TransactionCard({required this.item});
-  final _TxItem item;
+  const _TransactionCard({required this.item, required this.onDelete});
+  final CashbookEntry item;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final color = item.isIncome ? AppColors.success : AppColors.error;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSecondary,
-        borderRadius: AppRadius.rlg,
-        border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.12)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              item.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
-              size: 18,
-              color: color,
-            ),
+    final amount = formatShekelAmount(item.amount);
+    return Material(
+      color: AppColors.backgroundSecondary,
+      borderRadius: AppRadius.rlg,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.rlg,
+          border: Border.all(
+            color: AppColors.textMuted.withValues(alpha: 0.12),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.label,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
+        ),
+        child: Row(
+          textDirection: TextDirection.rtl,
+          children: [
+            IconButton(
+              onPressed: onDelete,
+              icon: const Icon(LucideIcons.trash2, size: 18),
+              color: AppColors.textMuted,
+            ),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                item.isIncome
+                    ? LucideIcons.trendingUp
+                    : LucideIcons.trendingDown,
+                size: 18,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                textDirection: TextDirection.rtl,
+                children: [
+                  Text(
+                    item.title,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                Text(
-                  item.date,
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.textMuted,
+                  Text(
+                    _dateLine(item.date),
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.textMuted,
+                    ),
                   ),
+                ],
+              ),
+            ),
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Text(
+                '${item.isIncome ? '+' : '-'} $amount ₪',
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w800,
                 ),
-              ],
+              ),
             ),
-          ),
-          Text(
-            (item.isIncome ? '+ ' : '- ') + item.amount,
-            style: AppTextStyles.titleSmall.copyWith(
-              color: color,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

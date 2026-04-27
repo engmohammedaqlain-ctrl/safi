@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -8,17 +9,20 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/account_selector.dart';
 import '../../../core/widgets/safi_button.dart';
+import '../../cash_flow/providers/accounts_provider.dart';
+import '../../sales/models/cashbook_entry.dart';
+import '../../sales/providers/cashbook_ui_provider.dart';
 
-class CashEntryScreen extends StatefulWidget {
+class CashEntryScreen extends ConsumerStatefulWidget {
   const CashEntryScreen({super.key, this.initialIncome = true});
 
   final bool initialIncome;
 
   @override
-  State<CashEntryScreen> createState() => _CashEntryScreenState();
+  ConsumerState<CashEntryScreen> createState() => _CashEntryScreenState();
 }
 
-class _CashEntryScreenState extends State<CashEntryScreen> {
+class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
   late bool _income;
   final _amount = TextEditingController();
   final _label = TextEditingController();
@@ -39,6 +43,47 @@ class _CashEntryScreenState extends State<CashEntryScreen> {
     super.dispose();
   }
 
+  void _submit() {
+    final raw = _amount.text.trim();
+    if (raw.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('أدخل المبلغ')),
+      );
+      return;
+    }
+    final value = double.tryParse(raw);
+    if (value == null || value <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('مبلغ غير صالح')),
+      );
+      return;
+    }
+    final accounts = ref.read(accountsProvider);
+    var accId = _paymentMethodId;
+    if (accId == null && accounts.isNotEmpty) {
+      accId = accounts.first.id;
+    }
+    if (accId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('أضف حساباً من «إدارة الحسابات» أولاً')),
+      );
+      return;
+    }
+    final title = _label.text.trim().isEmpty ? 'حركة نقدية' : _label.text.trim();
+    final entry = CashbookEntry(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      title: title,
+      amount: value,
+      isIncome: _income,
+      date: DateTime.now(),
+      note: _note.text.trim(),
+      accountId: accId,
+    );
+    ref.read(cashbookEntriesProvider.notifier).add(entry);
+    if (!context.mounted) return;
+    Navigator.pop(context, true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,7 +91,6 @@ class _CashEntryScreenState extends State<CashEntryScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          // ── نوع القيد ──
           Row(
             children: [
               Expanded(
@@ -71,8 +115,6 @@ class _CashEntryScreenState extends State<CashEntryScreen> {
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-
-          // ── حقول النموذج ──
           TextField(
             controller: _label,
             textInputAction: TextInputAction.next,
@@ -117,19 +159,10 @@ class _CashEntryScreenState extends State<CashEntryScreen> {
             onChanged: (acc) => setState(() => _paymentMethodId = acc.id),
           ),
           const SizedBox(height: AppSpacing.xl),
-
           SafiButton(
             label: _income ? 'حفظ الوارد' : 'حفظ المصروف',
             icon: LucideIcons.check,
-            onPressed: () {
-              if (_amount.text.trim().isEmpty) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('أدخل المبلغ')));
-                return;
-              }
-              Navigator.pop(context, true);
-            },
+            onPressed: _submit,
           ),
         ],
       ),

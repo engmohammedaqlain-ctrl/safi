@@ -1,37 +1,73 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// بيانات معروضة لدفتر النقدية (لاحقاً: ربط بـ Firebase/محلي)
+import '../../../core/bootstrap/startup_ledger_data.dart';
+import '../models/cashbook_entry.dart';
+
 class CashbookSummary {
   const CashbookSummary({
-    required this.userName,
     required this.balance,
     required this.income,
     required this.expense,
     required this.transactionCount,
   });
 
-  final String userName;
   final double balance;
   final double income;
   final double expense;
   final int transactionCount;
 }
 
-final cashbookSummaryProvider = Provider<CashbookSummary>(
-  (ref) => const CashbookSummary(
-    userName: 'تاجر',
-    balance: 0,
-    income: 0,
-    expense: 0,
-    transactionCount: 0,
-  ),
-);
-
-String formatMAD(double v) {
-  if (v == v.roundToDouble()) {
-    return 'MAD ${v.toStringAsFixed(0)}.0';
+class CashbookNotifier extends Notifier<List<CashbookEntry>> {
+  @override
+  List<CashbookEntry> build() {
+    return List<CashbookEntry>.from(StartupLedgerData.cashbook);
   }
-  return 'MAD ${v.toStringAsFixed(1)}';
+
+  void _persist() {
+    scheduleMicrotask(() => StartupLedgerData.saveCashbook(state));
+  }
+
+  void add(CashbookEntry e) {
+    state = [e, ...state];
+    _persist();
+  }
+
+  void removeById(String id) {
+    state = [for (final x in state) if (x.id != id) x];
+    _persist();
+  }
 }
 
-String obscureMoney() => 'MAD ••••';
+final cashbookEntriesProvider =
+    NotifierProvider<CashbookNotifier, List<CashbookEntry>>(
+  CashbookNotifier.new,
+);
+
+final cashbookSummaryProvider = Provider<CashbookSummary>((ref) {
+  final list = ref.watch(cashbookEntriesProvider);
+  double inc = 0, exp = 0;
+  for (final e in list) {
+    if (e.isIncome) {
+      inc += e.amount;
+    } else {
+      exp += e.amount;
+    }
+  }
+  return CashbookSummary(
+    balance: inc - exp,
+    income: inc,
+    expense: exp,
+    transactionCount: list.length,
+  );
+});
+
+String formatShekelAmount(double v) {
+  if (v == v.roundToDouble()) {
+    return '${v.toStringAsFixed(0)}.0';
+  }
+  return v.toStringAsFixed(1);
+}
+
+String obscureAmountText() => '••••';

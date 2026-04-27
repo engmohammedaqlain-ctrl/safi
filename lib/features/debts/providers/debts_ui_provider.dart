@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/bootstrap/startup_ledger_data.dart';
 import '../../../core/theme/app_colors.dart';
 
 enum DebtUrgency { low, medium, high }
@@ -109,10 +112,17 @@ String _formatDateStatus(DateTime date) {
 
 class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
   @override
-  List<DebtorUi> build() => [];
+  List<DebtorUi> build() {
+    return List<DebtorUi>.from(StartupLedgerData.debtors);
+  }
+
+  void _persist() {
+    scheduleMicrotask(() => StartupLedgerData.saveDebtors(state));
+  }
 
   void addCustomer(DebtorUi customer) {
     state = [...state, customer];
+    _persist();
   }
 
   void updateCustomerAddress(String customerId, String address) {
@@ -133,6 +143,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
         else
           d,
     ];
+    _persist();
   }
 
   /// تحديث رصيد العميل بمقدار delta
@@ -156,6 +167,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
           isSupplier: d.isSupplier,
         ),
     ];
+    _persist();
   }
 
   void updateCustomerBalance(String customerId, double delta) {
@@ -179,6 +191,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
         else
           d,
     ];
+    _persist();
   }
 
   String _computeNewAmount(String currentAmount, double delta) {
@@ -240,14 +253,22 @@ final suppliersNumbersProvider = Provider<DebtMyNumbers>((ref) {
 
 class TransactionsNotifier extends Notifier<List<TransactionUi>> {
   @override
-  List<TransactionUi> build() => [];
+  List<TransactionUi> build() {
+    return List<TransactionUi>.from(StartupLedgerData.transactions);
+  }
+
+  void _persist() {
+    scheduleMicrotask(() => StartupLedgerData.saveTransactions(state));
+  }
 
   void addTransaction(TransactionUi tx) {
     state = [...state, tx];
+    _persist();
   }
 
   void removeTransactionById(String id) {
     state = [for (final t in state) if (t.id != id) t];
+    _persist();
   }
 }
 

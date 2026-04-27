@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:safi/app.dart';
 import 'package:safi/core/bootstrap/prefs_keys.dart';
+import 'package:safi/core/bootstrap/startup_ledger_data.dart';
 
 void main() {
   testWidgets('Safi app loads with Arabic shell after session gate', (WidgetTester tester) async {
@@ -11,16 +12,16 @@ void main() {
     SharedPreferences.setMockInitialValues({
       PrefsKeys.loggedIn: true,
       PrefsKeys.onboardingDone: true,
+      PrefsKeys.userName: 'مستخدم',
     });
+    await StartupLedgerData.load();
 
     await tester.pumpWidget(
       const ProviderScope(child: SafiApp()),
     );
-    // شاشة البداية (≈1.6s) ثم التطبيق
     await tester.pump(const Duration(milliseconds: 2000));
     await tester.pumpAndSettle();
 
-    expect(find.text('الرئيسية'), findsWidgets);
-    expect(find.text('لوحة التحكم'), findsOneWidget);
+    expect(find.text('دفتر الديون'), findsOneWidget);
   });
 }
