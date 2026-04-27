@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../cash_flow/screens/cash_entry_screen.dart';
 import '../../cash_flow/screens/cash_flow_screen.dart';
 import '../../cash_flow/screens/financial_accounts_screen.dart';
@@ -13,23 +11,25 @@ import '../providers/cashbook_ui_provider.dart';
 import 'new_sale_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
 
-/// دفتر النقدية — تصميم متسق مع دفتر الديون
-class SalesScreen extends ConsumerStatefulWidget {
+/// ظل ناعم موحّد مع بطاقة ملخص دفتر الديون
+List<BoxShadow> _kCardShadow() => [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.04),
+        blurRadius: 12,
+        offset: const Offset(0, 4),
+      ),
+    ];
+
+/// دفتر النقدية — نفس ألوان / ثيم صفحة الديون + تخطيط RTL
+class SalesScreen extends ConsumerWidget {
   const SalesScreen({super.key, this.bottomInset = 0});
 
   final double bottomInset;
 
   @override
-  ConsumerState<SalesScreen> createState() => _SalesScreenState();
-}
-
-class _SalesScreenState extends ConsumerState<SalesScreen> {
-  bool _hide = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(cashbookSummaryProvider);
-    final bottomPad = 12.0 + widget.bottomInset;
+    final hidden = ref.watch(hideBalanceProvider);
 
     void push(Widget page) {
       Navigator.push<void>(
@@ -38,374 +38,328 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
       );
     }
 
-    final bal = _hide ? obscureMoney() : formatMAD(summary.balance);
-    final inc = _hide ? obscureMoney() : formatMAD(summary.income);
-    final out = _hide ? obscureMoney() : formatMAD(summary.expense);
+    final balText = hidden ? obscureMoney() : formatMAD(summary.balance);
+    final incText = hidden ? obscureMoney() : formatMAD(summary.income);
+    final outText = hidden ? obscureMoney() : formatMAD(summary.expense);
 
-    return Column(
-      children: [
-        Expanded(
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.lg,
-              bottomPad,
+    // يضمن ترتيب العناصر من اليمين لليسار حتى داخل الـ ListView
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: ListView(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 100 + bottomInset),
+          children: [
+            _BalanceCard(
+              balanceText: balText,
+              incomeText: incText,
+              expenseText: outText,
+              onIncome: () => push(const CashEntryScreen(initialIncome: true)),
+              onExpense: () => push(const CashEntryScreen(initialIncome: false)),
             ),
+            const SizedBox(height: 20),
+
+            Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Expanded(
+                  child: _QuickAction(
+                    icon: LucideIcons.inbox,
+                    label: 'أرشيف المعاملات',
+                    onTap: () => push(const CashFlowScreen()),
+                  ),
+                ),
+                Expanded(
+                  child: _QuickAction(
+                    icon: LucideIcons.barChart2,
+                    label: 'التقارير',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('تقرير مفصّل — قريباً'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: _QuickAction(
+                    icon: LucideIcons.briefcase,
+                    label: 'إنهاء الوردية',
+                    onTap: () => _confirmEndShift(context),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            _LinkRow(
+              icon: LucideIcons.wallet,
+              title: 'إدارة الحسابات والمحافظ',
+              subtitle: 'البنوك، الكاش، المحافظ الإلكترونية',
+              onTap: () => push(const FinancialAccountsScreen()),
+            ),
+            const SizedBox(height: 8),
+            _LinkRow(
+              icon: LucideIcons.shoppingCart,
+              title: 'نقطة البيع (POS)',
+              subtitle: 'الكاشير وإدارة الطلبات السريعة',
+              onTap: () => push(const NewSaleScreen()),
+            ),
+            const SizedBox(height: 24),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              textDirection: TextDirection.rtl,
+              children: [
+                Text(
+                  'المعاملات (${summary.transactionCount})',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            if (summary.transactionCount == 0)
+              const _EmptyTransactions()
+            else
+              const SizedBox.shrink(),
+          ],
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+        floatingActionButton: Material(
+          elevation: 2,
+          shadowColor: AppColors.primary.withValues(alpha: 0.25),
+          borderRadius: BorderRadius.circular(12),
+          child: FloatingActionButton.extended(
+            onPressed: () => push(const CashEntryScreen(initialIncome: true)),
+            backgroundColor: AppColors.primary,
+            elevation: 0,
+            highlightElevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            icon: const Icon(LucideIcons.plus, color: Colors.white),
+            label: const Text(
+              'إضافة معاملة',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmEndShift(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إنهاء الوردية'),
+        content: const Text('هل تريد إغلاق جلسة الوردية؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('تأكيد'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  بطاقة الرصيد — ألوان مثل سطور «أخذت / أعطيت» في دفتر الديون
+// ════════════════════════════════════════════════════════════════
+class _BalanceCard extends StatelessWidget {
+  const _BalanceCard({
+    required this.balanceText,
+    required this.incomeText,
+    required this.expenseText,
+    required this.onIncome,
+    required this.onExpense,
+  });
+
+  final String balanceText;
+  final String incomeText;
+  final String expenseText;
+  final VoidCallback onIncome;
+  final VoidCallback onExpense;
+
+  @override
+  Widget build(BuildContext context) {
+    // نفس ألوان سطور «أخذت / أعطيت» في debts_screen
+    const incomeColor = Colors.green;
+    const expenseValColor = Colors.deepOrange;
+    final expenseCtaBg = AppColors.errorLight;
+    const incomeCtaBg = AppColors.successLight;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _kCardShadow(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'الرصيد',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              balanceText,
+              textDirection: TextDirection.ltr,
+              style: const TextStyle(
+                color: incomeColor,
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                height: 1.1,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _MiniMetric(
+                  label: 'الدخل',
+                  value: incomeText,
+                  valueColor: incomeColor,
+                ),
+                const SizedBox(height: 4),
+                _MiniMetric(
+                  label: 'المصروف',
+                  value: expenseText,
+                  valueColor: expenseValColor,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            textDirection: TextDirection.rtl,
             children: [
-              // ── شريط الأرقام الثلاثة — مطابق للديون ──
-
-              // ── شريط الأرقام الثلاثة — مطابق للديون ──
-              Row(
-                children: [
-                  Expanded(
-                    child: _MetricCell(
-                      label: 'الرصيد',
-                      value: bal,
-                      icon: LucideIcons.wallet,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _MetricCell(
-                      label: 'الدخل',
-                      value: inc,
-                      icon: LucideIcons.trendingUp,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _MetricCell(
-                      label: 'المصروف',
-                      value: out,
-                      icon: LucideIcons.trendingDown,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // ── إدارة المحافظ والحسابات ──
-              Material(
-                color: AppColors.backgroundSecondary,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    width: 1.2,
-                  ),
-                  borderRadius: AppRadius.rmd,
-                ),
-                child: InkWell(
-                  onTap: () => push(const FinancialAccountsScreen()),
-                  borderRadius: AppRadius.rmd,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                LucideIcons.wallet,
-                                color: AppColors.primary,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'إدارة الحسابات والمحافظ',
-                                  style: AppTextStyles.labelMedium.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'البنوك، الكاش، المحافظ الإلكترونية',
-                                  style: AppTextStyles.labelSmall.copyWith(
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const Icon(
-                          LucideIcons.chevronLeft,
-                          color: AppColors.textMuted,
-                          size: 20,
-                        ),
-                      ],
-                    ),
-                  ),
+              Expanded(
+                child: _SoftCta(
+                  label: '+ دخل',
+                  bg: incomeCtaBg,
+                  fg: incomeColor,
+                  onTap: onIncome,
                 ),
               ),
-              const SizedBox(height: 18),
-
-              // ── زر نقطة البيع POS (مهم جداً) ──
-              _CtaBlock(
-                background: AppColors.aiPurple,
-                onTap: () => push(const NewSaleScreen()),
-                icon: LucideIcons.shoppingCart,
-                label: 'نقطة البيع (POS)',
-                subtitle: 'الكاشير وإدارة الطلبات السريعة',
-              ),
-              const SizedBox(height: 12),
-
-              // ── زرّا الإجراء الرئيسيان — مطابق للديون ──
-              Row(
-                children: [
-                  Expanded(
-                    child: _CtaBlock(
-                      background: AppColors.primary,
-                      onTap: () =>
-                          push(const CashEntryScreen(initialIncome: true)),
-                      icon: LucideIcons.plus,
-                      label: '+ دخل',
-                      subtitle: 'إيراد أو وارد',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _CtaBlock(
-                      background: AppColors.primaryDark,
-                      onTap: () =>
-                          push(const CashEntryScreen(initialIncome: false)),
-                      icon: LucideIcons.minus,
-                      label: '- مصروف',
-                      subtitle: 'نفقة أو صادر',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 22),
-
-              // ── روابط سريعة ──
-              Row(
-                children: [
-                  Expanded(
-                    child: _SecondaryAction(
-                      icon: LucideIcons.archive,
-                      label: 'أرشيف\nالمعاملات',
-                      onTap: () => push(const CashFlowScreen()),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _SecondaryAction(
-                      icon: LucideIcons.lineChart,
-                      label: 'التقارير',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('تقرير مفصّل — قريباً'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _SecondaryAction(
-                      icon: LucideIcons.briefcase,
-                      label: 'إنهاء\nالوردية',
-                      onTap: () {
-                        showDialog<void>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('إنهاء الوردية'),
-                            content: const Text(
-                              'هل تريد إغلاق جلسة الوردية؟ (تجريبي)',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text('إلغاء'),
-                              ),
-                              FilledButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text('تأكيد'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _SecondaryAction(
-                      icon: _hide ? LucideIcons.eye : LucideIcons.eyeOff,
-                      label: _hide ? 'إظهار\nالأرقام' : 'إخفاء\nالأرقام',
-                      onTap: () => setState(() => _hide = !_hide),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-
-              // ── المعاملات ──
-              Text(
-                'المعاملات (${summary.transactionCount})',
-                style: AppTextStyles.titleSmall.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.1,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _SoftCta(
+                  label: '− مصروف',
+                  bg: expenseCtaBg,
+                  fg: expenseValColor,
+                  onTap: onExpense,
                 ),
-              ),
-              const SizedBox(height: 14),
-              _EmptyStateCard(
-                onRecordHint: () =>
-                    push(const CashEntryScreen(initialIncome: true)),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniMetric extends StatelessWidget {
+  const _MiniMetric({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      textDirection: TextDirection.rtl,
+      children: [
+        Text(
+          value,
+          textDirection: TextDirection.ltr,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '$label: ',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
         ),
       ],
     );
   }
 }
 
-// ── بطاقة رقم ملخص — مطابقة تماماً لما في الديون ──
-class _MetricCell extends StatelessWidget {
-  const _MetricCell({
+class _SoftCta extends StatelessWidget {
+  const _SoftCta({
     required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSecondary,
-        borderRadius: AppRadius.rlg,
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.12),
-          width: 1.2,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEDEBF0),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 17, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.labelLarge.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w900,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// (SubAccountCell was removed because accounts are now managed via FinancialAccountsScreen)
-
-// ── زر CTA كبير ملوّن — نفس _CtaBlock في الديون ──
-class _CtaBlock extends StatelessWidget {
-  const _CtaBlock({
-    required this.background,
+    required this.bg,
+    required this.fg,
     required this.onTap,
-    required this.icon,
-    required this.label,
-    required this.subtitle,
   });
 
-  final Color background;
-  final VoidCallback onTap;
-  final IconData icon;
   final String label;
-  final String subtitle;
+  final Color bg;
+  final Color fg;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(18),
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
+      color: bg,
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: fg.withValues(alpha: 0.1),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 110),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 32, color: AppColors.onPrimary),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.labelLarge.copyWith(
-                  color: AppColors.onPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.onPrimary.withValues(alpha: 0.85),
-                  fontSize: 11,
-                  height: 1.1,
-                ),
-              ),
-            ],
+          height: 48,
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: fg,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ),
@@ -413,9 +367,11 @@ class _CtaBlock extends StatelessWidget {
   }
 }
 
-// ── إجراء ثانوي (أيقونة صغيرة + نص) ──
-class _SecondaryAction extends StatelessWidget {
-  const _SecondaryAction({
+// ════════════════════════════════════════════════════════════════
+//  إجراء سريع — مطابق لـ _ActionButton في debts_screen
+// ════════════════════════════════════════════════════════════════
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -427,38 +383,28 @@ class _SecondaryAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: AppRadius.rmd,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
-              color: const Color(0xFFEDEBF0),
-              borderRadius: AppRadius.rmd,
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                width: 1,
-              ),
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppColors.textSecondary, size: 22),
+            child: Icon(icon, color: AppColors.primary),
           ),
-          const SizedBox(height: 6),
-          Container(
-            height: 38,
-            alignment: Alignment.topCenter,
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.textSecondary,
-                height: 1.25,
-                fontWeight: FontWeight.w600,
-              ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -467,63 +413,137 @@ class _SecondaryAction extends StatelessWidget {
   }
 }
 
-// ── حالة فارغة ──
-class _EmptyStateCard extends StatelessWidget {
-  const _EmptyStateCard({required this.onRecordHint});
+// ════════════════════════════════════════════════════════════════
+//  صف رابط
+// ════════════════════════════════════════════════════════════════
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
-  final VoidCallback onRecordHint;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: _kCardShadow(),
+          ),
+          child: Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  textDirection: TextDirection.rtl,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                LucideIcons.chevronLeft,
+                color: Colors.grey.shade400,
+                size: 18,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  حالة فارغة
+// ════════════════════════════════════════════════════════════════
+class _EmptyTransactions extends StatelessWidget {
+  const _EmptyTransactions();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.rlg,
-        border: Border.all(color: AppColors.outlineSoft),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: _kCardShadow(),
       ),
       child: Column(
         children: [
           Container(
-            width: 80,
-            height: 80,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
-              color: const Color(0xFFEEECEF),
-              borderRadius: AppRadius.rlg,
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               LucideIcons.bookOpen,
-              size: 36,
-              color: AppColors.textSecondary,
+              size: 28,
+              color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
+          const SizedBox(height: 14),
+          const Text(
             'لا توجد معاملات بعد',
             textAlign: TextAlign.center,
-            style: AppTextStyles.titleSmall.copyWith(
+            style: TextStyle(
               color: AppColors.textPrimary,
+              fontSize: 15,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            'سجّل دخلاً أو مصروفاً من الأعلى لبدء المتابعة',
+            'سجّل دخلاً أو مصروفاً لبدء المتابعة',
             textAlign: TextAlign.center,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textMuted,
-              height: 1.5,
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 13,
             ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.tonal(
-            onPressed: onRecordHint,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              foregroundColor: AppColors.primary,
-            ),
-            child: const Text('تسجيل أول وارد'),
           ),
         ],
       ),

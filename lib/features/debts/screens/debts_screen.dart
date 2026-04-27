@@ -31,10 +31,20 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final all = ref.watch(debtorsUiProvider);
-    final my = ref.watch(debtMyNumbersProvider);
-    final list = filterDebtors(all, _q);
+    final isSuppliersTab = _selectedTab == 1;
+    final source = isSuppliersTab
+        ? ref.watch(suppliersOnlyProvider)
+        : ref.watch(customersOnlyProvider);
+    final my = isSuppliersTab
+        ? ref.watch(suppliersNumbersProvider)
+        : ref.watch(customersNumbersProvider);
+    final list = filterDebtors(source, _q);
     final hidden = ref.watch(hideBalanceProvider);
+
+    final entityLabel = isSuppliersTab ? 'الموردين' : 'العملاء';
+    final emptyLabel = isSuppliersTab ? 'لا يوجد موردون' : 'لا يوجد عملاء';
+    final fabLabel = isSuppliersTab ? 'إضافة مورد' : 'إضافة عميل';
+    final summaryCountLabel = '$entityLabel: ${hidden ? '**' : my.debtorCount}';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -76,39 +86,70 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    _ActionButton(
-                      icon: LucideIcons.bell, 
-                      label: 'تحصيل الديون',
-                      onTap: () => Navigator.push<void>(context, AppPageRoute<void>(builder: (_) => const RecordPaymentScreen())),
-                    ),
-                    const SizedBox(width: 16),
-                    _ActionButton(
-                      icon: LucideIcons.barChart2, 
-                      label: 'التقارير',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
+                // أول طفل = يمين البطاقة في RTL: «أخذت / أعطيت» + سطر العدّاد
                 Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('أخذت', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                    Text(hidden ? '****' : my.totalReceivedLabel, style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text('أعطيت', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                    Text(hidden ? '****' : my.totalGaveLabel, style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
+                    _SummaryMetricRow(
+                      label: 'أخذت',
+                      value: hidden ? '****' : my.totalReceivedLabel,
+                      valueColor: Colors.green,
+                    ),
+                    const SizedBox(height: 6),
+                    _SummaryMetricRow(
+                      label: 'أعطيت',
+                      value: hidden ? '****' : my.totalGaveLabel,
+                      valueColor: Colors.deepOrange,
+                    ),
+                    const SizedBox(height: 10),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('متأخر: ${hidden ? '**' : my.overdueCount}', style: TextStyle(color: Colors.orange.shade700, fontSize: 12, fontWeight: FontWeight.w600)),
+                        Text(
+                          'متأخر: ${hidden ? '**' : my.overdueCount}',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         const SizedBox(width: 12),
-                        Text('العملاء: ${hidden ? '**' : my.debtorCount}', style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                        Text(
+                          summaryCountLabel,
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
+                    ),
+                  ],
+                ),
+                // ثاني طفل = يسار البطاقة في RTL: أيقونات الإجراءات
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!isSuppliersTab) ...[
+                      _ActionButton(
+                        icon: LucideIcons.bell,
+                        label: 'تحصيل الديون',
+                        onTap: () => Navigator.push<void>(
+                          context,
+                          AppPageRoute<void>(
+                            builder: (_) => const RecordPaymentScreen(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    _ActionButton(
+                      icon: LucideIcons.barChart2,
+                      label: 'التقارير',
+                      onTap: () {},
                     ),
                   ],
                 ),
@@ -120,18 +161,19 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
-                'العملاء (${list.length})',
-                style: const TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.bold),
+                '$entityLabel (${list.length})',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _FilterIconButton(icon: LucideIcons.fileText),
-              const SizedBox(width: 8),
-              _FilterIconButton(icon: LucideIcons.slidersHorizontal),
-              const SizedBox(width: 8),
+              // RTL: أول طفل = يمين الشاشة → حقل البحث
               Expanded(
                 child: Container(
                   height: 48,
@@ -142,16 +184,28 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                   child: TextField(
                     controller: _search,
                     onChanged: (v) => setState(() => _q = v),
+                    textAlign: TextAlign.right,
                     decoration: InputDecoration(
                       hintText: 'البحث',
                       hintStyle: TextStyle(color: Colors.grey.shade500),
-                      prefixIcon: Icon(LucideIcons.search, color: Colors.grey.shade500, size: 20),
+                      prefixIcon: Icon(
+                        LucideIcons.search,
+                        color: Colors.grey.shade500,
+                        size: 20,
+                      ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 4,
+                      ),
                     ),
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
+              _FilterIconButton(icon: LucideIcons.slidersHorizontal),
+              const SizedBox(width: 8),
+              _FilterIconButton(icon: LucideIcons.fileText),
             ],
           ),
           const SizedBox(height: 16),
@@ -159,50 +213,55 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 32),
               child: Center(
-                child: Text('لا يوجد عملاء', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+                child: Text(
+                  emptyLabel,
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
+                ),
               ),
             ),
           ...list.map((debtor) {
             final amountText = debtor.amount.replaceAll('₪', '').trim();
-            final isRed = !amountText.startsWith('-') && amountText != '0.0' && amountText != '0';
-            final color = isRed ? Colors.red : Colors.green;
+            final isRed =
+                !amountText.startsWith('-') &&
+                amountText != '0.0' &&
+                amountText != '0';
+            final color = isRed ? Colors.deepOrange : Colors.green;
             final label = isRed ? 'أعطيت' : 'أخذت';
-            final displayAmount = amountText.startsWith('-') ? amountText.substring(1) : amountText;
-            final avatarStr = debtor.name.startsWith('+') ? '+' : (debtor.name.isNotEmpty ? debtor.name.split(' ').first[0] : '؟');
+            final displayAmount = amountText.startsWith('-')
+                ? amountText.substring(1)
+                : amountText;
+            final avatarStr = debtor.name.startsWith('+')
+                ? '+'
+                : (debtor.name.isNotEmpty
+                      ? debtor.name.split(' ').first[0]
+                      : '؟');
 
             return InkWell(
               onTap: () {
-                Navigator.push<void>(context, AppPageRoute<void>(builder: (_) => CustomerDetailScreen(debtor: debtor)));
+                Navigator.push<void>(
+                  context,
+                  AppPageRoute<void>(
+                    builder: (_) => CustomerDetailScreen(debtor: debtor),
+                  ),
+                );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 8,
+                ),
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade200),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          hidden ? '****' : '₪ $displayAmount', 
-                          textDirection: TextDirection.ltr,
-                          style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)
-                        ),
-                        Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
-                      ],
-                    ),
+                    // RTL: يمين الصف → الأفاتار + الاسم
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(debtor.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            Text(debtor.status, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
-                          ],
-                        ),
-                        const SizedBox(width: 12),
                         Container(
                           width: 44,
                           height: 44,
@@ -213,7 +272,53 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                           alignment: Alignment.center,
                           child: Text(
                             avatarStr,
-                            style: const TextStyle(color: AppColors.primary, fontSize: 20, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              debtor.name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              debtor.status,
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    // RTL: يسار الصف → المبلغ ووسم أعطيت/أخذت
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          hidden ? '****' : '₪ $displayAmount',
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -228,13 +333,28 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push<void>(context, AppPageRoute<void>(builder: (_) => const AddCustomerScreen()));
+          Navigator.push<void>(
+            context,
+            AppPageRoute<void>(
+              builder: (_) => AddCustomerScreen(isSupplier: isSuppliersTab),
+            ),
+          );
         },
         backgroundColor: AppColors.primary,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        icon: const Icon(LucideIcons.userPlus, color: Colors.white),
-        label: const Text('إضافة عميل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        icon: Icon(
+          isSuppliersTab ? LucideIcons.truck : LucideIcons.userPlus,
+          color: Colors.white,
+        ),
+        label: Text(
+          fabLabel,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
       ),
     );
   }
@@ -246,7 +366,12 @@ class _TabButton extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _TabButton({required this.title, required this.icon, required this.isSelected, required this.onTap});
+  const _TabButton({
+    required this.title,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -255,12 +380,15 @@ class _TabButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.05)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // RTL: يمين الزر → النص، يسار → الأيقونة
             Text(
               title,
               style: TextStyle(
@@ -269,7 +397,11 @@ class _TabButton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Icon(icon, size: 18, color: isSelected ? AppColors.primary : Colors.grey.shade500),
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? AppColors.primary : Colors.grey.shade500,
+            ),
           ],
         ),
       ),
@@ -282,7 +414,11 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ActionButton({required this.icon, required this.label, required this.onTap});
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -300,7 +436,10 @@ class _ActionButton extends StatelessWidget {
             child: Icon(icon, color: AppColors.primary),
           ),
           const SizedBox(height: 8),
-          Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+          Text(
+            label,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -322,6 +461,44 @@ class _FilterIconButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(icon, color: AppColors.primary, size: 20),
+    );
+  }
+}
+
+/// صف عرض «أخذت / أعطيت» داخل بطاقة الملخص.
+/// - الوسم على اليمين، المبلغ على اليسار (مثل تطبيق كناش).
+/// - المبلغ نفسه يستخدم LTR لأن الرقم والرمز مكتوبان بالأرقام اللاتينية.
+class _SummaryMetricRow extends StatelessWidget {
+  const _SummaryMetricRow({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          value,
+          textDirection: TextDirection.ltr,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }

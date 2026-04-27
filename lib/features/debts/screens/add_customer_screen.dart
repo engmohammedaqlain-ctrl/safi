@@ -9,7 +9,9 @@ import 'package:safi/core/router/app_page_route.dart';
 import '../providers/debts_ui_provider.dart';
 
 class AddCustomerScreen extends ConsumerStatefulWidget {
-  const AddCustomerScreen({super.key});
+  const AddCustomerScreen({super.key, this.isSupplier = false});
+
+  final bool isSupplier;
 
   @override
   ConsumerState<AddCustomerScreen> createState() => _AddCustomerScreenState();
@@ -29,14 +31,16 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
 
   Future<void> _fetchContacts() async {
     setState(() => _isLoading = true);
-    
+
     final status = await Permission.contacts.request();
     if (status.isGranted) {
-      List<Contact> contacts = await FlutterContacts.getAll(properties: {ContactProperty.phone});
-      
+      List<Contact> contacts = await FlutterContacts.getAll(
+        properties: {ContactProperty.phone},
+      );
+
       // Filter out contacts without a phone number
       final validContacts = contacts.where((c) => c.phones.isNotEmpty).toList();
-      
+
       setState(() {
         _contacts = validContacts;
         _filteredContacts = validContacts;
@@ -56,7 +60,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
       setState(() => _filteredContacts = _contacts);
       return;
     }
-    
+
     final lowerQuery = query.toLowerCase();
     setState(() {
       _filteredContacts = _contacts.where((c) {
@@ -74,7 +78,13 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('إضافة عميل', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        title: Text(
+          widget.isSupplier ? 'إضافة مورد' : 'إضافة عميل',
+          style: const TextStyle(
+            color: AppColors.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -89,14 +99,30 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary, 
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   elevation: 0,
                 ),
                 onPressed: () {
-                  Navigator.push(context, AppPageRoute(builder: (_) => const AddCustomerDetailScreen()));
+                  Navigator.push(
+                    context,
+                    AppPageRoute(
+                      builder: (_) => AddCustomerDetailScreen(
+                        isSupplier: widget.isSupplier,
+                      ),
+                    ),
+                  );
                 },
-                child: const Text('إضافة عميل جديد', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: Text(
+                  widget.isSupplier ? 'إضافة مورد جديد' : 'إضافة عميل جديد',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
           ),
@@ -104,7 +130,14 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               children: [
-                Text('جهات الاتصال', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  'جهات الاتصال',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
@@ -123,9 +156,16 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                 decoration: const InputDecoration(
                   hintText: 'البحث',
                   hintStyle: TextStyle(color: Colors.grey),
-                  prefixIcon: Icon(LucideIcons.search, color: Colors.grey, size: 20),
+                  prefixIcon: Icon(
+                    LucideIcons.search,
+                    color: Colors.grey,
+                    size: 20,
+                  ),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
@@ -135,69 +175,114 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _permissionDenied
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('صلاحية الوصول لجهات الاتصال مطلوبة', style: TextStyle(fontSize: 16)),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () => openAppSettings(),
-                              child: const Text('فتح الإعدادات لمنح الصلاحية'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'صلاحية الوصول لجهات الاتصال مطلوبة',
+                          style: TextStyle(fontSize: 16),
                         ),
-                      )
-                    : _filteredContacts.isEmpty
-                        ? const Center(child: Text('لا توجد جهات اتصال مطابقة', style: TextStyle(color: Colors.grey, fontSize: 16)))
-                        : ListView.separated(
-                            itemCount: _filteredContacts.length,
-                            separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFEEEEEE)),
-                            itemBuilder: (context, index) {
-                              final contact = _filteredContacts[index];
-                              final phone = contact.phones.isNotEmpty ? contact.phones.first.number : '';
-                              final name = contact.displayName ?? phone;
-                              
-                              final cleanPhone = phone.replaceAll(RegExp(r'\s+'), '').replaceAll('-', '');
-                              final existingDebtors = ref.watch(debtorsUiProvider);
-                              final isAlreadyAdded = existingDebtors.any((d) {
-                                final dPhone = d.phone.replaceAll(RegExp(r'\s+'), '').replaceAll('-', '');
-                                return dPhone == cleanPhone || 
-                                       dPhone == '+$cleanPhone' || 
-                                       dPhone.replaceAll('+', '') == cleanPhone.replaceAll('+', '');
-                              });
-                              
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                title: Text(
-                                  name,
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isAlreadyAdded ? Colors.grey : Colors.black),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                subtitle: Text(
-                                  isAlreadyAdded ? '$phone - مضاف مسبقاً' : phone, 
-                                  style: TextStyle(color: isAlreadyAdded ? Colors.grey.shade400 : Colors.grey.shade500, fontSize: 12)
-                                ),
-                                trailing: isAlreadyAdded 
-                                    ? const Icon(LucideIcons.checkCircle, color: Colors.grey)
-                                    : Container(
-                                        width: 36,
-                                        height: 36,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withValues(alpha: 0.1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(LucideIcons.plus, color: AppColors.primary, size: 20),
-                                      ),
-                                onTap: isAlreadyAdded ? null : () {
-                                  Navigator.push(context, AppPageRoute(builder: (_) => AddCustomerDetailScreen(
-                                    initialName: name,
-                                    initialPhone: phone,
-                                  )));
-                                },
-                              );
-                            },
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () => openAppSettings(),
+                          child: const Text('فتح الإعدادات لمنح الصلاحية'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _filteredContacts.isEmpty
+                ? const Center(
+                    child: Text(
+                      'لا توجد جهات اتصال مطابقة',
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: _filteredContacts.length,
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                    itemBuilder: (context, index) {
+                      final contact = _filteredContacts[index];
+                      final phone = contact.phones.isNotEmpty
+                          ? contact.phones.first.number
+                          : '';
+                      final name = contact.displayName ?? phone;
+
+                      final cleanPhone = phone
+                          .replaceAll(RegExp(r'\s+'), '')
+                          .replaceAll('-', '');
+                      final existingDebtors = ref.watch(debtorsUiProvider);
+                      final isAlreadyAdded = existingDebtors.any((d) {
+                        final dPhone = d.phone
+                            .replaceAll(RegExp(r'\s+'), '')
+                            .replaceAll('-', '');
+                        return dPhone == cleanPhone ||
+                            dPhone == '+$cleanPhone' ||
+                            dPhone.replaceAll('+', '') ==
+                                cleanPhone.replaceAll('+', '');
+                      });
+
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        title: Text(
+                          name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: isAlreadyAdded ? Colors.grey : Colors.black,
                           ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          isAlreadyAdded ? '$phone - مضاف مسبقاً' : phone,
+                          style: TextStyle(
+                            color: isAlreadyAdded
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        ),
+                        trailing: isAlreadyAdded
+                            ? const Icon(
+                                LucideIcons.checkCircle,
+                                color: Colors.grey,
+                              )
+                            : Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  LucideIcons.plus,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                              ),
+                        onTap: isAlreadyAdded
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  AppPageRoute(
+                                    builder: (_) => AddCustomerDetailScreen(
+                                      initialName: name,
+                                      initialPhone: phone,
+                                      isSupplier: widget.isSupplier,
+                                    ),
+                                  ),
+                                );
+                              },
+                      );
+                    },
+                  ),
           ),
         ],
       ),

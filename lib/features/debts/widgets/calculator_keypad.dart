@@ -10,50 +10,28 @@ class CalculatorKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // الصف 1: C  M+  M-  ⌫
-            _row4(['C', 'M+', 'M-', '⌫']),
-            const SizedBox(height: 10),
-            // الصف 2: 7  8  9  ( / | % )
-            _row2Special(['7', '8', '9'], '/', '%'),
-            const SizedBox(height: 10),
-            // الصف 3: 4  5  6  ×
-            _row4(['4', '5', '6', 'x']),
-            const SizedBox(height: 10),
-            // الصف 4: 1  2  3  −
-            _row4(['1', '2', '3', '-']),
-            const SizedBox(height: 10),
-            // الصف 5: 0  .  =  +
-            _row4(['0', '.', '=', '+']),
-          ],
-        ),
+    // تُرث اتجاه الصفحة (RTL) فتُعكس صفوف المفاتيح من اليمين لليسار
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _row4(['C', 'M+', 'M-', '⌫']),
+          const SizedBox(height: 10),
+          _row2Special(['7', '8', '9'], '/', '%'),
+          const SizedBox(height: 10),
+          _row4(['4', '5', '6', 'x']),
+          const SizedBox(height: 10),
+          _row4(['1', '2', '3', '-']),
+          const SizedBox(height: 10),
+          _row4(['0', '.', '=', '+']),
+        ],
       ),
     );
   }
 
   Widget _row4(List<String> keys) {
-    return Row(
-      children: keys
-          .map((k) => Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _btn(k),
-                ),
-              ))
-          .toList(),
-    );
-  }
-
-  Widget _row5(List<String> keys) {
-    // This is no longer used for 5 keys, we use _row2Special instead.
-    // Keeping it or we can just replace the call in build.
     return Row(
       children: keys
           .map((k) => Expanded(

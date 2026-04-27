@@ -7,6 +7,17 @@ enum DebtUrgency { low, medium, high }
 
 enum TransactionType { gave, received }
 
+/// وسم عربي لوسيلة الدفع (كما في شاشة تسجيل الدين/الدفعة)
+String transactionPayMethodLabel(String? methodId) {
+  if (methodId == null || methodId.isEmpty) return 'غير مُعرَّف';
+  return switch (methodId) {
+    'cash' => 'كاش',
+    'wallet' => 'محفظة',
+    'bank' => 'بنك فلسطين',
+    _ => methodId,
+  };
+}
+
 /// معاملة مالية (دين أو دفعة)
 class TransactionUi {
   const TransactionUi({
@@ -16,6 +27,7 @@ class TransactionUi {
     required this.type,
     required this.note,
     required this.date,
+    this.payMethodId,
   });
 
   final String id;
@@ -24,6 +36,9 @@ class TransactionUi {
   final TransactionType type; // gave = أعطيت, received = أخذت
   final String note;
   final DateTime date;
+
+  /// مثل: cash, wallet, bank
+  final String? payMethodId;
 }
 
 /// أرقام ملخصة لرأس شاشة الديون
@@ -50,6 +65,8 @@ class DebtorUi {
     required this.status,
     required this.urgency,
     this.address,
+    this.categoryIds = const [],
+    this.isSupplier = false,
   });
 
   final String id;
@@ -59,6 +76,10 @@ class DebtorUi {
   final String status;
   final DebtUrgency urgency;
   final String? address;
+  final List<String> categoryIds;
+
+  /// إذا كان المورد (true) بدلاً من العميل (false)
+  final bool isSupplier;
 }
 
 Color urgencyToColor(DebtUrgency u) {
@@ -106,6 +127,8 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
             amount: d.amount,
             status: d.status,
             urgency: d.urgency,
+            categoryIds: d.categoryIds,
+            isSupplier: d.isSupplier,
           )
         else
           d,
@@ -114,6 +137,27 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
 
   /// تحديث رصيد العميل بمقدار delta
   /// delta موجب = أعطيت (الدين يزيد)، delta سالب = أخذت (الدين يقل)
+  /// إزالة مُعرّف تصنيف من كل العملاء (عند حذف التصنيف)
+  void stripCategoryFromAll(String categoryId) {
+    state = [
+      for (final d in state)
+        DebtorUi(
+          id: d.id,
+          name: d.name,
+          phone: d.phone,
+          address: d.address,
+          amount: d.amount,
+          status: d.status,
+          urgency: d.urgency,
+          categoryIds: [
+            for (final c in d.categoryIds)
+              if (c != categoryId) c,
+          ],
+          isSupplier: d.isSupplier,
+        ),
+    ];
+  }
+
   void updateCustomerBalance(String customerId, double delta) {
     state = [
       for (final d in state)
@@ -129,6 +173,8 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
               (double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0) +
                   delta,
             ),
+            categoryIds: d.categoryIds,
+            isSupplier: d.isSupplier,
           )
         else
           d,
@@ -143,8 +189,52 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
   }
 }
 
-final debtorsUiProvider =
-    NotifierProvider<DebtorsUiNotifier, List<DebtorUi>>(DebtorsUiNotifier.new);
+final debtorsUiProvider = NotifierProvider<DebtorsUiNotifier, List<DebtorUi>>(
+  DebtorsUiNotifier.new,
+);
+
+/// عملاء فقط (isSupplier = false)
+final customersOnlyProvider = Provider<List<DebtorUi>>((ref) {
+  return ref.watch(debtorsUiProvider).where((d) => !d.isSupplier).toList();
+});
+
+/// موردون فقط (isSupplier = true)
+final suppliersOnlyProvider = Provider<List<DebtorUi>>((ref) {
+  return ref.watch(debtorsUiProvider).where((d) => d.isSupplier).toList();
+});
+
+DebtMyNumbers _computeNumbers(List<DebtorUi> list) {
+  double totalGave = 0;
+  double totalReceived = 0;
+  int overdueCount = 0;
+  for (final d in list) {
+    final amount = double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
+    if (amount > 0) {
+      totalGave += amount;
+    } else if (amount < 0) {
+      totalReceived += amount.abs();
+    }
+    if (d.urgency == DebtUrgency.high) {
+      overdueCount++;
+    }
+  }
+  return DebtMyNumbers(
+    totalGaveLabel: '₪ ${totalGave.toStringAsFixed(1)}',
+    totalReceivedLabel: '₪ ${totalReceived.toStringAsFixed(1)}',
+    debtorCount: list.length,
+    overdueCount: overdueCount,
+  );
+}
+
+/// أرقام ملخصة للعملاء فقط
+final customersNumbersProvider = Provider<DebtMyNumbers>((ref) {
+  return _computeNumbers(ref.watch(customersOnlyProvider));
+});
+
+/// أرقام ملخصة للموردين فقط
+final suppliersNumbersProvider = Provider<DebtMyNumbers>((ref) {
+  return _computeNumbers(ref.watch(suppliersOnlyProvider));
+});
 
 // ── Transactions Notifier ──
 
@@ -155,21 +245,25 @@ class TransactionsNotifier extends Notifier<List<TransactionUi>> {
   void addTransaction(TransactionUi tx) {
     state = [...state, tx];
   }
+
+  void removeTransactionById(String id) {
+    state = [for (final t in state) if (t.id != id) t];
+  }
 }
 
 final transactionsProvider =
     NotifierProvider<TransactionsNotifier, List<TransactionUi>>(
-  TransactionsNotifier.new,
-);
+      TransactionsNotifier.new,
+    );
 
 /// معاملات عميل محدد — مرتبة من الأحدث للأقدم
 final customerTransactionsProvider =
     Provider.family<List<TransactionUi>, String>((ref, customerId) {
-  final all = ref.watch(transactionsProvider);
-  final filtered = all.where((t) => t.customerId == customerId).toList()
-    ..sort((a, b) => b.date.compareTo(a.date));
-  return filtered;
-});
+      final all = ref.watch(transactionsProvider);
+      final filtered = all.where((t) => t.customerId == customerId).toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+      return filtered;
+    });
 
 /// بيانات عميل حسب المعرّف — يتحدث تلقائيًا عند تغيّر الرصيد
 final debtorByIdProvider = Provider.family<DebtorUi?, String>((ref, id) {
@@ -178,31 +272,7 @@ final debtorByIdProvider = Provider.family<DebtorUi?, String>((ref, id) {
   return matches.isEmpty ? null : matches.first;
 });
 
-/// أرقام ملخصة — محسوبة من البيانات الفعلية
+/// أرقام ملخصة عامة — كل العملاء + الموردين معًا
 final debtMyNumbersProvider = Provider<DebtMyNumbers>((ref) {
-  final debtors = ref.watch(debtorsUiProvider);
-
-  double totalGave = 0;
-  double totalReceived = 0;
-  int overdueCount = 0;
-
-  for (final d in debtors) {
-    final amount =
-        double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
-    if (amount > 0) {
-      totalGave += amount;
-    } else if (amount < 0) {
-      totalReceived += amount.abs();
-    }
-    if (d.urgency == DebtUrgency.high) {
-      overdueCount++;
-    }
-  }
-
-  return DebtMyNumbers(
-    totalGaveLabel: '₪ ${totalGave.toStringAsFixed(1)}',
-    totalReceivedLabel: '₪ ${totalReceived.toStringAsFixed(1)}',
-    debtorCount: debtors.length,
-    overdueCount: overdueCount,
-  );
+  return _computeNumbers(ref.watch(debtorsUiProvider));
 });

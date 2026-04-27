@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 // ══════════════════════════════════════════════════════════════════════════
-//  AppPageRoute — انتقال بنكي ناعم: يدخل من اليمين، يخرج لليسار
-//  مع تأخير خفيف في البداية يُعطي إحساس الوزن والاحترافية
+//  AppPageRoute — منزلق سريع خفيف (لا يبطئ التنقّل بين الصفحات)
 // ══════════════════════════════════════════════════════════════════════════
 
 class AppPageRoute<T> extends PageRouteBuilder<T> {
@@ -13,8 +12,8 @@ class AppPageRoute<T> extends PageRouteBuilder<T> {
   }) : super(
           pageBuilder: (context, animation, secondaryAnimation) =>
               builder(context),
-          transitionDuration: const Duration(milliseconds: 2000),
-          reverseTransitionDuration: const Duration(milliseconds: 2000),
+          transitionDuration: const Duration(milliseconds: 280),
+          reverseTransitionDuration: const Duration(milliseconds: 220),
           transitionsBuilder: _buildTransition,
         );
 
@@ -24,52 +23,20 @@ class AppPageRoute<T> extends PageRouteBuilder<T> {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    // ─── منحنى الدخول والخروج: مرونة شديدة وانزلاق بطيء في النهاية ───
-    final enterCurve = CurvedAnimation(
+    final enter = CurvedAnimation(
       parent: animation,
-      curve: Curves.fastLinearToSlowEaseIn,
+      curve: Curves.easeOutCubic,
     );
-
-    final exitCurve = CurvedAnimation(
-      parent: secondaryAnimation,
-      curve: Curves.fastLinearToSlowEaseIn,
-    );
-
-    // في وضع RTL (العربية): Offset(-1.0, 0.0) تعني جسدياً "يمين الشاشة"
-    // الدخول: الصفحة الجديدة تنزلق من اليمين إلى اليسار
+    // RTL: دخول من اليمين (Offset سلبي x)
     final slideIn = Tween<Offset>(
-      begin: const Offset(-1.0, 0.0),
+      begin: const Offset(-0.06, 0.0),
       end: Offset.zero,
-    ).animate(enterCurve);
-
-    // الخروج: الصفحة السابقة (أو الحالية التي يتم تغطيتها) تنزلق نحو اليسار الجسدي
-    final slideOut = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0.3, 0.0),
-    ).animate(exitCurve);
-
-    // تلاشٍ خفيف للصفحة القادمة في البداية فقط
-    final fadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: animation,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-      ),
-    );
-
-    // تلاشٍ للصفحة الخارجة (لا تختفي كلياً لتعطي عمقاً)
-    final fadeOut = Tween<double>(begin: 1.0, end: 0.5).animate(exitCurve);
-
-    return SlideTransition(
-      position: slideOut,
-      child: FadeTransition(
-        opacity: fadeOut,
-        child: SlideTransition(
-          position: slideIn,
-          child: FadeTransition(
-            opacity: fadeIn,
-            child: child,
-          ),
-        ),
+    ).animate(enter);
+    return FadeTransition(
+      opacity: enter,
+      child: SlideTransition(
+        position: slideIn,
+        child: child,
       ),
     );
   }

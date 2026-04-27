@@ -97,8 +97,9 @@ class _MainShellState extends ConsumerState<MainShell> {
         titleSpacing: 16,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          textDirection: TextDirection.rtl,
           children: [
-            // زر إخفاء الرصيد
+            // RTL: start=يمين → أول مُعرَف: العين
             Consumer(
               builder: (context, ref, _) {
                 final hidden = ref.watch(hideBalanceProvider);
@@ -113,9 +114,13 @@ class _MainShellState extends ConsumerState<MainShell> {
                 );
               },
             ),
-            // اسم المستخدم + أيقونة الدفتر
+            // ثانياً: الاسم + الدفتر (جهة يسار الشاشة)
             Row(
+              mainAxisSize: MainAxisSize.min,
+              textDirection: TextDirection.rtl,
               children: [
+                const Icon(LucideIcons.bookOpen, color: AppColors.primary),
+                const SizedBox(width: 8),
                 Consumer(
                   builder: (context, ref, _) {
                     final asyncName = ref.watch(userNameProvider);
@@ -128,8 +133,6 @@ class _MainShellState extends ConsumerState<MainShell> {
                     );
                   },
                 ),
-                const SizedBox(width: 8),
-                const Icon(LucideIcons.bookOpen, color: AppColors.primary),
               ],
             ),
           ],

@@ -102,6 +102,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
       type: TransactionType.received,
       note: _noteCtrl.text.trim(),
       date: _date,
+      payMethodId: _payMethod,
     );
     ref.read(transactionsProvider.notifier).addTransaction(tx);
     ref.read(debtorsUiProvider.notifier).updateCustomerBalance(cid, -amount);
@@ -123,26 +124,29 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final c = widget.forCustomer;
-    final curBal = c != null
-        ? (double.tryParse(c.amount.replaceAll('₪', '').trim()) ?? 0) : 0.0;
-    final entered = _displayValue;
-    final newBal = curBal - entered;
     final dateStr =
         '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0, centerTitle: true,
-        leading: const SizedBox.shrink(),
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.chevronRight, color: AppColors.primary),
-            onPressed: () => Navigator.pop(context),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowRight, color: AppColors.primary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          c?.name ?? '',
+          style: const TextStyle(
+            color: AppColors.primary,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
-        ],
-        title: Text(c?.name ?? '',
-            style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 18)),
+        ),
       ),
       body: Column(
         children: [
@@ -154,22 +158,39 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      // في RTL: start = يمين الشاشة
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Spacer(),
                         Align(
                             alignment: Alignment.centerRight,
-                            child: Text(_displayText, textDirection: TextDirection.ltr,
-                                style: TextStyle(fontSize: 42, fontWeight: FontWeight.bold, color: Colors.green.shade600)),
+                            child: Text(
+                              _displayText,
+                              textDirection: TextDirection.ltr,
+                              style: const TextStyle(
+                                fontSize: 42,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.flowIn,
+                              ),
+                            ),
                           ),
                           if (_expr.isNotEmpty)
-                            Text('$_expr${_fresh ? '' : _displayNum}',
+                            Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: Text(
+                                '$_expr${_fresh ? '' : _displayNum}',
                                 textDirection: TextDirection.ltr,
-                                style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.grey.shade500),
+                              ),
+                            ),
 
                           if (_hasInput) ...[
                             const SizedBox(height: 14),
-                            _chip(dateStr, LucideIcons.calendar, () {
+                            _chip(
+                              dateStr,
+                              LucideIcons.calendar,
+                              () {
                               showModalBottomSheet(
                                 context: context,
                                 backgroundColor: Colors.white,
@@ -219,22 +240,40 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                                   ),
                                 ),
                               );
-                            }),
+                            },
+                              labelLtr: true,
+                            ),
                             const SizedBox(height: 6),
                             Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(8),
+                                color: AppColors.surfaceVariant,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.outlineSoft),
                               ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                textDirection: TextDirection.rtl,
                                 children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Icon(
+                                      LucideIcons.list,
+                                      size: 16,
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: TextField(
                                       controller: _noteCtrl,
-                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                                      textAlign: TextAlign.right,
+                                      textDirection: TextDirection.rtl,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.textSecondary,
+                                      ),
                                       minLines: 1,
                                       maxLines: 4,
                                       keyboardType: TextInputType.multiline,
@@ -243,23 +282,33 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                                         hintStyle: TextStyle(fontSize: 12),
                                         border: InputBorder.none,
                                         isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(vertical: 6),
+                                        contentPadding:
+                                            EdgeInsets.symmetric(vertical: 8),
                                       ),
                                     ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: Icon(LucideIcons.alignLeft, size: 14, color: Colors.grey.shade500),
                                   ),
                                 ],
                               ),
                             ),
                             const SizedBox(height: 6),
-                            _chip('إضافة صورة', LucideIcons.camera, () {}),
+                            _chip(
+                              'إضافة صورة',
+                              LucideIcons.camera,
+                              () {},
+                              labelLtr: false,
+                            ),
                             const SizedBox(height: 8),
-                            Wrap(spacing: 6, runSpacing: 4, alignment: WrapAlignment.end, children: [
-                              _payChip('كاش', 'cash'), _payChip('محفظة', 'wallet'), _payChip('بنك فلسطين', 'bank'),
-                            ]),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              alignment: WrapAlignment.start,
+                              textDirection: TextDirection.rtl,
+                              children: [
+                                _payChip('كاش', 'cash'),
+                                _payChip('محفظة', 'wallet'),
+                                _payChip('بنك فلسطين', 'bank'),
+                              ],
+                            ),
                           ],
                         const SizedBox(height: 16),
                       ],
@@ -276,9 +325,13 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
               child: ElevatedButton(
                 onPressed: _hasInput ? _submit : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade50, foregroundColor: Colors.green.shade700,
-                  disabledBackgroundColor: Colors.grey.shade100, elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  backgroundColor: AppColors.successLight,
+                  foregroundColor: AppColors.flowIn,
+                  disabledBackgroundColor: Colors.grey.shade100,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 child: const Text('تسجيل', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
@@ -291,23 +344,42 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     );
   }
 
-  Widget _chip(String label, IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
-            const SizedBox(width: 4),
-            Icon(icon, size: 13, color: Colors.grey.shade500),
-          ],
+  Widget _chip(
+    String label,
+    IconData icon,
+    VoidCallback onTap, {
+    bool labelLtr = true,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceVariant,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.outlineSoft),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            textDirection: TextDirection.rtl,
+            children: [
+              Icon(icon, size: 16, color: AppColors.textMuted),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                textDirection:
+                    labelLtr ? TextDirection.ltr : TextDirection.rtl,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -315,18 +387,29 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
 
   Widget _payChip(String label, String id) {
     final sel = _payMethod == id;
-    return InkWell(
-      onTap: () => setState(() => _payMethod = _payMethod == id ? null : id),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: sel ? AppColors.primary : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: sel ? AppColors.primary : Colors.grey.shade300)),
-        child: Text(label, style: TextStyle(fontSize: 11,
-            fontWeight: sel ? FontWeight.bold : FontWeight.w500,
-            color: sel ? Colors.white : Colors.grey.shade700)),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => setState(() => _payMethod = _payMethod == id ? null : id),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: sel ? AppColors.primary : AppColors.surfaceVariant,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: sel ? AppColors.primary : AppColors.outlineSoft,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: sel ? FontWeight.w600 : FontWeight.w500,
+              color: sel ? Colors.white : AppColors.textSecondary,
+            ),
+          ),
+        ),
       ),
     );
   }
