@@ -181,10 +181,39 @@ class _AddCustomerDetailScreenState extends ConsumerState<AddCustomerDetailScree
                     elevation: 0,
                   ),
                   onPressed: () {
+                    final phoneInput = _phoneCtrl.text.trim();
+                    if (phoneInput.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('الرجاء إدخال رقم الهاتف'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final formattedPhone = '+$phoneInput';
+                    
+                    final existingDebtors = ref.read(debtorsUiProvider);
+                    final phoneExists = existingDebtors.any((d) => 
+                        d.phone == formattedPhone || 
+                        d.phone == phoneInput || 
+                        d.phone.replaceAll('+', '') == phoneInput);
+
+                    if (phoneExists) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('رقم الهاتف مسجل مسبقاً، لا يمكن إضافة حسابين بنفس الرقم'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
                     final newCustomer = DebtorUi(
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      name: _nameCtrl.text.trim().isEmpty ? _phoneCtrl.text.trim() : _nameCtrl.text.trim(),
-                      phone: '+${_phoneCtrl.text.trim()}',
+                      name: _nameCtrl.text.trim().isEmpty ? phoneInput : _nameCtrl.text.trim(),
+                      phone: formattedPhone,
                       address: _addressCtrl.text.trim(),
                       amount: '0.0',
                       status: 'اليوم',

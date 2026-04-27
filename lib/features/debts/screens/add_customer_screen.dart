@@ -4,16 +4,18 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import 'add_customer_detail_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safi/core/router/app_page_route.dart';
+import '../providers/debts_ui_provider.dart';
 
-class AddCustomerScreen extends StatefulWidget {
+class AddCustomerScreen extends ConsumerStatefulWidget {
   const AddCustomerScreen({super.key});
 
   @override
-  State<AddCustomerScreen> createState() => _AddCustomerScreenState();
+  ConsumerState<AddCustomerScreen> createState() => _AddCustomerScreenState();
 }
 
-class _AddCustomerScreenState extends State<AddCustomerScreen> {
+class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
   List<Contact> _contacts = [];
   List<Contact> _filteredContacts = [];
   bool _isLoading = true;
@@ -156,24 +158,38 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                               final phone = contact.phones.isNotEmpty ? contact.phones.first.number : '';
                               final name = contact.displayName ?? phone;
                               
+                              final cleanPhone = phone.replaceAll(RegExp(r'\s+'), '').replaceAll('-', '');
+                              final existingDebtors = ref.watch(debtorsUiProvider);
+                              final isAlreadyAdded = existingDebtors.any((d) {
+                                final dPhone = d.phone.replaceAll(RegExp(r'\s+'), '').replaceAll('-', '');
+                                return dPhone == cleanPhone || 
+                                       dPhone == '+$cleanPhone' || 
+                                       dPhone.replaceAll('+', '') == cleanPhone.replaceAll('+', '');
+                              });
+                              
                               return ListTile(
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                 title: Text(
                                   name,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isAlreadyAdded ? Colors.grey : Colors.black),
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                subtitle: Text(phone, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                                trailing: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(LucideIcons.plus, color: AppColors.primary, size: 20),
+                                subtitle: Text(
+                                  isAlreadyAdded ? '$phone - مضاف مسبقاً' : phone, 
+                                  style: TextStyle(color: isAlreadyAdded ? Colors.grey.shade400 : Colors.grey.shade500, fontSize: 12)
                                 ),
-                                onTap: () {
+                                trailing: isAlreadyAdded 
+                                    ? const Icon(LucideIcons.checkCircle, color: Colors.grey)
+                                    : Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(alpha: 0.1),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(LucideIcons.plus, color: AppColors.primary, size: 20),
+                                      ),
+                                onTap: isAlreadyAdded ? null : () {
                                   Navigator.push(context, AppPageRoute(builder: (_) => AddCustomerDetailScreen(
                                     initialName: name,
                                     initialPhone: phone,

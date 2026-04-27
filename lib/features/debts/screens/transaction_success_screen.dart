@@ -26,13 +26,7 @@ class TransactionSuccessScreen extends StatefulWidget {
       _TransactionSuccessScreenState();
 }
 
-class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
-    with TickerProviderStateMixin {
-  late final AnimationController _entryController;
-  late final Animation<double> _fadeAnim;
-  late final Animation<double> _scaleAnim;
-  late final Animation<Offset> _slideAnim;
-
+class _TransactionSuccessScreenState extends State<TransactionSuccessScreen> {
   Timer? _countdownTimer;
   int _secondsLeft = 4;
 
@@ -40,27 +34,6 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
   void initState() {
     super.initState();
     HapticFeedback.mediumImpact();
-
-    _entryController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-
-    _fadeAnim = CurvedAnimation(
-      parent: _entryController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-    );
-    _scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _entryController, curve: Curves.easeOut),
-    );
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.12),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _entryController, curve: Curves.easeOut),
-    );
-
-    _entryController.forward();
     _startCountdown();
   }
 
@@ -82,7 +55,6 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
 
   @override
   void dispose() {
-    _entryController.dispose();
     _countdownTimer?.cancel();
     super.dispose();
   }
@@ -105,15 +77,9 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
           slivers: [
             SliverFillRemaining(
               hasScrollBody: false,
-              child: FadeTransition(
-                opacity: _fadeAnim,
-                child: SlideTransition(
-                  position: _slideAnim,
-                  child: ScaleTransition(
-                    scale: _scaleAnim,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                      child: Column(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: Column(
                         children: [
                           // ── أيقونة النجاح ──
                           Container(
@@ -159,7 +125,7 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.06),
+                                  color: Colors.black.withValues(alpha: 0.06),
                                   blurRadius: 20,
                                   offset: const Offset(0, 6),
                                 ),
@@ -185,7 +151,7 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w600,
-                                          color: accentColor.withOpacity(0.8),
+                                          color: accentColor.withValues(alpha: 0.8),
                                         ),
                                       ),
                                       const SizedBox(height: 8),
@@ -296,7 +262,7 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
                                   },
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.primary,
-                                    side: BorderSide(color: AppColors.primary.withOpacity(0.4)),
+                                    side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
                                     padding: const EdgeInsets.symmetric(vertical: 15),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
@@ -340,14 +306,11 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
                           const SizedBox(height: 12),
                         ],
                       ),
-                    ),
-                  ),
-                ),
+                      ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
     );
   }
 }
