@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import 'add_customer_detail_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 class AddCustomerScreen extends StatefulWidget {
   const AddCustomerScreen({super.key});
@@ -91,7 +92,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                   elevation: 0,
                 ),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AddCustomerDetailScreen()));
+                  Navigator.push(context, AppPageRoute(builder: (_) => const AddCustomerDetailScreen()));
                 },
                 child: const Text('إضافة عميل جديد', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
@@ -173,7 +174,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                                   child: const Icon(LucideIcons.plus, color: AppColors.primary, size: 20),
                                 ),
                                 onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => AddCustomerDetailScreen(
+                                  Navigator.push(context, AppPageRoute(builder: (_) => AddCustomerDetailScreen(
                                     initialName: name,
                                     initialPhone: phone,
                                   )));

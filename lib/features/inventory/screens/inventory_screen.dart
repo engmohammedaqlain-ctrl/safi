@@ -13,6 +13,7 @@ import '../data/product_ui_model.dart';
 import 'add_product_screen.dart';
 import 'delete_products_screen.dart';
 import 'product_detail_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 class InventoryScreen extends ConsumerWidget {
   const InventoryScreen({super.key, this.bottomContentPadding = 32});
@@ -78,7 +79,7 @@ class InventoryScreen extends ConsumerWidget {
                     icon: LucideIcons.plus,
                     onPressed: () => Navigator.push<void>(
                       context,
-                      MaterialPageRoute<void>(
+                      AppPageRoute<void>(
                         builder: (_) => const AddProductScreen(),
                       ),
                     ),
@@ -92,7 +93,7 @@ class InventoryScreen extends ConsumerWidget {
                     variant: SafiButtonVariant.outline,
                     onPressed: () => Navigator.push<void>(
                       context,
-                      MaterialPageRoute<void>(
+                      AppPageRoute<void>(
                         builder: (_) => const DeleteProductsScreen(),
                       ),
                     ),
@@ -198,7 +199,7 @@ class _ProductRowListTile extends StatelessWidget {
     return ListTile(
       onTap: () => Navigator.push<void>(
         context,
-        MaterialPageRoute<void>(
+        AppPageRoute<void>(
           builder: (_) => ProductDetailScreen(product: product),
         ),
       ),

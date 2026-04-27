@@ -8,6 +8,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../data/product_ui_model.dart';
 import 'add_product_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   const ProductDetailScreen({super.key, required this.product});
@@ -29,7 +30,7 @@ class ProductDetailScreen extends StatelessWidget {
             onPressed: () {
               Navigator.push<void>(
                 context,
-                MaterialPageRoute<void>(
+                AppPageRoute<void>(
                   builder: (_) => const AddProductScreen(),
                 ),
               );

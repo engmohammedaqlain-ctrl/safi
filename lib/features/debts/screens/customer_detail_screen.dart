@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../providers/debts_ui_provider.dart';
 import 'add_debt_screen.dart';
 import 'record_payment_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 class CustomerDetailScreen extends ConsumerWidget {
   const CustomerDetailScreen({super.key, required this.debtor});
@@ -182,7 +183,7 @@ class CustomerDetailScreen extends ConsumerWidget {
                     onPressed: () {
                       Navigator.push<bool>(
                         context,
-                        MaterialPageRoute<bool>(
+                        AppPageRoute<bool>(
                           builder: (_) =>
                               AddDebtScreen(forCustomer: currentDebtor),
                         ),
@@ -208,7 +209,7 @@ class CustomerDetailScreen extends ConsumerWidget {
                     onPressed: () {
                       Navigator.push<bool>(
                         context,
-                        MaterialPageRoute<bool>(
+                        AppPageRoute<bool>(
                           builder: (_) =>
                               RecordPaymentScreen(forCustomer: currentDebtor),
                         ),

@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../providers/debts_ui_provider.dart';
 import '../screens/customer_detail_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 class DebtorCard extends StatelessWidget {
   const DebtorCard({super.key, required this.debtor});
@@ -22,7 +23,7 @@ class DebtorCard extends StatelessWidget {
         onTap: () {
           Navigator.push<void>(
             context,
-            MaterialPageRoute<void>(
+            AppPageRoute<void>(
               builder: (_) => CustomerDetailScreen(debtor: debtor),
             ),
           );

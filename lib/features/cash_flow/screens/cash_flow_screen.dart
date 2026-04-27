@@ -6,6 +6,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import 'cash_entry_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 class CashFlowScreen extends StatelessWidget {
   const CashFlowScreen({super.key});
@@ -13,7 +14,7 @@ class CashFlowScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     void push(Widget w) {
-      Navigator.push<void>(context, MaterialPageRoute<void>(builder: (_) => w));
+      Navigator.push<void>(context, AppPageRoute<void>(builder: (_) => w));
     }
 
     return ListView(

@@ -9,6 +9,7 @@ import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import 'add_customer_screen.dart';
 import 'record_payment_screen.dart';
 import 'customer_detail_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 class DebtsScreen extends ConsumerStatefulWidget {
   const DebtsScreen({super.key});
@@ -82,7 +83,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                     _ActionButton(
                       icon: LucideIcons.bell, 
                       label: 'تحصيل الديون',
-                      onTap: () => Navigator.push<void>(context, MaterialPageRoute<void>(builder: (_) => const RecordPaymentScreen())),
+                      onTap: () => Navigator.push<void>(context, AppPageRoute<void>(builder: (_) => const RecordPaymentScreen())),
                     ),
                     const SizedBox(width: 16),
                     _ActionButton(
@@ -171,7 +172,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
 
             return InkWell(
               onTap: () {
-                Navigator.push<void>(context, MaterialPageRoute<void>(builder: (_) => CustomerDetailScreen(debtor: debtor)));
+                Navigator.push<void>(context, AppPageRoute<void>(builder: (_) => CustomerDetailScreen(debtor: debtor)));
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
@@ -227,7 +228,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push<void>(context, MaterialPageRoute<void>(builder: (_) => const AddCustomerScreen()));
+          Navigator.push<void>(context, AppPageRoute<void>(builder: (_) => const AddCustomerScreen()));
         },
         backgroundColor: AppColors.primary,
         elevation: 0,

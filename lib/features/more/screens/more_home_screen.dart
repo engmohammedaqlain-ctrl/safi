@@ -19,6 +19,7 @@ import '../../reports/screens/reports_screen.dart';
 import '../../sales/screens/new_sale_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import 'notifications_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 /// مركز وصول لبقية أقسام التطبيق
 class MoreHomeScreen extends StatelessWidget {
@@ -27,7 +28,7 @@ class MoreHomeScreen extends StatelessWidget {
   void _push(BuildContext context, Widget page) {
     Navigator.push<void>(
       context,
-      MaterialPageRoute<void>(builder: (_) => page),
+      AppPageRoute<void>(builder: (_) => page),
     );
   }
 

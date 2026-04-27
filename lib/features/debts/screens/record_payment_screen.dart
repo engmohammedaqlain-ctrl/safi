@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../providers/debts_ui_provider.dart';
 import '../widgets/calculator_keypad.dart';
 import 'transaction_success_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 class RecordPaymentScreen extends ConsumerStatefulWidget {
   const RecordPaymentScreen({super.key, this.forCustomer});
@@ -108,7 +109,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     if (!context.mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
+      AppPageRoute(
         builder: (_) => TransactionSuccessScreen(
           customerName: widget.forCustomer!.name,
           amount: amount,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../router/app_page_route.dart';
 import 'app_colors.dart';
 import 'app_radius.dart';
 import 'app_text_styles.dart';
@@ -95,6 +96,14 @@ class AppTheme {
       listTileTheme: const ListTileThemeData(
         iconColor: AppColors.primary,
         textColor: AppColors.textPrimary,
+      ),
+      // ─── انتقال بنكي ناعم على كل route في التطبيق ───
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: AppPageTransitionsBuilder(),
+          TargetPlatform.iOS:     AppPageTransitionsBuilder(),
+          TargetPlatform.windows: AppPageTransitionsBuilder(),
+        },
       ),
     );
   }

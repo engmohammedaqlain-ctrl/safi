@@ -10,6 +10,7 @@ import '../providers/debts_ui_provider.dart';
 import '../utils/debtor_filter.dart';
 import 'add_debt_screen.dart';
 import 'customer_detail_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 /// كل العملاء — من «المزيد» أو للمراجعة السريعة
 class AllCustomersScreen extends ConsumerStatefulWidget {
@@ -44,7 +45,7 @@ class _AllCustomersScreenState extends ConsumerState<AllCustomersScreen> {
             onPressed: () {
               Navigator.push<void>(
                 context,
-                MaterialPageRoute<void>(
+                AppPageRoute<void>(
                   builder: (_) => const AddDebtScreen(),
                 ),
               );
@@ -99,7 +100,7 @@ class _AllCustomersScreenState extends ConsumerState<AllCustomersScreen> {
                 onTap: () {
                   Navigator.push<void>(
                     context,
-                    MaterialPageRoute<void>(
+                    AppPageRoute<void>(
                       builder: (_) => CustomerDetailScreen(debtor: list[i]),
                     ),
                   );

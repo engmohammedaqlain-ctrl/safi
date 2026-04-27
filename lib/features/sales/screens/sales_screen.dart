@@ -11,6 +11,7 @@ import '../../cash_flow/screens/cash_flow_screen.dart';
 import '../../cash_flow/screens/financial_accounts_screen.dart';
 import '../providers/cashbook_ui_provider.dart';
 import 'new_sale_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
 
 /// دفتر النقدية — تصميم متسق مع دفتر الديون
 class SalesScreen extends ConsumerStatefulWidget {
@@ -33,7 +34,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     void push(Widget page) {
       Navigator.push<void>(
         context,
-        MaterialPageRoute<void>(builder: (_) => page),
+        AppPageRoute<void>(builder: (_) => page),
       );
     }
 
