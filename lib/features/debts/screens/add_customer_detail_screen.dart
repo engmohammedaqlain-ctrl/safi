@@ -22,7 +22,7 @@ class _AddCustomerDetailScreenState extends ConsumerState<AddCustomerDetailScree
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController(text: widget.initialName != null ? '${widget.initialPhone} ${widget.initialName}' : '');
+    _nameCtrl = TextEditingController(text: widget.initialName ?? '');
     String p = widget.initialPhone ?? '';
     if (p.startsWith('+')) p = p.substring(1);
     _phoneCtrl = TextEditingController(text: p);

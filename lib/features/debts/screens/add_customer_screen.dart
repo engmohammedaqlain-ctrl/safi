@@ -157,14 +157,10 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                               
                               return ListTile(
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                title: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(phone, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                  ],
+                                title: Text(
+                                  name,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 subtitle: Text(phone, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                                 trailing: Container(
