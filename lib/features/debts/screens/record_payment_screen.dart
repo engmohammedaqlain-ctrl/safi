@@ -209,6 +209,59 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                 );
                 return;
               }
+
+              final parsedAmount =
+                  double.tryParse(_amount.text.trim()) ?? 0;
+              if (parsedAmount <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('الرجاء إدخال مبلغ صحيح')),
+                );
+                return;
+              }
+
+              // إذا كان عميل جديد، أنشئه أولاً
+              String customerId;
+              if (_pickedFromList != null) {
+                customerId = _pickedFromList!.id;
+              } else {
+                customerId =
+                    DateTime.now().millisecondsSinceEpoch.toString();
+                final newCustomer = DebtorUi(
+                  id: customerId,
+                  name: _customerNameCtrl.text.trim(),
+                  phone: '',
+                  amount: '0.0',
+                  status: 'اليوم',
+                  urgency: DebtUrgency.low,
+                );
+                ref
+                    .read(debtorsUiProvider.notifier)
+                    .addCustomer(newCustomer);
+              }
+
+              // أضف المعاملة
+              final tx = TransactionUi(
+                id: DateTime.now().microsecondsSinceEpoch.toString(),
+                customerId: customerId,
+                amount: parsedAmount,
+                type: TransactionType.received,
+                note: _note.text.trim(),
+                date: DateTime.now(),
+              );
+              ref.read(transactionsProvider.notifier).addTransaction(tx);
+
+              // حدّث رصيد العميل (أخذت = الدين يقل)
+              ref
+                  .read(debtorsUiProvider.notifier)
+                  .updateCustomerBalance(customerId, -parsedAmount);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                      'تم تسجيل دفعة ₪ ${parsedAmount.toStringAsFixed(1)}'),
+                  backgroundColor: Colors.green,
+                ),
+              );
               Navigator.pop(context, true);
             },
           ),

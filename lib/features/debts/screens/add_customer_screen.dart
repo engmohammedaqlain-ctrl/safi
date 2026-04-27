@@ -27,15 +27,16 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   Future<void> _fetchContacts() async {
     setState(() => _isLoading = true);
     
-    if (await FlutterContacts.requestPermission()) {
-      List<Contact> contacts = await FlutterContacts.getContacts(withProperties: true);
+    final status = await Permission.contacts.request();
+    if (status.isGranted) {
+      List<Contact> contacts = await FlutterContacts.getAll(properties: {ContactProperty.phone});
       
       // Filter out contacts without a phone number
-      contacts = contacts.where((c) => c.phones.isNotEmpty).toList();
+      final validContacts = contacts.where((c) => c.phones.isNotEmpty).toList();
       
       setState(() {
-        _contacts = contacts;
-        _filteredContacts = contacts;
+        _contacts = validContacts;
+        _filteredContacts = validContacts;
         _isLoading = false;
         _permissionDenied = false;
       });
@@ -56,8 +57,10 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     final lowerQuery = query.toLowerCase();
     setState(() {
       _filteredContacts = _contacts.where((c) {
-        final nameMatch = c.displayName.toLowerCase().contains(lowerQuery);
-        final phoneMatch = c.phones.any((p) => p.number.contains(lowerQuery));
+        final displayName = c.displayName ?? '';
+        final nameMatch = displayName.toLowerCase().contains(lowerQuery);
+        final phones = c.phones;
+        final phoneMatch = phones.any((p) => p.number.contains(lowerQuery));
         return nameMatch || phoneMatch;
       }).toList();
     });
@@ -83,7 +86,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue, 
+                  backgroundColor: AppColors.primary, 
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   elevation: 0,
                 ),
@@ -150,12 +153,14 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                             itemBuilder: (context, index) {
                               final contact = _filteredContacts[index];
                               final phone = contact.phones.isNotEmpty ? contact.phones.first.number : '';
+                              final name = contact.displayName ?? phone;
+                              
                               return ListTile(
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                 title: Row(
                                   children: [
                                     Expanded(
-                                      child: Text(contact.displayName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis),
+                                      child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(phone, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -173,7 +178,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                                 ),
                                 onTap: () {
                                   Navigator.push(context, MaterialPageRoute(builder: (_) => AddCustomerDetailScreen(
-                                    initialName: contact.displayName,
+                                    initialName: name,
                                     initialPhone: phone,
                                   )));
                                 },

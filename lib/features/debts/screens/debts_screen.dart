@@ -96,10 +96,10 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text('أخذت', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                    Text(hidden ? '****' : '₪ 0', style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(hidden ? '****' : my.totalReceivedLabel, style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Text('أعطيت', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                    Text(hidden ? '****' : my.totalDebtLabel, style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(hidden ? '****' : my.totalGaveLabel, style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisSize: MainAxisSize.min,
@@ -161,57 +161,67 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                 child: Text('لا يوجد عملاء', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
               ),
             ),
-          ...list.map((debtor) => InkWell(
-            onTap: () {
-              Navigator.push<void>(context, MaterialPageRoute<void>(builder: (_) => CustomerDetailScreen(debtor: debtor)));
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        hidden ? '****' : (debtor.amount.contains('₪') ? debtor.amount : '₪ ${debtor.amount}'), 
-                        style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)
-                      ),
-                      Text('أعطيت', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(debtor.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          Text(debtor.status, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+          ...list.map((debtor) {
+            final amountText = debtor.amount.replaceAll('₪', '').trim();
+            final isRed = !amountText.startsWith('-') && amountText != '0.0' && amountText != '0';
+            final color = isRed ? Colors.red : Colors.green;
+            final label = isRed ? 'أعطيت' : 'أخذت';
+            final displayAmount = amountText.startsWith('-') ? amountText.substring(1) : amountText;
+            final avatarStr = debtor.name.startsWith('+') ? '+' : (debtor.name.isNotEmpty ? debtor.name.split(' ').first[0] : '؟');
+
+            return InkWell(
+              onTap: () {
+                Navigator.push<void>(context, MaterialPageRoute<void>(builder: (_) => CustomerDetailScreen(debtor: debtor)));
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          hidden ? '****' : '₪ $displayAmount', 
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)
                         ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          debtor.name.isNotEmpty ? debtor.name.split(' ').first[0] : '؟',
-                          style: const TextStyle(color: AppColors.primary, fontSize: 20, fontWeight: FontWeight.bold),
+                        Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(debtor.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text(debtor.status, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            avatarStr,
+                            style: const TextStyle(color: AppColors.primary, fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          )),
+            );
+          }),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,

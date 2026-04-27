@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
+import '../providers/debts_ui_provider.dart';
 
-class AddCustomerDetailScreen extends StatefulWidget {
+class AddCustomerDetailScreen extends ConsumerStatefulWidget {
   final String? initialName;
   final String? initialPhone;
 
   const AddCustomerDetailScreen({super.key, this.initialName, this.initialPhone});
 
   @override
-  State<AddCustomerDetailScreen> createState() => _AddCustomerDetailScreenState();
+  ConsumerState<AddCustomerDetailScreen> createState() => _AddCustomerDetailScreenState();
 }
 
-class _AddCustomerDetailScreenState extends State<AddCustomerDetailScreen> {
+class _AddCustomerDetailScreenState extends ConsumerState<AddCustomerDetailScreen> {
   late TextEditingController _nameCtrl;
   late TextEditingController _phoneCtrl;
+  late TextEditingController _addressCtrl;
 
   @override
   void initState() {
@@ -23,12 +26,14 @@ class _AddCustomerDetailScreenState extends State<AddCustomerDetailScreen> {
     String p = widget.initialPhone ?? '';
     if (p.startsWith('+')) p = p.substring(1);
     _phoneCtrl = TextEditingController(text: p);
+    _addressCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
+    _addressCtrl.dispose();
     super.dispose();
   }
 
@@ -106,19 +111,20 @@ class _AddCustomerDetailScreenState extends State<AddCustomerDetailScreen> {
 
                   const Text('العنوان', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Container(
-                    height: 48,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('العنوان', style: TextStyle(color: Colors.grey)),
-                        Icon(LucideIcons.chevronLeft, color: Colors.blue.shade300),
-                      ],
+                  TextField(
+                    controller: _addressCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'أدخل موقع أو عنوان العميل',
+                      hintStyle: const TextStyle(color: Colors.grey),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(4),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(4),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -170,11 +176,21 @@ class _AddCustomerDetailScreenState extends State<AddCustomerDetailScreen> {
                 height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     elevation: 0,
                   ),
                   onPressed: () {
+                    final newCustomer = DebtorUi(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      name: _nameCtrl.text.trim().isEmpty ? _phoneCtrl.text.trim() : _nameCtrl.text.trim(),
+                      phone: '+${_phoneCtrl.text.trim()}',
+                      address: _addressCtrl.text.trim(),
+                      amount: '0.0',
+                      status: 'اليوم',
+                      urgency: DebtUrgency.low,
+                    );
+                    ref.read(debtorsUiProvider.notifier).addCustomer(newCustomer);
                     Navigator.popUntil(context, (route) => route.isFirst);
                   },
                   child: const Text('تأكيد', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
