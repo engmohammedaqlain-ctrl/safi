@@ -12,7 +12,7 @@ class TransactionSuccessScreen extends StatefulWidget {
     super.key,
     required this.customerName,
     required this.amount,
-    required this.type, // gave = أعطيت, received = أخذت
+    required this.type,
     required this.date,
   });
 
@@ -28,64 +28,45 @@ class TransactionSuccessScreen extends StatefulWidget {
 
 class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
     with TickerProviderStateMixin {
-  late final AnimationController _cardController;
-  late final AnimationController _titleController;
-  late final Animation<double> _cardScale;
-  late final Animation<double> _cardOpacity;
-  late final Animation<double> _titleOpacity;
-  late final Animation<Offset> _titleSlide;
+  late final AnimationController _entryController;
+  late final Animation<double> _fadeAnim;
+  late final Animation<double> _scaleAnim;
+  late final Animation<Offset> _slideAnim;
 
-  Timer? _autoNavTimer;
-  int _secondsLeft = 4;
   Timer? _countdownTimer;
+  int _secondsLeft = 4;
 
   @override
   void initState() {
     super.initState();
-
     HapticFeedback.mediumImpact();
 
-    // Animation: card scales up + fades in
-    _cardController = AnimationController(
+    _entryController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _cardScale = CurvedAnimation(
-      parent: _cardController,
-      curve: Curves.elasticOut,
-    );
-    _cardOpacity = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _cardController, curve: const Interval(0, 0.4)),
+      duration: const Duration(milliseconds: 700),
     );
 
-    // Animation: title slides down + fades in
-    _titleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
+    _fadeAnim = CurvedAnimation(
+      parent: _entryController,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
     );
-    _titleOpacity = Tween<double>(begin: 0, end: 1).animate(_titleController);
-    _titleSlide = Tween<Offset>(
-      begin: const Offset(0, -0.3),
+    _scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _entryController, curve: Curves.easeOut),
+    );
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.12),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(parent: _titleController, curve: Curves.easeOut),
+      CurvedAnimation(parent: _entryController, curve: Curves.easeOut),
     );
 
-    _titleController.forward();
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (mounted) _cardController.forward();
-    });
-
-    // Auto-navigate back after 4 seconds
+    _entryController.forward();
     _startCountdown();
   }
 
   void _startCountdown() {
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) {
-        t.cancel();
-        return;
-      }
+      if (!mounted) { t.cancel(); return; }
       setState(() => _secondsLeft--);
       if (_secondsLeft <= 0) {
         t.cancel();
@@ -96,18 +77,12 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
 
   void _navigateBack() {
     _countdownTimer?.cancel();
-    _autoNavTimer?.cancel();
-    if (mounted) {
-      // pushReplacement was used, so success screen IS the top — one pop() returns to CustomerDetailScreen
-      Navigator.of(context).pop(true);
-    }
+    if (mounted) Navigator.of(context).pop(true);
   }
 
   @override
   void dispose() {
-    _cardController.dispose();
-    _titleController.dispose();
-    _autoNavTimer?.cancel();
+    _entryController.dispose();
     _countdownTimer?.cancel();
     super.dispose();
   }
@@ -115,258 +90,289 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
   @override
   Widget build(BuildContext context) {
     final isGave = widget.type == TransactionType.gave;
-    final amountColor = isGave ? Colors.red : Colors.green;
+    final accentColor = isGave ? const Color(0xFFE53935) : const Color(0xFF43A047);
+    final bgColor = isGave ? const Color(0xFFFFEBEE) : const Color(0xFFE8F5E9);
+    final label = isGave ? 'أعطيت' : 'أخذت';
     final sign = isGave ? '+' : '-';
-
     final timeStr = _formatTime(widget.date);
-    final amountStr =
-        '${widget.amount.toStringAsFixed(2)} ₪';
+    final dateStr = _formatDate(widget.date);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      resizeToAvoidBottomInset: false, // يمنع تقلص الشاشة أثناء إغلاق الكيبورد
+      backgroundColor: const Color(0xFFF5F5F8),
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             SliverFillRemaining(
               hasScrollBody: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 48),
-
-              // ── العنوان ──
-              SlideTransition(
-                position: _titleSlide,
-                child: FadeTransition(
-                  opacity: _titleOpacity,
-                  child: Column(
-                    children: [
-                      Text(
-                        'تمت المعاملة بنجاح',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                          height: 1.3,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // تم إخفاء العداد بناءً على طلب المستخدم
-                      // Text(
-                      //   'ستُغلق الصفحة تلقائياً خلال $_secondsLeft ثواني',
-                      //   style: const TextStyle(
-                      //     fontSize: 13,
-                      //     color: Colors.grey,
-                      //   ),
-                      // ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 48),
-
-              // ── البطاقة ──
-              ScaleTransition(
-                scale: _cardScale,
-                child: FadeTransition(
-                  opacity: _cardOpacity,
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7F7F9),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.07),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        // خلفية زخرفية (نمط أرابيسك خفيف)
-                        Positioned.fill(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: CustomPaint(
-                              painter: _PatternPainter(),
+              child: FadeTransition(
+                opacity: _fadeAnim,
+                child: SlideTransition(
+                  position: _slideAnim,
+                  child: ScaleTransition(
+                    scale: _scaleAnim,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                      child: Column(
+                        children: [
+                          // ── أيقونة النجاح ──
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: bgColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.check_circle_rounded,
+                              color: accentColor,
+                              size: 52,
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 16),
 
-                        // المحتوى
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 28,
-                            vertical: 32,
+                          // ── العنوان ──
+                          const Text(
+                            'تمت العملية بنجاح',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1A2E),
+                            ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                          const SizedBox(height: 6),
+                          Text(
+                            'سيتم الإغلاق تلقائياً خلال $_secondsLeft ثانية',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          // ── البطاقة ──
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.06),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                // ── قسم المبلغ (ملوّن) ──
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(20),
+                                      topRight: Radius.circular(20),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        label,
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: accentColor.withOpacity(0.8),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '$sign${widget.amount.toStringAsFixed(2)} ₪',
+                                        textDirection: TextDirection.ltr,
+                                        style: TextStyle(
+                                          fontSize: 40,
+                                          fontWeight: FontWeight.bold,
+                                          color: accentColor,
+                                          letterSpacing: -1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // ── فاصل ──
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  child: Row(
+                                    children: [
+                                      _DashedCircle(color: const Color(0xFFF5F5F8)),
+                                      Expanded(
+                                        child: Row(
+                                          children: List.generate(
+                                            30,
+                                            (i) => Expanded(
+                                              child: Container(
+                                                margin: const EdgeInsets.symmetric(horizontal: 1),
+                                                height: 1.5,
+                                                color: i.isEven ? Colors.grey.shade300 : Colors.transparent,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      _DashedCircle(color: const Color(0xFFF5F5F8)),
+                                    ],
+                                  ),
+                                ),
+
+                                // ── تفاصيل الإيصال ──
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                                  child: Column(
+                                    children: [
+                                      _ReceiptRow(label: 'العميل', value: widget.customerName),
+                                      const SizedBox(height: 12),
+                                      _ReceiptRow(label: 'نوع العملية', value: label),
+                                      const SizedBox(height: 12),
+                                      _ReceiptRow(label: 'التاريخ', value: dateStr),
+                                      const SizedBox(height: 12),
+                                      _ReceiptRow(label: 'الوقت', value: timeStr),
+                                    ],
+                                  ),
+                                ),
+
+                                // ── شعار التطبيق ──
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 20),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          gradient: AppColors.primaryGradient,
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: const Center(
+                                          child: Text(
+                                            'ص',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Text(
+                                        'صافي',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const Spacer(),
+
+                          // ── أزرار ──
+                          Row(
                             children: [
-                              // اسم العميل
-                              Text(
-                                widget.customerName,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w500,
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    // TODO: مشاركة الإيصال
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.primary,
+                                    side: BorderSide(color: AppColors.primary.withOpacity(0.4)),
+                                    padding: const EdgeInsets.symmetric(vertical: 15),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.share_outlined, size: 18),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'مشاركة',
+                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              // التاريخ والوقت
-                              Text(
-                                'اليوم ساعة $timeStr',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: _navigateBack,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 15),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'إنهاء',
+                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 20),
-                              // نوع المعاملة
-                              Text(
-                                isGave ? 'أعطيت' : 'أخذت',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: amountColor,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              // المبلغ
-                              Text(
-                                '$sign$amountStr',
-                                textDirection: TextDirection.ltr,
-                                style: TextStyle(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.bold,
-                                  color: amountColor,
-                                ),
-                              ),
-                              const SizedBox(height: 28),
-                              // شعار التطبيق
-                              _AppBadge(),
                             ],
                           ),
-                        ),
-                      ],
+
+                          const SizedBox(height: 12),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-
-              const Spacer(),
-
-              // ── أزرار ──
-              FadeTransition(
-                opacity: _cardOpacity,
-                child: Row(
-                  children: [
-                    // زر إنهاء
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _navigateBack,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
-                          foregroundColor: AppColors.primary,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'إنهاء',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // زر مشاركة
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: مشاركة الإيصال
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'مشاركة',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── تنسيق الوقت بدون مكتبة intl ──
-String _formatTime(DateTime date) {
-  final h = date.hour.toString().padLeft(2, '0');
-  final m = date.minute.toString().padLeft(2, '0');
-  return '$h:$m';
-}
+// ── صف تفصيلة في الإيصال ──
+class _ReceiptRow extends StatelessWidget {
+  const _ReceiptRow({required this.label, required this.value});
+  final String label;
+  final String value;
 
-// ── شعار التطبيق ──
-class _AppBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Center(
-            child: Text(
-              'ص',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 17,
-              ),
-            ),
-          ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: Colors.grey),
         ),
-        const SizedBox(width: 8),
-        const Text(
-          'صافي',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF4A148C),
-            letterSpacing: 0.5,
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A1A2E),
           ),
         ),
       ],
@@ -374,24 +380,32 @@ class _AppBadge extends StatelessWidget {
   }
 }
 
-// ── خلفية زخرفية بسيطة ──
-class _PatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF6A1B9A).withOpacity(0.04)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+// ── الدائرة الجانبية لفاصل الإيصال ──
+class _DashedCircle extends StatelessWidget {
+  const _DashedCircle({required this.color});
+  final Color color;
 
-    const spacing = 40.0;
-    for (double x = 0; x < size.width + spacing; x += spacing) {
-      for (double y = 0; y < size.height + spacing; y += spacing) {
-        canvas.drawCircle(Offset(x, y), 18, paint);
-        canvas.drawCircle(Offset(x, y), 10, paint);
-      }
-    }
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+    );
   }
+}
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+// ── تنسيق الوقت ──
+String _formatTime(DateTime date) {
+  final h = date.hour.toString().padLeft(2, '0');
+  final m = date.minute.toString().padLeft(2, '0');
+  return '$h:$m';
+}
+
+// ── تنسيق التاريخ ──
+String _formatDate(DateTime date) {
+  return '${date.day}/${date.month}/${date.year}';
 }

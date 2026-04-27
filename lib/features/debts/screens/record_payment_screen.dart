@@ -85,6 +85,14 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
       return;
     }
 
+    if (_payMethod == null) {
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الرجاء تحديد مصدر الدفع: كاش، محفظة، أو بنك فلسطين')),
+      );
+      return;
+    }
+
     final cid = widget.forCustomer!.id;
     final tx = TransactionUi(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -213,17 +221,16 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                             }),
                             const SizedBox(height: 6),
                             Container(
-                              constraints: const BoxConstraints(maxWidth: 220),
+                              width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                               decoration: BoxDecoration(
                                 border: Border.all(color: Colors.grey.shade300),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
-                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Flexible(
+                                  Expanded(
                                     child: TextField(
                                       controller: _noteCtrl,
                                       style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
@@ -231,7 +238,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                                       maxLines: 4,
                                       keyboardType: TextInputType.multiline,
                                       decoration: const InputDecoration(
-                                        hintText: 'Add note',
+                                        hintText: 'ملاحظة...',
                                         hintStyle: TextStyle(fontSize: 12),
                                         border: InputBorder.none,
                                         isDense: true,

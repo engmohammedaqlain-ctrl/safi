@@ -4,13 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../bootstrap/prefs_keys.dart';
-
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../widgets/animated_page_switcher.dart';
 import 'nav_provider.dart';
 import '../../features/more/screens/more_home_screen.dart';
-import '../../features/more/screens/notifications_screen.dart';
 import '../../features/sales/screens/sales_screen.dart';
 import '../../features/debts/screens/debts_screen.dart';
 
@@ -20,27 +17,76 @@ class HideBalanceNotifier extends Notifier<bool> {
   void toggle() => state = !state;
 }
 
-final hideBalanceProvider = NotifierProvider<HideBalanceNotifier, bool>(HideBalanceNotifier.new);
+final hideBalanceProvider =
+    NotifierProvider<HideBalanceNotifier, bool>(HideBalanceNotifier.new);
 
 final userNameProvider = FutureProvider<String>((ref) async {
   final p = await SharedPreferences.getInstance();
   return p.getString(PrefsKeys.userName) ?? 'المستخدم الأول';
 });
 
-const _shellTitles = <String>['دفتر الديون', 'دفتر النقدية', 'المزيد'];
-
-class MainShell extends ConsumerWidget {
+// ──────────────────────────────────────────────────────────────
+// Shell رئيسية مع PageView قابل للسحب ← تلاشٍ خفيف بين الصفحات
+// ──────────────────────────────────────────────────────────────
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  late final PageController _pageController;
+
+  /// عدد الصفحات
+  static const int _pageCount = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = ref.read(navIndexProvider);
+    _pageController = PageController(initialPage: initial);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  /// يُستدعى عند الضغط على أيقونة الشريط السفلي → انتقال بانزلاق+تلاشٍ
+  void _onNavTap(int index) {
+    ref.read(navIndexProvider.notifier).goTo(index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  /// يُستدعى عند السحب اليدوي → تحديث الـ provider بالصفحة الجديدة
+  void _onPageChanged(int index) {
+    ref.read(navIndexProvider.notifier).goTo(index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final index = ref.watch(navIndexProvider);
 
-    const pages = <Widget>[
-      RepaintBoundary(child: DebtsScreen()),
-      RepaintBoundary(child: SalesScreen()),
-      RepaintBoundary(child: MoreHomeScreen()),
-    ];
+    // إذا طلب الـ provider صفحةً مختلفة (مثلاً deep link أو إعادة تحميل)
+    // نتأكد أن PageView يتبعه دون أنيميشن مكرّر
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_pageController.hasClients) {
+        final current = _pageController.page?.round() ?? 0;
+        if (current != index) {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 380),
+            curve: Curves.easeInOutCubic,
+          );
+        }
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -52,27 +98,26 @@ class MainShell extends ConsumerWidget {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Consumer(
-                  builder: (context, ref, child) {
-                    final hidden = ref.watch(hideBalanceProvider);
-                    return GestureDetector(
-                      onTap: () => ref.read(hideBalanceProvider.notifier).toggle(),
-                      child: _TopBarIcon(
-                        icon: hidden ? LucideIcons.eyeOff : LucideIcons.eye,
-                        color: AppColors.primary,
-                        bgColor: AppColors.primary.withValues(alpha: 0.1),
-                      ),
-                    );
-                  },
-                ),
-              ],
+            // زر إخفاء الرصيد
+            Consumer(
+              builder: (context, ref, _) {
+                final hidden = ref.watch(hideBalanceProvider);
+                return GestureDetector(
+                  onTap: () =>
+                      ref.read(hideBalanceProvider.notifier).toggle(),
+                  child: _TopBarIcon(
+                    icon: hidden ? LucideIcons.eyeOff : LucideIcons.eye,
+                    color: AppColors.primary,
+                    bgColor: AppColors.primary.withValues(alpha: 0.1),
+                  ),
+                );
+              },
             ),
+            // اسم المستخدم + أيقونة الدفتر
             Row(
               children: [
                 Consumer(
-                  builder: (context, ref, child) {
+                  builder: (context, ref, _) {
                     final asyncName = ref.watch(userNameProvider);
                     return Text(
                       asyncName.value ?? '',
@@ -90,12 +135,23 @@ class MainShell extends ConsumerWidget {
           ],
         ),
       ),
-      // TextField (بحث وغيره) يتطلّب سلف Material — الشفاف يحافظ على مظهر التدرج
       body: Material(
         color: AppColors.background,
         child: SafeArea(
           top: false,
-          child: AnimatedPageSwitcher(pageKey: index, child: pages[index]),
+          // ────────────────────────────────────────────────
+          // PageView مع تأثير تلاشٍ تدريجي أثناء التمرير
+          // ────────────────────────────────────────────────
+          child: _FadingPageView(
+            controller: _pageController,
+            pageCount: _pageCount,
+            onPageChanged: _onPageChanged,
+            pages: const [
+              RepaintBoundary(child: DebtsScreen()),
+              RepaintBoundary(child: SalesScreen()),
+              RepaintBoundary(child: MoreHomeScreen()),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Container(
@@ -113,9 +169,7 @@ class MainShell extends ConsumerWidget {
             elevation: 0,
             selectedIndex: index,
             indicatorColor: AppColors.primary.withValues(alpha: 0.1),
-            onDestinationSelected: (i) {
-              ref.read(navIndexProvider.notifier).goTo(i);
-            },
+            onDestinationSelected: _onNavTap,
             destinations: const [
               NavigationDestination(
                 icon: Icon(LucideIcons.bookOpen, size: 22),
@@ -137,12 +191,100 @@ class MainShell extends ConsumerWidget {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+//  PageView مع تلاشٍ خفيف بين الصفحات
+// ══════════════════════════════════════════════════════════════
+class _FadingPageView extends StatefulWidget {
+  const _FadingPageView({
+    required this.controller,
+    required this.pages,
+    required this.pageCount,
+    required this.onPageChanged,
+  });
+
+  final PageController controller;
+  final List<Widget> pages;
+  final int pageCount;
+  final ValueChanged<int> onPageChanged;
+
+  @override
+  State<_FadingPageView> createState() => _FadingPageViewState();
+}
+
+class _FadingPageViewState extends State<_FadingPageView> {
+  /// الصفحة الحالية كعدد عشري (مثلاً 0.6 أثناء التمرير بين 0 و 1)
+  double _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _page = widget.controller.initialPage.toDouble();
+    widget.controller.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!widget.controller.hasClients) return;
+    setState(() => _page = widget.controller.page ?? _page);
+  }
+
+  /// حساب شفافية كل صفحة بناءً على بُعدها عن الصفحة الحالية
+  double _opacityFor(int pageIndex) {
+    // كلما اقتربنا من الصفحة كانت الـ opacity = 1
+    // نحدّ القيمة بين 0.0 و 1.0
+    final dist = (_page - pageIndex).abs();
+    // نبدأ التلاشي حين يكون البُعد > 0.3 من الصفحة
+    return (1.0 - (dist * 1.4).clamp(0.0, 1.0)).clamp(0.0, 1.0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PageView.builder(
+      controller: widget.controller,
+      // Flutter يعكس اتجاه PageView تلقائياً مع Directionality(RTL)
+      physics: const _SmoothPagePhysics(),
+      onPageChanged: widget.onPageChanged,
+      itemCount: widget.pageCount,
+      itemBuilder: (context, index) {
+        return Opacity(
+          opacity: _opacityFor(index),
+          child: widget.pages[index],
+        );
+      },
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Physics خفيفة: تقلّل من الـ over-scroll وتمنح لمسة بنكية
+// ══════════════════════════════════════════════════════════════
+class _SmoothPagePhysics extends PageScrollPhysics {
+  const _SmoothPagePhysics() : super(parent: const ClampingScrollPhysics());
+
+  @override
+  _SmoothPagePhysics applyTo(ScrollPhysics? ancestor) =>
+      const _SmoothPagePhysics();
+
+  // زيادة friction → يبدو أثقل وأكثر دقة (مثل تطبيق بنكي)
+  @override
+  double get dragStartDistanceMotionThreshold => 3.5;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  أيقونة شريط العنوان
+// ══════════════════════════════════════════════════════════════
 class _TopBarIcon extends StatelessWidget {
   final IconData icon;
   final Color color;
   final Color bgColor;
 
-  const _TopBarIcon({required this.icon, required this.color, required this.bgColor});
+  const _TopBarIcon(
+      {required this.icon, required this.color, required this.bgColor});
 
   @override
   Widget build(BuildContext context) {
