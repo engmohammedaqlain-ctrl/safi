@@ -11,6 +11,9 @@ enum AppSessionPhase {
   /// تسجيل دخول (هاتف / OTP) — مرة أو بعد تسجيل خروج
   login,
 
+  /// تعيين اسم المستخدم (بعد الدخول لأول مرة)
+  nameSetup,
+
   /// إعداد أولي للمحل (مرة بعد أول دخول ناجح)
   onboarding,
 
@@ -25,14 +28,16 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
   @override
   AppSessionPhase build() => AppSessionPhase.splash;
 
-  /// تُستدعى مرة عند عرض [SplashView] (بعد التأخير ينتقل تلقائياً)
   Future<void> completeSplashGate() async {
     await Future<void>.delayed(const Duration(milliseconds: 1600));
     final p = await SharedPreferences.getInstance();
     final logged = p.getBool(PrefsKeys.loggedIn) ?? false;
+    final hasName = p.getString(PrefsKeys.userName) != null;
     final done = p.getBool(PrefsKeys.onboardingDone) ?? false;
     if (!logged) {
       state = AppSessionPhase.login;
+    } else if (!hasName) {
+      state = AppSessionPhase.nameSetup;
     } else if (!done) {
       state = AppSessionPhase.onboarding;
     } else {
@@ -40,10 +45,27 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     }
   }
 
-  /// بعد إدخال رقم الهاتف (وتأكيد OTP) — يتبعها الإعداد إن لم يُكمل
+  /// بعد إدخال رقم الهاتف (وتأكيد OTP) — يتبعها إدخال الاسم
   Future<void> onLoginSuccess() async {
     final p = await SharedPreferences.getInstance();
     await p.setBool(PrefsKeys.loggedIn, true);
+    final hasName = p.getString(PrefsKeys.userName) != null;
+    if (!hasName) {
+      state = AppSessionPhase.nameSetup;
+    } else {
+      final ob = p.getBool(PrefsKeys.onboardingDone) ?? false;
+      if (!ob) {
+        state = AppSessionPhase.onboarding;
+      } else {
+        state = AppSessionPhase.main;
+      }
+    }
+  }
+
+  /// بعد كتابة الاسم
+  Future<void> saveName(String name) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString(PrefsKeys.userName, name);
     final ob = p.getBool(PrefsKeys.onboardingDone) ?? false;
     if (!ob) {
       state = AppSessionPhase.onboarding;

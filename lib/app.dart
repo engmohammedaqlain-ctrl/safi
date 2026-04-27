@@ -6,6 +6,7 @@ import 'core/bootstrap/app_session.dart';
 import 'core/router/main_shell.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/name_setup_screen.dart';
 import 'features/auth/screens/splash_screen.dart';
 import 'features/onboarding/screens/onboarding_screen.dart';
 
@@ -19,6 +20,7 @@ class SafiApp extends ConsumerWidget {
     final home = switch (phase) {
       AppSessionPhase.splash => const SplashScreen(),
       AppSessionPhase.login => const LoginScreen(),
+      AppSessionPhase.nameSetup => const NameSetupScreen(),
       AppSessionPhase.onboarding => const OnboardingScreen(),
       AppSessionPhase.main => const MainShell(),
     };
