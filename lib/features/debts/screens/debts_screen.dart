@@ -10,6 +10,7 @@ import 'add_customer_screen.dart';
 import 'record_payment_screen.dart';
 import 'customer_detail_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
+import '../../reports/screens/unified_reports_screen.dart';
 
 class DebtsScreen extends ConsumerStatefulWidget {
   const DebtsScreen({super.key});
@@ -149,7 +150,17 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                     _ActionButton(
                       icon: LucideIcons.barChart2,
                       label: 'التقارير',
-                      onTap: () {},
+                      onTap: () => Navigator.push<void>(
+                        context,
+                        AppPageRoute<void>(
+                          builder: (_) => UnifiedReportsScreen(
+                            initialFilter: isSuppliersTab
+                                ? AppReportDebtFilter.suppliersOnly
+                                : AppReportDebtFilter.customersOnly,
+                            lockDebtScope: true,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

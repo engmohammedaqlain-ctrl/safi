@@ -1,8 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/bootstrap/app_session.dart';
+import '../../../core/sync/firebase_sync_status.dart';
+import '../../../core/sync/ledger_firestore_sync.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -76,7 +79,29 @@ class SettingsScreen extends ConsumerWidget {
                 _SettingsTile(
                   icon: LucideIcons.cloud,
                   title: 'المزامنة',
-                  subtitle: 'متصل — جاهز',
+                  subtitle: ref.watch(firebaseSyncStatusSubtitleProvider),
+                  onTap: () async {
+                    final u = FirebaseAuth.instance.currentUser;
+                    if (!context.mounted) return;
+                    if (u == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'يجب تسجيل الدخول لمزامنة بيانات متجرك مع السحابة.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    await ref.read(ledgerFirestoreSyncProvider).pushNow(u.uid);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('تم حفظ النسخة الحالية في السحابة.'),
+                        ),
+                      );
+                    }
+                  },
                 ),
                 const Divider(height: 1, indent: 52),
                 _SettingsTile(
@@ -120,6 +145,9 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 );
                 if (go == true) {
+                  if (context.mounted && Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
                   await ref.read(appSessionProvider.notifier).logout();
                 }
               },

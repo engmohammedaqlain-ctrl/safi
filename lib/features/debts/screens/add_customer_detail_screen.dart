@@ -31,6 +31,7 @@ class _AddCustomerDetailScreenState
   late TextEditingController _phoneCtrl;
   late TextEditingController _addressCtrl;
   List<String> _categoryIds = [];
+  bool _doubleLedger = false;
 
   @override
   void initState() {
@@ -202,7 +203,26 @@ class _AddCustomerDetailScreenState
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 14),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'دفتر حساب مزدوج لهذا الطرف',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'يُشار إليه بالتطبيق فقط لتنظيم الحسابات؛ الرصيد كما كان.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      textAlign: TextAlign.right,
+                    ),
+                    value: _doubleLedger,
+                    onChanged: (v) => setState(() => _doubleLedger = v),
+                  ),
+                  const SizedBox(height: 18),
 
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -422,6 +442,8 @@ class _AddCustomerDetailScreenState
                       urgency: DebtUrgency.low,
                       categoryIds: List<String>.from(_categoryIds),
                       isSupplier: widget.isSupplier,
+                      editedMs: DateTime.now().millisecondsSinceEpoch,
+                      doubleLedger: _doubleLedger,
                     );
                     ref
                         .read(debtorsUiProvider.notifier)

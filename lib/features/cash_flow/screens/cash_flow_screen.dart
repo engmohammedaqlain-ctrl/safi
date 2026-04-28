@@ -5,436 +5,497 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../sales/models/cashbook_entry.dart';
+import '../../debts/providers/debts_ui_provider.dart';
+import '../../debts/screens/customer_detail_screen.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
+import '../../sales/providers/unified_ledger_provider.dart';
 import 'cashbook_entry_detail_screen.dart';
 import 'cash_entry_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
 
-class CashFlowScreen extends ConsumerWidget {
+enum _LedgerFilter { all, income, expense }
+
+/// أرشيف — كل المعاملات (صندوق + ديون) بترتيب زمني وزر تصفية.
+class CashFlowScreen extends ConsumerStatefulWidget {
   const CashFlowScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    void push(Widget w) {
-      Navigator.push<void>(context, AppPageRoute<void>(builder: (_) => w));
+  ConsumerState<CashFlowScreen> createState() => _CashFlowScreenState();
+}
+
+class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
+  _LedgerFilter _filter = _LedgerFilter.all;
+
+  List<UnifiedLedgerRowUi> _filtered(List<UnifiedLedgerRowUi> all) {
+    switch (_filter) {
+      case _LedgerFilter.all:
+        return List<UnifiedLedgerRowUi>.from(all);
+      case _LedgerFilter.income:
+        return [for (final r in all) if (r.deltaSigned > 0) r];
+      case _LedgerFilter.expense:
+        return [for (final r in all) if (r.deltaSigned < 0) r];
     }
+  }
 
-    final summary = ref.watch(cashbookSummaryProvider);
-    final entries = ref.watch(cashbookEntriesProvider);
+  String _filterLabel() => switch (_filter) {
+        _LedgerFilter.all => 'كل الحركات',
+        _LedgerFilter.income => 'وارد فقط',
+        _LedgerFilter.expense => 'صادر فقط',
+      };
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.lg,
-        24,
+  void _showFilterSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      children: [
-        _MetricsStrip(
-          balance: formatShekelAmount(summary.balance),
-          income: formatShekelAmount(summary.income),
-          expense: formatShekelAmount(summary.expense),
-        ),
-        const SizedBox(height: 18),
-        _PrimaryActions(
-          onIncome: () => push(const CashEntryScreen(initialIncome: true)),
-          onExpense: () => push(const CashEntryScreen(initialIncome: false)),
-        ),
-        const SizedBox(height: 22),
-        Text(
-          'آخر المعاملات',
-          style: AppTextStyles.titleSmall.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.1,
-          ),
-        ),
-        const SizedBox(height: 10),
-        _TransactionsList(
-          entries: entries,
-          onOpen: (e) {
-            Navigator.push<void>(
-              context,
-              AppPageRoute<void>(
-                builder: (_) => CashbookEntryDetailScreen(entry: e),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-// ── شريط الأرقام الثلاث (مثل دفتر الديون) ──
-class _MetricsStrip extends StatelessWidget {
-  const _MetricsStrip({
-    required this.balance,
-    required this.income,
-    required this.expense,
-  });
-
-  final String balance;
-  final String income;
-  final String expense;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _MetricCell(
-            label: 'الصافي',
-            value: '$balance ₪',
-            icon: LucideIcons.wallet,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _MetricCell(
-            label: 'الدخل',
-            value: '$income ₪',
-            icon: LucideIcons.trendingUp,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _MetricCell(
-            label: 'المصروف',
-            value: '$expense ₪',
-            icon: LucideIcons.trendingDown,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MetricCell extends StatelessWidget {
-  const _MetricCell({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSecondary,
-        borderRadius: AppRadius.rlg,
-        border: Border.all(
-          color: AppColors.textMuted.withValues(alpha: 0.12),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEDEBF0),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 18, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── أزرار الإجراءات الرئيسية — مطابقة لنمط دفتر الديون ──
-class _PrimaryActions extends StatelessWidget {
-  const _PrimaryActions({required this.onIncome, required this.onExpense});
-
-  final VoidCallback onIncome;
-  final VoidCallback onExpense;
-
-  static const _tileRadius = 18.0;
-  static const _tileH = 100.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _CtaBlock(
-            height: _tileH,
-            radius: _tileRadius,
-            background: AppColors.primary,
-            onTap: onIncome,
-            icon: LucideIcons.plus,
-            label: '+ دخل',
-            subtitle: 'إيراد أو وارد',
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _CtaBlock(
-            height: _tileH,
-            radius: _tileRadius,
-            background: AppColors.primaryDark,
-            onTap: onExpense,
-            icon: LucideIcons.minus,
-            label: '- مصروف',
-            subtitle: 'نفقة أو صادر',
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CtaBlock extends StatelessWidget {
-  const _CtaBlock({
-    required this.height,
-    required this.radius,
-    required this.background,
-    required this.onTap,
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-  });
-
-  final double height;
-  final double radius;
-  final Color background;
-  final VoidCallback onTap;
-  final IconData icon;
-  final String label;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(radius),
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: SizedBox(
-          height: height,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 32, color: AppColors.onPrimary),
-                const SizedBox(height: 8),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: AppColors.onPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.onPrimary.withValues(alpha: 0.9),
-                    fontSize: 11,
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── قائمة المعاملات ——————————————————————————————————————
-String _dateLine(DateTime d) {
-  final now = DateTime.now();
-  if (d.year == now.year && d.month == now.month && d.day == now.day) {
-    return 'اليوم ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
-  }
-  return '${d.day}/${d.month}/${d.year}';
-}
-
-class _TransactionsList extends StatelessWidget {
-  const _TransactionsList({required this.entries, required this.onOpen});
-
-  final List<CashbookEntry> entries;
-  final void Function(CashbookEntry e) onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    if (entries.isEmpty) {
-      return _EmptyState();
-    }
-    return Column(
-      children: [
-        for (final t in entries)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _TransactionCard(
-              item: t,
-              onTap: () => onOpen(t),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _TransactionCard extends StatelessWidget {
-  const _TransactionCard({required this.item, required this.onTap});
-  final CashbookEntry item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = item.isIncome ? AppColors.success : AppColors.error;
-    final amount = formatShekelAmount(item.amount);
-    return Material(
-      color: AppColors.backgroundSecondary,
-      borderRadius: AppRadius.rlg,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.rlg,
-        child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: AppRadius.rlg,
-          border: Border.all(
-            color: AppColors.textMuted.withValues(alpha: 0.12),
-          ),
-        ),
-        child: Row(
+      builder: (ctx) {
+        return Directionality(
           textDirection: TextDirection.rtl,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: (!kIsWeb &&
-                      item.imagePath != null &&
-                      item.imagePath!.isNotEmpty)
-                  ? Image.file(
-                      File(item.imagePath!),
-                      fit: BoxFit.cover,
-                    )
-                  : Icon(
-                      item.isIncome
-                          ? LucideIcons.trendingUp
-                          : LucideIcons.trendingDown,
-                      size: 18,
-                      color: color,
-                    ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'عرض الحركات',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  _sheetTile('كل الحركات', _LedgerFilter.all),
+                  _sheetTile('وارد فقط', _LedgerFilter.income),
+                  _sheetTile('صادر فقط', _LedgerFilter.expense),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _sheetTile(String title, _LedgerFilter f) {
+    final sel = _filter == f;
+    return ListTile(
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: sel ? FontWeight.w900 : FontWeight.w600,
+          color: sel ? AppColors.primary : AppColors.textPrimary,
+        ),
+      ),
+      trailing: Icon(
+        sel ? Icons.check_circle : Icons.circle_outlined,
+        color: sel ? AppColors.primary : Colors.grey.shade400,
+      ),
+      onTap: () {
+        setState(() => _filter = f);
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  void _openRow(UnifiedLedgerRowUi row) {
+    void push(Widget w) {
+      Navigator.push<void>(
+        context,
+        AppPageRoute<void>(builder: (_) => w),
+      );
+    }
+
+    if (row.isCashbook && row.cashbookEntry != null) {
+      push(CashbookEntryDetailScreen(entry: row.cashbookEntry!));
+      return;
+    }
+    final tid = row.debtTransactionId;
+    if (tid == null) return;
+    TransactionUi? found;
+    for (final t in ref.read(transactionsProvider)) {
+      if (t.id == tid) {
+        found = t;
+        break;
+      }
+    }
+    final debtor =
+        found != null ? ref.read(debtorByIdProvider(found.customerId)) : null;
+    if (debtor != null) {
+      push(CustomerDetailScreen(debtor: debtor));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    void push(Widget w) {
+      Navigator.push<void>(
+        context,
+        AppPageRoute<void>(builder: (_) => w),
+      );
+    }
+
+    final unifiedAll = ref.watch(unifiedLedgerRowsProvider);
+    final hidden = ref.watch(hideBalanceProvider);
+    final rows = [..._filtered(unifiedAll)]
+      ..sort((a, b) => b.sortTime.compareTo(a.sortTime));
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        floatingActionButton: FloatingActionButton.extended(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          onPressed: () => push(const CashEntryScreen(initialIncome: true)),
+          icon: const Icon(LucideIcons.plus, size: 20),
+          label: const Text(
+            'تسجيل حركة',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+        floatingActionButtonLocation:
+            FloatingActionButtonLocation.centerFloat,
+        backgroundColor: const Color(0xFFF2F6FA),
+        extendBodyBehindAppBar: false,
+        appBar: AppBar(
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [
+                  Color(0xFF1A0A24),
+                  AppColors.primaryDark,
+                  AppColors.primary,
+                ],
+                stops: [0.0, 0.52, 1.0],
+              ),
+            ),
+          ),
+          leadingWidth: 48,
+          leading: BackButton(
+            color: Colors.white,
+            onPressed: () => Navigator.maybePop(context),
+          ),
+          title: const Text(
+            'الأرشيف',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
                 textDirection: TextDirection.rtl,
                 children: [
-                  Text(
-                    item.title,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'سجل الحركات',
+                        style: AppTextStyles.titleSmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.2,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
                   ),
-                  if (item.category != null && item.category!.isNotEmpty)
-                    Text(
-                      item.category!,
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
+                  Tooltip(
+                    message: 'التصفية: ${_filterLabel()}',
+                    child: Material(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(999),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(999),
+                        onTap: _showFilterSheet,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                LucideIcons.slidersHorizontal,
+                                size: 14,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _filterLabel(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 11.5,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  Text(
-                    _dateLine(item.date),
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.textMuted,
+                  ),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 12),
+                    child: Text(
+                      '${rows.length} عملية',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: Text(
-                '${item.isIncome ? '+' : '-'} $amount ₪',
-                style: AppTextStyles.titleSmall.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+            Expanded(
+              child: rows.isEmpty
+                  ? SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: 88),
+                      child:
+                          unifiedAll.isEmpty
+                              ? _EmptyLedger(onAddIncome: () {
+                                  push(const CashEntryScreen(
+                                    initialIncome: true,
+                                  ));
+                                })
+                              : _EmptyFilteredState(
+                                  hasAnyEntries: true,
+                                  filter: _filter,
+                                ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        0,
+                        AppSpacing.lg,
+                        112,
+                      ),
+                      itemCount: rows.length,
+                      separatorBuilder:
+                          (context, index) => const SizedBox(height: 10),
+                      itemBuilder: (context, i) {
+                        final row = rows[i];
+                        return _ArchiveLedgerTile(
+                          row: row,
+                          hideAmount: hidden,
+                          onTap: () => _openRow(row),
+                        );
+                      },
+                    ),
             ),
           ],
-        ),
         ),
       ),
     );
   }
 }
 
-class _EmptyState extends StatelessWidget {
+class _EmptyFilteredState extends StatelessWidget {
+  const _EmptyFilteredState({
+    required this.hasAnyEntries,
+    required this.filter,
+  });
+
+  final bool hasAnyEntries;
+  final _LedgerFilter filter;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasAnyEntries) {
+      return const SizedBox.shrink();
+    }
+    final msg = switch (filter) {
+      _LedgerFilter.income => 'لا توجد حركات وارد ضمن هذا العرض.',
+      _LedgerFilter.expense =>
+        'لا توجد حركات صادر ضمن هذا العرض.',
+      _ => '',
+    };
+    if (msg.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 28),
+      child: Center(
+        child: Text(
+          msg,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textMuted,
+            height: 1.45,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _formatArchiveDate(DateTime d) {
+  final now = DateTime.now();
+  if (d.year == now.year &&
+      d.month == now.month &&
+      d.day == now.day) {
+    return 'اليوم ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  }
+  return '${d.day}/${d.month}/${d.year}';
+}
+
+class _ArchiveLedgerTile extends StatelessWidget {
+  const _ArchiveLedgerTile({
+    required this.row,
+    required this.hideAmount,
+    required this.onTap,
+  });
+
+  final UnifiedLedgerRowUi row;
+  final bool hideAmount;
+  final VoidCallback onTap;
+
+  Color _accent() {
+    if (row.isCashbook && row.cashbookEntry != null) {
+      final e = row.cashbookEntry!;
+      return e.isIncome ? Colors.green : Colors.deepOrange;
+    }
+    return row.deltaSigned >= 0 ? Colors.green : Colors.deepOrange;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _accent();
+    final absAmt = row.deltaSigned.abs();
+    final amountStr =
+        hideAmount ? obscureAmountText() : formatShekelAmount(absAmt);
+
+    Widget leadingIcon() {
+      if (row.isCashbook && row.cashbookEntry != null) {
+        final e = row.cashbookEntry!;
+        return (!kIsWeb && e.imagePath != null && e.imagePath!.isNotEmpty)
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(File(e.imagePath!), fit: BoxFit.cover),
+              )
+            : Icon(
+                e.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+                color: c,
+                size: 20,
+              );
+      }
+      return Icon(row.icon, color: c, size: 20);
+    }
+
+    return Material(
+      color: Colors.white,
+      elevation: 0,
+      borderRadius: AppRadius.rlg,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.rlg,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.rlg,
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              SizedBox(
+                width: 42,
+                height: 42,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: c.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Center(child: leadingIcon()),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  textDirection: TextDirection.rtl,
+                  children: [
+                    Text(
+                      row.headline,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (row.detailLine.isNotEmpty && row.detailLine != '—')
+                      Text(
+                        row.detailLine,
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    Text(
+                      _formatArchiveDate(row.sortTime),
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Text(
+                  '${row.deltaSigned >= 0 ? '+' : '-'} $amountStr ₪',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    color: c,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyLedger extends StatelessWidget {
+  const _EmptyLedger({required this.onAddIncome});
+
+  final VoidCallback onAddIncome;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -465,11 +526,22 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'سجّل دخلاً أو مصروفاً من الأعلى لبدء المتابعة',
+            'سجّل حركتك من الصافي أو دفتر الديون، أو بالزر أدناه.',
             textAlign: TextAlign.center,
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textMuted,
               height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: onAddIncome,
+            icon: const Icon(LucideIcons.plus),
+            label: const Text('تسجيل دخل أو مصروف'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
           ),
         ],

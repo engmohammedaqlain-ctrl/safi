@@ -10,13 +10,57 @@ import 'package:safi/core/router/app_page_route.dart';
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_snackbar.dart';
+import '../../debts/providers/debts_ui_provider.dart';
+import '../../debts/screens/customer_detail_screen.dart';
 import '../../sales/models/cashbook_entry.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
+import '../../sales/providers/unified_ledger_math.dart';
 import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
 import 'cashbook_entry_detail_screen.dart';
 import 'cash_entry_screen.dart';
 import 'financial_accounts_screen.dart' show AccountFormScreen;
+
+String? _resolvedCashAccountId(
+  CashbookEntry e,
+  List<FinancialAccount> accs,
+) {
+  final a = e.accountId;
+  if (a != null && a.isNotEmpty) return a;
+  return accs.isNotEmpty ? accs.first.id : null;
+}
+
+/// هل هذه المعاملة المالية الدينية مستخدمة على هذه المحفظة (`payMethodId` أو قيم legacy).
+bool _payTouchesWallet(
+  TransactionUi tx,
+  FinancialAccount acc,
+  List<FinancialAccount> accounts,
+) {
+  final pid = tx.payMethodId;
+  if (pid == null || pid.isEmpty) return false;
+  if (pid == acc.id) return true;
+
+  AccountType? legacyType;
+  switch (pid) {
+    case 'cash':
+      legacyType = AccountType.cash;
+      break;
+    case 'wallet':
+      legacyType = AccountType.wallet;
+      break;
+    case 'bank':
+      legacyType = AccountType.bank;
+      break;
+    default:
+      return false;
+  }
+
+  if (acc.type != legacyType) return false;
+  final same = accounts.where((a) => a.type == legacyType).toList()
+    ..sort((a, b) => a.id.compareTo(b.id));
+  if (same.isEmpty) return false;
+  return same.first.id == acc.id;
+}
 
 /// تفاصيل محفظة واحدة:
 /// - بطاقة الرصيد + معلومات الحساب
@@ -63,14 +107,44 @@ class WalletDetailScreen extends ConsumerWidget {
 
     final hidden = ref.watch(hideBalanceProvider);
     final allEntries = ref.watch(cashbookEntriesProvider);
-    final entries =
-        allEntries.where((e) => e.accountId == acc.id).toList(growable: false);
+    final allTx = ref.watch(transactionsProvider);
+    final debtors = ref.watch(debtorsUiProvider);
 
-    final income =
-        entries.where((e) => e.isIncome).fold<double>(0, (s, e) => s + e.amount);
-    final expense = entries
+    final cashEntries = allEntries.where((e) {
+      final rid = _resolvedCashAccountId(e, accounts);
+      return rid == acc.id;
+    }).toList(growable: false);
+
+    final debtTxs = allTx
+        .where((t) => _payTouchesWallet(t, acc, accounts))
+        .toList(growable: false);
+
+    final cashIncome = cashEntries
+        .where((e) => e.isIncome)
+        .fold<double>(0, (s, e) => s + e.amount);
+    final cashExpense = cashEntries
         .where((e) => !e.isIncome)
         .fold<double>(0, (s, e) => s + e.amount);
+
+    final debtIncome = debtTxs
+        .where((t) => t.type == TransactionType.received)
+        .fold<double>(0, (s, t) => s + t.amount);
+    final debtExpense = debtTxs
+        .where((t) => t.type == TransactionType.gave)
+        .fold<double>(0, (s, t) => s + t.amount);
+
+    final income = cashIncome + debtIncome;
+    final expense = cashExpense + debtExpense;
+    final movementCount = cashEntries.length + debtTxs.length;
+
+    final combined = <({DateTime t, CashbookEntry? c, TransactionUi? d})>[];
+    for (final e in cashEntries) {
+      combined.add((t: e.date, c: e, d: null));
+    }
+    for (final t in debtTxs) {
+      combined.add((t: t.date, c: null, d: t));
+    }
+    combined.sort((a, b) => b.t.compareTo(a.t));
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -112,7 +186,7 @@ class WalletDetailScreen extends ConsumerWidget {
               income: income,
               expense: expense,
               hidden: hidden,
-              count: entries.length,
+              count: movementCount,
             ),
             const SizedBox(height: 16),
             Row(
@@ -187,7 +261,7 @@ class WalletDetailScreen extends ConsumerWidget {
             Row(
               children: [
                 Text(
-                  'الحركات (${entries.length})',
+                  'الحركات ($movementCount)',
                   style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 16,
@@ -197,25 +271,52 @@ class WalletDetailScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
-            if (entries.isEmpty)
+            if (combined.isEmpty)
               const _EmptyMovements()
             else
-              ...entries.map(
-                (e) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _MovementTile(
-                    entry: e,
-                    hidden: hidden,
-                    onOpen: () {
-                      Navigator.push<void>(
-                        context,
-                        AppPageRoute<void>(
-                          builder: (_) => CashbookEntryDetailScreen(entry: e),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+              ...combined.map(
+                (row) {
+                  if (row.c != null) {
+                    final e = row.c!;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _MovementTile(
+                        entry: e,
+                        hidden: hidden,
+                        onOpen: () {
+                          Navigator.push<void>(
+                            context,
+                            AppPageRoute<void>(
+                              builder: (_) =>
+                                  CashbookEntryDetailScreen(entry: e),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  }
+                  final t = row.d!;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _DebtWalletTile(
+                      tx: t,
+                      debtors: debtors,
+                      hidden: hidden,
+                      onOpen: () {
+                        final debtor =
+                            ref.read(debtorByIdProvider(t.customerId));
+                        if (debtor == null) return;
+                        Navigator.push<void>(
+                          context,
+                          AppPageRoute<void>(
+                            builder: (_) =>
+                                CustomerDetailScreen(debtor: debtor),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
           ],
         ),
@@ -623,6 +724,122 @@ String _formatDate(DateTime d) {
     return 'اليوم ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
   return '${d.day}/${d.month}/${d.year}';
+}
+
+class _DebtWalletTile extends StatelessWidget {
+  const _DebtWalletTile({
+    required this.tx,
+    required this.debtors,
+    required this.hidden,
+    required this.onOpen,
+  });
+
+  final TransactionUi tx;
+  final List<DebtorUi> debtors;
+  final bool hidden;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final isGave = tx.type == TransactionType.gave;
+    final c = isGave ? Colors.deepOrange : Colors.green;
+    final amount =
+        hidden ? obscureAmountText() : formatShekelAmount(tx.amount);
+    final name = UnifiedLedgerMath.debtName(debtors, tx.customerId);
+    final headline =
+        isGave ? 'أعطيت — عبر المحفظة' : 'سداد — إلى المحفظة';
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+          ),
+          child: Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  LucideIcons.bookMarked,
+                  color: c,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      headline,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      name,
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      _formatDate(tx.date),
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${isGave ? '-' : '+'} $amount',
+                      style: TextStyle(
+                        color: c,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      ' ₪',
+                      style: TextStyle(
+                        color: c,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _MovementTile extends StatelessWidget {

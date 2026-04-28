@@ -35,6 +35,14 @@ dependencies:
   flutter_contacts: ^2.0.2
   permission_handler: ^12.0.1
   image_picker: ^1.2.1
+  firebase_core: ^4.7.0
+  firebase_auth: ^6.4.0
+  cloud_firestore: ^6.3.0
+  characters: ^1.4.0
+  connectivity_plus: ^7.1.1
+  printing: ^5.13.3
+  syncfusion_flutter_pdf: ^33.2.4
+  google_generative_ai: ^0.4.7
 
 dev_dependencies:
   flutter_test:
@@ -43,6 +51,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/fonts/thmanyahsans-Regular.otf
+    - assets/fonts/thmanyahsans-Black.otf
+    - assets/fonts/Amiri-Regular.ttf
+    - assets/fonts/Amiri-Bold.ttf
 
   fonts:
     - family: ThmanyahSans

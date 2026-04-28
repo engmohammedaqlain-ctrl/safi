@@ -1,14 +1,21 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../../core/auth/firestore_registered_phone_auth.dart';
+import '../../../core/auth/phone_e164.dart';
 import '../../../core/bootstrap/app_session.dart';
+import '../../../core/network/connectivity_status.dart';
+import '../../../core/sync/post_login_loading.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_snackbar.dart';
+import '../../../core/widgets/light_loading_overlay.dart';
 import '../../../core/widgets/safi_button.dart';
 import '../../../core/widgets/vault_branded_shell.dart';
 
@@ -21,10 +28,14 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phone = TextEditingController();
+
   var _showOtp = false;
   var _submitting = false;
   String _otpCode = '';
   final _otpKey = GlobalKey<OtpCodeFieldState>();
+
+  /// هل رقم الهاتف له مستند في [registered_phones] (يُحمَّل الاسم بعدها).
+  bool _listedInFirestore = false;
 
   @override
   void dispose() {
@@ -32,186 +43,320 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _continue() async {
-    if (_submitting) return;
-    if (!_showOtp) {
-      if (_phone.text.trim().length < 8) {
-        showAppSnackBar(context, 'أدخل رقماً صحيحاً');
-        return;
-      }
-      setState(() => _showOtp = true);
+  Future<void> _afterFirebaseSignIn({
+    required String rawDigits,
+    String? displayNameFromFirestore,
+  }) async {
+    final docId = FirestoreRegisteredPhoneAuth.documentIdFromE164(
+      phoneDigitsToE164(rawDigits),
+    );
+    await ref.read(appSessionProvider.notifier).onLoginSuccess(
+          phoneDocId: docId,
+          displayNameFromFirestore: displayNameFromFirestore,
+        );
+  }
+
+  /// يفرِّق بين: موجود في Firestore (مسموح ومُدار) أو لم يُسجَّل بعد (إنشاء عبر Firebase Auth المعتادة).
+  Future<void> _beginOtpStep() async {
+    final raw = _phone.text.trim();
+    if (raw.length < 8) {
+      showAppSnackBar(context, 'أدخل رقماً صحيحاً');
       return;
     }
-    if (_otpCode.length < OtpCodeField.otpLength) {
-      showAppSnackBar(context, 'أدخل الأرقام الستة لرمز التحقق');
+    final online = await checkDeviceOnlineNow();
+    if (!online) {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'فعّل الإنترنت للتحقّق من رقم المتجر ومزامنة البيانات.',
+        );
+      }
       return;
     }
     setState(() => _submitting = true);
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 380));
+      try {
+        phoneDigitsToE164(raw);
+      } on FormatException {
+        if (!mounted) return;
+        showAppSnackBar(
+          context,
+          'تنسيق الرقم غير مدعوم. جرّب إدخال الرقم كاملاً مع المفتاح الدولي.',
+        );
+        return;
+      }
+      DocumentSnapshot<Map<String, dynamic>>? snap;
+      try {
+        snap =
+            await FirestoreRegisteredPhoneAuth.lookupPhone(raw); // مستند موجود / null
+      } catch (e, st) {
+        debugPrint('Firestore lookupPhone: $e\n$st');
+        if (!mounted) return;
+        showAppSnackBar(
+          context,
+          'تعذر مراجعة رقم المتجر ضد Firestore. تحقّق من الاتصال.',
+        );
+        return;
+      }
       if (!mounted) return;
-      await ref.read(appSessionProvider.notifier).onLoginSuccess();
+      setState(() {
+        _showOtp = true;
+        _otpCode = '';
+        _listedInFirestore = snap != null;
+      });
+      _otpKey.currentState?.clear();
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
   }
 
+  Future<void> _confirmOtp() async {
+    if (_otpCode.length < OtpCodeField.otpLength) {
+      showAppSnackBar(context, 'أدخل الأرقام الستة لرمز الدخول');
+      return;
+    }
+    if (_otpCode != FirestoreRegisteredPhoneAuth.otpForLogin) {
+      showAppSnackBar(context, 'رمز الدخول غير صحيح');
+      return;
+    }
+    final online = await checkDeviceOnlineNow();
+    if (!online) {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'يجب اتصال بالإنترنت لتحميل بيانات المتجر من السحابة وحفظها للعمل بدون شبكة.',
+        );
+      }
+      return;
+    }
+    ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(true);
+    final raw = _phone.text.trim();
+    setState(() => _submitting = true);
+    try {
+      await FirestoreRegisteredPhoneAuth.signInWithRegisteredPhoneAllowed(
+        rawPhoneDigits: raw,
+      );
+      if (_listedInFirestore) {
+        await FirestoreRegisteredPhoneAuth.mergePhoneRegistryDocFromLogin(raw);
+      }
+      String? displayName;
+      if (_listedInFirestore) {
+        try {
+          final snap = await FirestoreRegisteredPhoneAuth.lookupPhone(raw);
+          displayName = snap?.data()?['displayName'] as String?;
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      await _afterFirebaseSignIn(
+        rawDigits: raw,
+        displayNameFromFirestore: displayName,
+      );
+    } on FirebaseAuthException catch (e) {
+      ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(false);
+      if (mounted) {
+        showAppSnackBar(context, _authErrorAr(e));
+      }
+    } catch (e, st) {
+      ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(false);
+      debugPrint('$e\n$st');
+      if (mounted) {
+        showAppSnackBar(context, 'تعذر إكمال الدخول. حاول لاحقاً.');
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  String _authErrorAr(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'wrong-password':
+      case 'invalid-credential':
+      case 'user-not-found':
+        return 'لم نستطع المصادقة. تأكّد أن «البريد/كلمة المرور» مفعَّل في Firebase، وألا يكون هذا الحساب مُنشأ سابقاً بكلمة مختلفة خارج التطبيق.';
+      case 'network-request-failed':
+        return 'لا يوجد اتصال؛ حاول لاحقاً.';
+      case 'too-many-requests':
+        return 'محاولات كثيرة؛ انتظر ثم حاول.';
+      default:
+        return e.message ?? 'فشل تسجيل الدخول';
+    }
+  }
+
+  Future<void> _continue() async {
+    if (_submitting) return;
+    if (!_showOtp) {
+      await _beginOtpStep();
+      return;
+    }
+    await _confirmOtp();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return VaultBrandedShell(
-      headerSubtitle: _showOtp
-          ? 'أدخل الرمز الستّي المرسل عبر الرسائل'
-          : 'تسجيل دخول آمن',
-      belowBrand: Center(
-        child: _LoginStepIndicator(onOtpStep: _showOtp),
-      ),
-      sheet: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                24,
-                AppSpacing.lg,
-                12,
-              ),
-              child: Column(
-                children: [
-                  Material(
-                    color: AppColors.backgroundSecondary,
-                    borderRadius: AppRadius.rxl,
-                    elevation: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: AppRadius.rxl,
-                        border: Border.all(color: AppColors.outlineSoft),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.07),
-                            blurRadius: 20,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (!_showOtp) ...[
-                            Text(
-                              'رقم الهاتف',
-                              style: AppTextStyles.titleSmall.copyWith(
-                                color: const Color(0xFF12121F),
-                              ),
+    return LightLoadingOverlay(
+      visible: _submitting,
+      semanticLabel: 'جاري التحقق',
+      child: VaultBrandedShell(
+        headerSubtitle: _showOtp
+            ? 'أدخل رمز الدخول الافتراضي (${FirestoreRegisteredPhoneAuth.otpForLogin})'
+            : 'تسجيل دخول آمن',
+        belowBrand: Center(child: _LoginStepIndicator(onOtpStep: _showOtp)),
+        sheet: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  24,
+                  AppSpacing.lg,
+                  12,
+                ),
+                child: Column(
+                  children: [
+                    Material(
+                      color: AppColors.backgroundSecondary,
+                      borderRadius: AppRadius.rxl,
+                      elevation: 0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: AppRadius.rxl,
+                          border: Border.all(color: AppColors.outlineSoft),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.07),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
                             ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _phone,
-                              keyboardType: TextInputType.phone,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              decoration: const InputDecoration(
-                                hintText: 'مثال: 599123456',
-                                prefixIcon: Icon(
-                                  LucideIcons.smartphone,
-                                  color: AppColors.primary,
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (!_showOtp) ...[
+                              Text(
+                                'رقم الهاتف',
+                                style: AppTextStyles.titleSmall.copyWith(
+                                  color: const Color(0xFF12121F),
                                 ),
                               ),
-                            ),
-                          ] else ...[
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _phone,
+                                keyboardType: TextInputType.phone,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                decoration: const InputDecoration(
+                                  hintText: 'مثال: 599123456 أو 9665…',
+                                  prefixIcon: Icon(
                                     LucideIcons.smartphone,
-                                    size: 16,
                                     color: AppColors.primary,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _phone.text,
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.w600,
+                              ),
+                            ] else ...[
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      LucideIcons.smartphone,
+                                      size: 16,
+                                      color: AppColors.primary,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'أدخل رمز التحقق المُرسل عبر SMS',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.textMuted,
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _phone.text,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            OtpCodeField(
-                              key: _otpKey,
-                              onCodeChanged: (s) {
-                                setState(() => _otpCode = s);
-                              },
-                            ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _listedInFirestore
+                                    ? 'رقمك موجود في قائمة المتجر؛ أدخل 123456 (نفس كلمة مرور الحساب في Firebase).'
+                                    : 'رقمك غير مُدرَج في القائمة بعد؛ بعد الرمز 123456 يُجرى إنشاء مستخدم جديد في Firebase تلقائياً إن لم يكن له حساب، أو الدخول إن وُجد.',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              OtpCodeField(
+                                key: _otpKey,
+                                onCodeChanged: (s) {
+                                  setState(() => _otpCode = s);
+                                },
+                              ),
+                            ],
+                            if (_showOtp) ...[
+                              const SizedBox(height: 6),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  TextButton(
+                                    onPressed: _submitting
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _showOtp = false;
+                                              _otpCode = '';
+                                              _listedInFirestore = false;
+                                            });
+                                            _otpKey.currentState?.clear();
+                                          },
+                                    child: const Text('تصحيح رقم الهاتف'),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
-                          if (_showOtp) ...[
-                            const SizedBox(height: 6),
-                            TextButton(
-                              onPressed: _submitting
-                                  ? null
-                                  : () {
-                                      setState(() {
-                                        _showOtp = false;
-                                        _otpCode = '';
-                                      });
-                                      _otpKey.currentState?.clear();
-                                    },
-                              child: const Text('تصحيح رقم الهاتف'),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'بمتابعة الدخول تؤكد موافقتك على استخدام التطبيق لإدارة متجرك.',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.textMuted,
-                      height: 1.4,
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'بمتابعة الدخول تؤكد موافقتك على استخدام التطبيق لإدارة متجرك.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.textMuted,
+                        height: 1.4,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          const VaultTrustStrip(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.sm,
-              AppSpacing.lg,
-              AppSpacing.lg,
+            const VaultTrustStrip(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
+              child: SafiButton(
+                label: _showOtp
+                    ? (_submitting ? 'جاري الدخول...' : 'تأكيد والدخول')
+                    : 'متابعة',
+                icon: _showOtp ? LucideIcons.check : null,
+                onPressed: _submitting ? null : _continue,
+              ),
             ),
-            child: SafiButton(
-              label: _showOtp
-                  ? (_submitting ? 'جاري التحقق...' : 'تأكيد والدخول')
-                  : 'إرسال رمز التحقق',
-              icon: _showOtp ? LucideIcons.check : null,
-              onPressed: _submitting ? null : _continue,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

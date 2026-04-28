@@ -8,6 +8,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_snackbar.dart';
+import '../../../core/widgets/glass_card.dart';
 import '../../cash_flow/data/financial_account_model.dart';
 import '../../cash_flow/providers/accounts_provider.dart';
 import '../providers/debts_ui_provider.dart';
@@ -19,7 +20,8 @@ class RecordPaymentScreen extends ConsumerStatefulWidget {
   final DebtorUi? forCustomer;
 
   @override
-  ConsumerState<RecordPaymentScreen> createState() => _RecordPaymentScreenState();
+  ConsumerState<RecordPaymentScreen> createState() =>
+      _RecordPaymentScreenState();
 }
 
 class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
@@ -42,27 +44,43 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
   void _onKey(String k) {
     setState(() {
       if (k == 'C') {
-        _displayNum = ''; _acc = 0; _pendingOp = null; _fresh = true; _expr = '';
+        _displayNum = '';
+        _acc = 0;
+        _pendingOp = null;
+        _fresh = true;
+        _expr = '';
       } else if (k == '⌫') {
         _displayNum = _displayNum.length > 1
-            ? _displayNum.substring(0, _displayNum.length - 1) : '';
+            ? _displayNum.substring(0, _displayNum.length - 1)
+            : '';
       } else if ('0123456789.'.contains(k)) {
-        if (_fresh) { _displayNum = k == '.' ? '0.' : k; _fresh = false; }
-        else { if (k == '.' && _displayNum.contains('.')) return; _displayNum += k; }
+        if (_fresh) {
+          _displayNum = k == '.' ? '0.' : k;
+          _fresh = false;
+        } else {
+          if (k == '.' && _displayNum.contains('.')) return;
+          _displayNum += k;
+        }
       } else if (['+', '-', 'x', '/'].contains(k)) {
         final cur = double.tryParse(_displayNum) ?? 0;
         if (_pendingOp != null) {
           _acc = _calc(_acc, cur, _pendingOp!);
           _expr += '$_displayNum$k';
-        } else { _acc = cur; _expr = '$_displayNum$k'; }
-        _pendingOp = k; _fresh = true; _displayNum = '';
+        } else {
+          _acc = cur;
+          _expr = '$_displayNum$k';
+        }
+        _pendingOp = k;
+        _fresh = true;
+        _displayNum = '';
       } else if (k == '=') {
         final cur = double.tryParse(_displayNum) ?? 0;
         if (_pendingOp != null) {
           _acc = _calc(_acc, cur, _pendingOp!);
           _expr += _displayNum;
           _displayNum = _fmtNum(_acc);
-          _pendingOp = null; _fresh = true;
+          _pendingOp = null;
+          _fresh = true;
         }
       } else if (k == '%') {
         final v = double.tryParse(_displayNum) ?? 0;
@@ -73,11 +91,16 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
 
   double _calc(double a, double b, String op) {
     switch (op) {
-      case '+': return a + b;
-      case '-': return a - b;
-      case 'x': return a * b;
-      case '/': return b != 0 ? a / b : 0;
-      default: return b;
+      case '+':
+        return a + b;
+      case '-':
+        return a - b;
+      case 'x':
+        return a * b;
+      case '/':
+        return b != 0 ? a / b : 0;
+      default:
+        return b;
     }
   }
 
@@ -85,6 +108,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
       v == v.toInt() ? v.toInt().toString() : v.toStringAsFixed(2);
 
   void _submit() {
+    if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
     if (_pendingOp != null) _onKey('=');
     final amount = _displayValue;
@@ -95,7 +119,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
 
     if (_payMethod == null) {
       setState(() => _isSubmitting = false);
-      showAppSnackBar(context, 'الرجاء اختيار محفظة من القائمة');
+      showAppSnackBar(context, 'الرجاء اختيار محفظة التسديد');
       return;
     }
 
@@ -110,6 +134,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
       payMethodId: _payMethod,
       imagePath: _imagePath,
     );
+    // Persist to UI Providers which sync to Local Storage & Firebase automatically
     ref.read(transactionsProvider.notifier).addTransaction(tx);
     ref.read(debtorsUiProvider.notifier).updateCustomerBalance(cid, -amount);
 
@@ -144,7 +169,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
@@ -154,11 +179,11 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          c?.name ?? '',
+          c?.name ?? 'تحصيل دين',
           style: const TextStyle(
             color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            fontSize: 20,
           ),
         ),
       ),
@@ -167,201 +192,285 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
           Expanded(
             child: CustomScrollView(
               slivers: [
-                SliverFillRemaining(
-                  hasScrollBody: false,
+                SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     child: Column(
-                      // في RTL: start = يمين الشاشة
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.max,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 4),
-                        Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              _displayText,
-                              textDirection: TextDirection.ltr,
-                              style: const TextStyle(
-                                fontSize: 42,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.flowIn,
-                              ),
-                            ),
+                        // Input Area
+                        GlassCard(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 24,
+                            horizontal: 20,
                           ),
-                          if (_expr.isNotEmpty)
-                            Align(
-                              alignment: AlignmentDirectional.centerStart,
-                              child: Text(
-                                '$_expr${_fresh ? '' : _displayNum}',
-                                textDirection: TextDirection.ltr,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'المبلغ المحصل',
+                                textAlign: TextAlign.right,
                                 style: TextStyle(
-                                    fontSize: 14, color: Colors.grey.shade500),
-                              ),
-                            ),
-
-                          if (_hasInput) ...[
-                            const SizedBox(height: 14),
-                            _chip(
-                              dateStr,
-                              LucideIcons.calendar,
-                              () {
-                              showModalBottomSheet(
-                                context: context,
-                                backgroundColor: Colors.white,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                  color: AppColors.textMuted,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                builder: (ctx) => SafeArea(
-                                  child: Container(
-                                    height: 400,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                              ),
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    _displayText,
+                                    textDirection: TextDirection.ltr,
+                                    style: const TextStyle(
+                                      fontSize: 54,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors
+                                          .flowIn, // Green because it's collection
+                                      letterSpacing: -1,
                                     ),
-                                    child: Column(
-                                      children: [
-                                        // مؤشر السحب (Drag Handle)
-                                        Container(
-                                          margin: const EdgeInsets.only(top: 12, bottom: 4),
-                                          width: 40,
-                                          height: 4,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey.shade300,
-                                            borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                              if (_expr.isNotEmpty)
+                                Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Text(
+                                    '$_expr${_fresh ? '' : _displayNum}',
+                                    textDirection: TextDirection.ltr,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.fastOutSlowIn,
+                          child: _hasInput
+                              ? Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    const SizedBox(height: 24),
+                                    Text(
+                                      'إلى محفظة:',
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    if (accounts.isEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 6,
+                                        ),
+                                        child: Text(
+                                          'لا توجد محافظ. أضف من «المحافظ والبنوك»',
+                                          textAlign: TextAlign.right,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: AppColors.warning,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Expanded(
-                                          child: Theme(
-                                            data: Theme.of(context).copyWith(
-                                              colorScheme: const ColorScheme.light(
-                                                primary: AppColors.primary, // لون التحديد
-                                                onSurface: Colors.black87, // لون الأيام
+                                      )
+                                    else
+                                      SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        reverse: true,
+                                        clipBehavior: Clip.none,
+                                        child: Row(
+                                          textDirection: TextDirection.rtl,
+                                          children: [
+                                            for (final a in accounts)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  left: 8,
+                                                ),
+                                                child: _payChipForAccount(a),
                                               ),
-                                            ),
-                                            child: CalendarDatePicker(
-                                              initialDate: _date,
-                                              firstDate: DateTime(2020),
-                                              lastDate: DateTime(2100),
-                                              onDateChanged: (d) {
-                                                setState(() => _date = d);
-                                                Navigator.pop(ctx);
-                                              },
-                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                    const SizedBox(height: 24),
+                                    // Date, Note, Image
+                                    Row(
+                                      textDirection: TextDirection.rtl,
+                                      children: [
+                                        Expanded(
+                                          child: _actionTile(
+                                            dateStr,
+                                            LucideIcons.calendarDays,
+                                            () {
+                                              showDatePicker(
+                                                context: context,
+                                                initialDate: _date,
+                                                firstDate: DateTime(2020),
+                                                lastDate: DateTime(2100),
+                                                builder: (ctx, child) => Theme(
+                                                  data: Theme.of(ctx).copyWith(
+                                                    colorScheme:
+                                                        const ColorScheme.light(
+                                                          primary:
+                                                              AppColors.primary,
+                                                        ),
+                                                  ),
+                                                  child: child!,
+                                                ),
+                                              ).then((d) {
+                                                if (d != null)
+                                                  setState(() => _date = d);
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: _actionTile(
+                                            _imagePath == null
+                                                ? 'أرفق إيصال'
+                                                : 'تم اختيار صورة',
+                                            LucideIcons.paperclip,
+                                            _pickImage,
+                                            isActive: _imagePath != null,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ),
-                              );
-                            },
-                              labelLtr: true,
-                            ),
-                            const SizedBox(height: 6),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceVariant,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.outlineSoft),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                textDirection: TextDirection.rtl,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 6),
-                                    child: Icon(
-                                      LucideIcons.list,
-                                      size: 16,
-                                      color: AppColors.textMuted,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _noteCtrl,
-                                      textAlign: TextAlign.right,
-                                      textDirection: TextDirection.rtl,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: AppColors.textSecondary,
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 4,
                                       ),
-                                      minLines: 1,
-                                      maxLines: 4,
-                                      keyboardType: TextInputType.multiline,
-                                      decoration: const InputDecoration(
-                                        hintText: 'ملاحظة...',
-                                        hintStyle: TextStyle(fontSize: 12),
-                                        border: InputBorder.none,
-                                        isDense: true,
-                                        contentPadding:
-                                            EdgeInsets.symmetric(vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: AppColors.outlineSoft,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.primary.withValues(
+                                              alpha: 0.03,
+                                            ),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        textDirection: TextDirection.rtl,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 14,
+                                            ),
+                                            child: Icon(
+                                              LucideIcons.penTool,
+                                              size: 18,
+                                              color: AppColors.textMuted,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: TextField(
+                                              controller: _noteCtrl,
+                                              textAlign: TextAlign.right,
+                                              textDirection: TextDirection.rtl,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                              minLines: 1,
+                                              maxLines: 3,
+                                              keyboardType:
+                                                  TextInputType.multiline,
+                                              decoration: InputDecoration(
+                                                hintText:
+                                                    'اكتب ملاحظة (اختياري)...',
+                                                hintStyle: TextStyle(
+                                                  fontSize: 13,
+                                                  color: AppColors.textMuted,
+                                                ),
+                                                border: InputBorder.none,
+                                                isDense: true,
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 14,
+                                                    ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            _chip(
-                              _imagePath == null
-                                  ? 'إضافة صورة'
-                                  : 'تغيير الصورة',
-                              LucideIcons.camera,
-                              _pickImage,
-                              labelLtr: false,
-                            ),
-                            if (_imagePath != null) ...[
-                              const SizedBox(height: 6),
-                              if (!kIsWeb)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Image.file(
-                                    File(_imagePath!),
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                  ),
+
+                                    if (_imagePath != null && !kIsWeb) ...[
+                                      const SizedBox(height: 16),
+                                      Stack(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            child: Image.file(
+                                              File(_imagePath!),
+                                              height: 140,
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 8,
+                                            right: 8,
+                                            child: InkWell(
+                                              onTap: () => setState(
+                                                () => _imagePath = null,
+                                              ),
+                                              child: CircleAvatar(
+                                                radius: 14,
+                                                backgroundColor: Colors.black
+                                                    .withValues(alpha: 0.6),
+                                                child: const Icon(
+                                                  LucideIcons.x,
+                                                  size: 16,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                    const SizedBox(height: 32),
+                                  ],
                                 )
-                              else
-                                Text(
-                                  'تم اختيار صورة',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                            ],
-                            const SizedBox(height: 8),
-                            if (accounts.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: Text(
-                                  'لا توجد محافظ. أضف من «المحافظ والبنوك»',
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.orange.shade800,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              )
-                            else
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
-                                alignment: WrapAlignment.start,
-                                textDirection: TextDirection.rtl,
-                                children: [
-                                  for (final a in accounts) _payChipForAccount(a),
-                                ],
-                              ),
-                          ],
-                        const SizedBox(height: 16),
+                              : const SizedBox(),
+                        ),
                       ],
                     ),
                   ),
@@ -370,21 +479,39 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              10,
+              20,
+              MediaQuery.of(context).padding.bottom + 10,
+            ),
             child: SizedBox(
-              width: double.infinity, height: 50,
+              width: double.infinity,
+              height: 56,
               child: ElevatedButton(
                 onPressed: _hasInput ? _submit : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.successLight,
-                  foregroundColor: AppColors.flowIn,
-                  disabledBackgroundColor: Colors.grey.shade100,
-                  elevation: 0,
+                  backgroundColor:
+                      AppColors.flowIn, // Green for receiving payment
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.textMuted.withValues(
+                    alpha: 0.3,
+                  ),
+                  elevation: 6,
+                  shadowColor: AppColors.flowIn.withValues(alpha: 0.4),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Text('تسجيل', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: _isSubmitting
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'تسجيل التحصيل',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -395,38 +522,58 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     );
   }
 
-  Widget _chip(
+  Widget _actionTile(
     String label,
     IconData icon,
     VoidCallback onTap, {
-    bool labelLtr = true,
+    bool isActive = false,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.outlineSoft),
+            color: isActive
+                ? AppColors.primary.withValues(alpha: 0.1)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isActive ? AppColors.primary : AppColors.outlineSoft,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             textDirection: TextDirection.rtl,
             children: [
-              Icon(icon, size: 16, color: AppColors.textMuted),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                textDirection:
-                    labelLtr ? TextDirection.ltr : TextDirection.rtl,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
+              Icon(
+                icon,
+                size: 18,
+                color: isActive ? AppColors.primary : AppColors.textMuted,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textDirection: TextDirection.rtl,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isActive
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -444,23 +591,34 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
       child: InkWell(
         onTap: () => setState(() => _payMethod = _payMethod == id ? null : id),
         borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           constraints: const BoxConstraints(maxWidth: 220),
           decoration: BoxDecoration(
-            color: sel ? AppColors.primary : AppColors.surfaceVariant,
+            color: sel ? AppColors.primary : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: sel ? AppColors.primary : AppColors.outlineSoft,
+              width: sel ? 1.5 : 1,
             ),
+            boxShadow: sel
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
           ),
           child: Text(
             a.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: sel ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
               color: sel ? Colors.white : AppColors.textSecondary,
             ),
           ),

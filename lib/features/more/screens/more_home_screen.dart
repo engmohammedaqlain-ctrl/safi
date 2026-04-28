@@ -8,7 +8,7 @@ import '../../../core/router/app_page_route.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../ai_assistant/screens/ai_assistant_screen.dart';
 import '../../debts/screens/all_customers_screen.dart';
-import '../../reports/screens/reports_screen.dart';
+import '../../reports/screens/unified_reports_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import 'notifications_screen.dart';
 
@@ -57,7 +57,7 @@ class MoreHomeScreen extends ConsumerWidget {
                   title: 'التقارير',
                   subtitle: 'تحليل الديون والمعاملات',
                   onTap: () => push(
-                    const ReportsScreen(bottomContentPadding: 32),
+                    const UnifiedReportsScreen(),
                   ),
                 ),
                 _MenuItem(

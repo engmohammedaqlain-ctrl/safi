@@ -10,6 +10,7 @@ class CashbookEntry {
     this.accountId,
     this.category,
     this.imagePath,
+    this.editedMs = 0,
   });
 
   final String id;
@@ -26,6 +27,35 @@ class CashbookEntry {
   /// مسار محلي لصورة مرفقة
   final String? imagePath;
 
+  /// أحدث وقت تعديل لتفضيل نسخة عند المزامنة
+  final int editedMs;
+
+  CashbookEntry copyWith({
+    String? id,
+    String? title,
+    double? amount,
+    bool? isIncome,
+    DateTime? date,
+    String? note,
+    String? accountId,
+    String? category,
+    String? imagePath,
+    int? editedMs,
+  }) {
+    return CashbookEntry(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      isIncome: isIncome ?? this.isIncome,
+      date: date ?? this.date,
+      note: note ?? this.note,
+      accountId: accountId ?? this.accountId,
+      category: category ?? this.category,
+      imagePath: imagePath ?? this.imagePath,
+      editedMs: editedMs ?? this.editedMs,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,
@@ -36,6 +66,7 @@ class CashbookEntry {
         'accountId': accountId,
         'category': category,
         'imagePath': imagePath,
+        'editedMs': editedMs,
       };
 
   factory CashbookEntry.fromJson(Map<String, dynamic> m) {
@@ -49,6 +80,7 @@ class CashbookEntry {
       accountId: m['accountId'] as String?,
       category: m['category'] as String?,
       imagePath: m['imagePath'] as String?,
+      editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
     );
   }
 }

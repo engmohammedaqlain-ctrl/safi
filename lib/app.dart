@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/bootstrap/app_session.dart';
 import 'core/router/main_shell.dart';
+import 'core/sync/ledger_sync_host.dart';
+import 'core/sync/post_login_loading.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/name_setup_screen.dart';
@@ -31,7 +33,7 @@ class SafiApp extends ConsumerWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      home: const _SessionRoot(),
+      home: const LedgerSyncHost(child: _SessionRoot()),
     );
   }
 }
@@ -48,7 +50,7 @@ class _SessionRoot extends ConsumerWidget {
       AppSessionPhase.login => const LoginScreen(),
       AppSessionPhase.nameSetup => const NameSetupScreen(),
       AppSessionPhase.onboarding => const OnboardingScreen(),
-      AppSessionPhase.main => const MainShell(),
+      AppSessionPhase.main => const _MainLoadedGate(),
     };
 
     return AnimatedSwitcher(
@@ -70,10 +72,56 @@ class _SessionRoot extends ConsumerWidget {
           ),
         );
       },
-      child: KeyedSubtree(
-        key: ValueKey(phase),
-        child: body,
-      ),
+      child: KeyedSubtree(key: ValueKey(phase), child: body),
+    );
+  }
+}
+
+/// انتظار أوّل جلب من Firebase بعد الدخول (يُزاد من شاشة تسجيل الدخول).
+class _MainLoadedGate extends ConsumerWidget {
+  const _MainLoadedGate();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loading = ref.watch(postLoginLedgerLoadingProvider);
+    final theme = Theme.of(context);
+
+    return Stack(
+      fit: StackFit.expand,
+      clipBehavior: Clip.none,
+      children: [
+        const MainShell(),
+        if (loading)
+          Positioned.fill(
+            child: AbsorbPointer(
+              absorbing: true,
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.42),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 18),
+                      Text(
+                        'جاري تحميل البيانات…',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ) ??
+                            const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -30,7 +30,8 @@ class CashbookNotifier extends Notifier<List<CashbookEntry>> {
   }
 
   void add(CashbookEntry e) {
-    state = [e, ...state];
+    final entry = e.copyWith(editedMs: DateTime.now().millisecondsSinceEpoch);
+    state = [entry, ...state];
     _persist();
   }
 
@@ -40,9 +41,12 @@ class CashbookNotifier extends Notifier<List<CashbookEntry>> {
   }
 
   void update(CashbookEntry updated) {
+    final entry = updated.copyWith(
+      editedMs: DateTime.now().millisecondsSinceEpoch,
+    );
     state = [
       for (final x in state)
-        if (x.id == updated.id) updated else x,
+        if (x.id == entry.id) entry else x,
     ];
     _persist();
   }

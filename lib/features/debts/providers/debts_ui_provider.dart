@@ -39,6 +39,7 @@ class TransactionUi {
     required this.date,
     this.payMethodId,
     this.imagePath,
+    this.editedMs = 0,
   });
 
   final String id;
@@ -53,6 +54,8 @@ class TransactionUi {
 
   /// مسار صورة اختيارية
   final String? imagePath;
+
+  final int editedMs;
 }
 
 /// أرقام ملخصة لرأس شاشة الديون
@@ -81,6 +84,8 @@ class DebtorUi {
     this.address,
     this.categoryIds = const [],
     this.isSupplier = false,
+    this.editedMs = 0,
+    this.doubleLedger = false,
   });
 
   final String id;
@@ -94,6 +99,12 @@ class DebtorUi {
 
   /// إذا كان المورد (true) بدلاً من العميل (false)
   final bool isSupplier;
+
+  /// أحدث وقت تعديل لتفضيل نسخة عند المزامنة
+  final int editedMs;
+
+  /// دفتر/حساب مزدوج اختياري للعميل
+  final bool doubleLedger;
 }
 
 Color urgencyToColor(DebtUrgency u) {
@@ -119,6 +130,8 @@ String _formatDateStatus(DateTime date) {
   return '${date.day}/${date.month}/${date.year}';
 }
 
+int _touchMs() => DateTime.now().millisecondsSinceEpoch;
+
 // ── Debtors Notifier ──
 
 class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
@@ -132,7 +145,22 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
   }
 
   void addCustomer(DebtorUi customer) {
-    state = [...state, customer];
+    final c = customer.editedMs == 0
+        ? DebtorUi(
+            id: customer.id,
+            name: customer.name,
+            phone: customer.phone,
+            address: customer.address,
+            amount: customer.amount,
+            status: customer.status,
+            urgency: customer.urgency,
+            categoryIds: customer.categoryIds,
+            isSupplier: customer.isSupplier,
+            editedMs: _touchMs(),
+            doubleLedger: customer.doubleLedger,
+          )
+        : customer;
+    state = [...state, c];
     _persist();
   }
 
@@ -150,6 +178,8 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
             urgency: d.urgency,
             categoryIds: d.categoryIds,
             isSupplier: d.isSupplier,
+            editedMs: _touchMs(),
+            doubleLedger: d.doubleLedger,
           )
         else
           d,
@@ -176,6 +206,8 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
               if (c != categoryId) c,
           ],
           isSupplier: d.isSupplier,
+          editedMs: _touchMs(),
+          doubleLedger: d.doubleLedger,
         ),
     ];
     _persist();
@@ -198,6 +230,8 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
             ),
             categoryIds: d.categoryIds,
             isSupplier: d.isSupplier,
+            editedMs: _touchMs(),
+            doubleLedger: d.doubleLedger,
           )
         else
           d,
@@ -273,7 +307,18 @@ class TransactionsNotifier extends Notifier<List<TransactionUi>> {
   }
 
   void addTransaction(TransactionUi tx) {
-    state = [...state, tx];
+    final bumped = TransactionUi(
+      id: tx.id,
+      customerId: tx.customerId,
+      amount: tx.amount,
+      type: tx.type,
+      note: tx.note,
+      date: tx.date,
+      payMethodId: tx.payMethodId,
+      imagePath: tx.imagePath,
+      editedMs: DateTime.now().millisecondsSinceEpoch,
+    );
+    state = [...state, bumped];
     _persist();
   }
 

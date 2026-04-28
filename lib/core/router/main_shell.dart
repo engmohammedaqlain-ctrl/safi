@@ -259,32 +259,11 @@ class _MainShellState extends ConsumerState<MainShell> {
                               ),
                             ),
                           ),
-                          child: SafeArea(
-                            top: false,
-                            child: NavigationBar(
-                              height: 65,
-                              backgroundColor: AppColors.backgroundSecondary,
-                              elevation: 0,
-                              selectedIndex: index,
-                              indicatorColor: AppColors.primary
-                                  .withValues(alpha: 0.1),
-                              onDestinationSelected: _onNavTap,
-                              destinations: const [
-                                NavigationDestination(
-                                  icon: Icon(LucideIcons.bookOpen, size: 22),
-                                  label: 'دفتر الديون',
-                                ),
-                                NavigationDestination(
-                                  icon: Icon(LucideIcons.wallet, size: 22),
-                                  label: 'الصافي',
-                                ),
-                                NavigationDestination(
-                                  icon:
-                                      Icon(LucideIcons.layoutGrid, size: 22),
-                                  label: 'المزيد',
-                                ),
-                              ],
-                            ),
+                          child: _SafiCompactBottomNav(
+                            index: index,
+                            onTap: _onNavTap,
+                            bottomInset:
+                                MediaQuery.paddingOf(context).bottom,
                           ),
                         ),
                       ],
@@ -295,6 +274,100 @@ class _MainShellState extends ConsumerState<MainShell> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  شريط سفلي ثلاثي — صف واحد بحيث يمتد كل تبويب بعرض المتاح (بدون فراغ أفقي كبير)
+// ══════════════════════════════════════════════════════════════
+class _SafiCompactBottomNav extends StatelessWidget {
+  const _SafiCompactBottomNav({
+    required this.index,
+    required this.onTap,
+    required this.bottomInset,
+  });
+
+  final int index;
+  final ValueChanged<int> onTap;
+  final double bottomInset;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget item(int i, IconData icon, String label) {
+      final sel = index == i;
+      return Expanded(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => onTap(i),
+            splashColor: AppColors.primary.withValues(alpha: 0.09),
+            highlightColor: AppColors.primary.withValues(alpha: 0.05),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: sel
+                          ? AppColors.primary.withValues(alpha: 0.12)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
+                      child: Icon(
+                        icon,
+                        size: sel ? 20 : 19,
+                        color:
+                            sel ? AppColors.primary : AppColors.textMuted,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: sel ? FontWeight.w800 : FontWeight.w600,
+                        color: sel ? AppColors.primary : AppColors.textMuted,
+                        height: 1.06,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Material(
+      color: AppColors.backgroundSecondary,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: SizedBox(
+          height: 58,
+          child: Row(
+            textDirection: TextDirection.rtl,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              item(0, LucideIcons.bookOpen, 'دفتر الديون'),
+              item(1, LucideIcons.wallet, 'الصافي'),
+              item(2, LucideIcons.layoutGrid, 'المزيد'),
+            ],
+          ),
+        ),
       ),
     );
   }

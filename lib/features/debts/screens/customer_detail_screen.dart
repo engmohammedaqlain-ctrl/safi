@@ -10,12 +10,13 @@ import '../../cash_flow/data/financial_account_model.dart';
 import '../../cash_flow/providers/accounts_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_snackbar.dart';
+import '../../../core/router/app_page_route.dart';
 import '../models/debt_category_model.dart';
 import '../providers/debt_categories_provider.dart';
 import '../providers/debts_ui_provider.dart';
+import '../../reports/screens/client_report_screen.dart';
 import 'add_debt_screen.dart';
 import 'record_payment_screen.dart';
-import 'package:safi/core/router/app_page_route.dart';
 
 class CustomerDetailScreen extends ConsumerWidget {
   const CustomerDetailScreen({super.key, required this.debtor});
@@ -165,7 +166,15 @@ class CustomerDetailScreen extends ConsumerWidget {
                       _QuickCircle(
                         icon: LucideIcons.fileText,
                         label: 'تقرير',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push<void>(
+                            context,
+                            AppPageRoute<void>(
+                              builder: (_) =>
+                                  ClientReportScreen(client: currentDebtor),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -192,10 +201,7 @@ class CustomerDetailScreen extends ConsumerWidget {
                     _buildEmptyState()
                   else
                     ...transactions.map(
-                      (tx) => _TransactionTile(
-                        debtor: currentDebtor,
-                        tx: tx,
-                      ),
+                      (tx) => _TransactionTile(debtor: currentDebtor, tx: tx),
                     ),
                 ],
               ),
@@ -577,10 +583,7 @@ void _openTransactionDetailSheet(
     useSafeArea: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.32),
-    builder: (ctx) => _TransactionDetailSheet(
-      debtor: debtor,
-      transaction: tx,
-    ),
+    builder: (ctx) => _TransactionDetailSheet(debtor: debtor, transaction: tx),
   );
 }
 
@@ -702,7 +705,10 @@ class _TransactionDetailSheet extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 18,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(16),
@@ -751,7 +757,10 @@ class _TransactionDetailSheet extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.07),
                       borderRadius: BorderRadius.circular(12),
@@ -824,7 +833,9 @@ class _TransactionDetailSheet extends ConsumerWidget {
                         if (tx.imagePath != null && tx.imagePath!.isNotEmpty) {
                           lines.add('صورة: مرفقة');
                         }
-                        Clipboard.setData(ClipboardData(text: lines.join('\n')));
+                        Clipboard.setData(
+                          ClipboardData(text: lines.join('\n')),
+                        );
                         Navigator.pop(context);
                         showAppSnackBar(context, 'تم نسخ تفاصيل المعاملة');
                       },
@@ -838,7 +849,10 @@ class _TransactionDetailSheet extends ConsumerWidget {
                       ),
                       child: const Text(
                         'مشاركة',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -897,7 +911,10 @@ class _TransactionDetailSheet extends ConsumerWidget {
                       ),
                       child: const Text(
                         'حذف',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
