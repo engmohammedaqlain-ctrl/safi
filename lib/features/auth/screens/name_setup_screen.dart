@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/widgets/safi_button.dart';
 import '../../../core/widgets/vault_branded_shell.dart';
 
@@ -29,9 +30,7 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
   void _save() {
     final name = _name.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إدخال اسمك')),
-      );
+      showAppSnackBar(context, 'الرجاء إدخال اسمك');
       return;
     }
     ref.read(appSessionProvider.notifier).saveName(name);

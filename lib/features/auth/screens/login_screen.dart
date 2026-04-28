@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/widgets/safi_button.dart';
 import '../../../core/widgets/vault_branded_shell.dart';
 
@@ -35,18 +36,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (_submitting) return;
     if (!_showOtp) {
       if (_phone.text.trim().length < 8) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('أدخل رقماً صحيحاً')));
+        showAppSnackBar(context, 'أدخل رقماً صحيحاً');
         return;
       }
       setState(() => _showOtp = true);
       return;
     }
     if (_otpCode.length < OtpCodeField.otpLength) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('أدخل الأرقام الستة لرمز التحقق')),
-      );
+      showAppSnackBar(context, 'أدخل الأرقام الستة لرمز التحقق');
       return;
     }
     setState(() => _submitting = true);

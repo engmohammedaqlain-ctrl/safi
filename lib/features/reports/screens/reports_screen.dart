@@ -7,6 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/ai_insight_card.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/vault_subpage_scaffold.dart';
 import '../providers/reports_ui_provider.dart';
 
 class ReportsScreen extends ConsumerWidget {
@@ -19,8 +20,8 @@ class ReportsScreen extends ConsumerWidget {
     final spots = ref.watch(pnlSpotsProvider);
     final bars = ref.watch(salesBarsProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('التقارير')),
+    return VaultSubpageScaffold(
+      title: 'التقارير',
       body: ListView(
         padding: EdgeInsets.fromLTRB(
           AppSpacing.lg,

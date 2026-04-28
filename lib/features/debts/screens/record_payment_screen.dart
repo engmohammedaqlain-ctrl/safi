@@ -7,9 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../cash_flow/data/financial_account_model.dart';
 import '../../cash_flow/providers/accounts_provider.dart';
-import 'package:safi/core/router/app_page_route.dart';
 import '../providers/debts_ui_provider.dart';
 import '../widgets/calculator_keypad.dart';
 import 'transaction_success_screen.dart';
@@ -95,11 +95,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
 
     if (_payMethod == null) {
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('الرجاء اختيار محفظة من القائمة'),
-        ),
-      );
+      showAppSnackBar(context, 'الرجاء اختيار محفظة من القائمة');
       return;
     }
 
@@ -120,13 +116,11 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     if (!context.mounted) return;
     Navigator.pushReplacement(
       context,
-      AppPageRoute(
-        builder: (_) => TransactionSuccessScreen(
-          customerName: widget.forCustomer!.name,
-          amount: amount,
-          type: TransactionType.received,
-          date: tx.date,
-        ),
+      TransactionSuccessScreen.route(
+        customerName: widget.forCustomer!.name,
+        amount: amount,
+        type: TransactionType.received,
+        date: tx.date,
       ),
     );
   }

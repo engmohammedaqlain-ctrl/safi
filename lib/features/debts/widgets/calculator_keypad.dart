@@ -9,7 +9,7 @@ const double _kKeyH = 50.0;
 const double _kRowGap = 6.0;
 const double _kKeyPadH = 3.5;
 
-/// لوحة مفاتيح — أرقام (هاتف) + عمود % / × − + سطر عشري: . 0(عريض) + = (بدون صف + بعرض كامل)
+/// لوحة مفاتيح — أرقام + عمود % / × − +؛ سطر سفلي: . 0 = + (عرض واحد للأصفار مثل بقية المفاتيح)
 class CalculatorKeypad extends StatelessWidget {
   const CalculatorKeypad({super.key, required this.onKeyTap});
   final void Function(String) onKeyTap;
@@ -19,27 +19,23 @@ class CalculatorKeypad extends StatelessWidget {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _row4(const ['C', 'M+', 'M-', '⌫']),
-          SizedBox(height: _kRowGap),
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _row4(const ['1', '2', '3', '%']),
-                SizedBox(height: _kRowGap),
-                _row4(const ['4', '5', '6', '/']),
-                SizedBox(height: _kRowGap),
-                _row4(const ['7', '8', '9', '-']),
-                SizedBox(height: _kRowGap),
-                _rowDecimalAndPlus(),
-              ],
-            ),
-          ),
-        ],
+      // لوحة حاسبة LTR دائماً حتى لا تنعكس صفوفها في واجهة RTL.
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _row4(const ['C', 'M+', 'M-', '⌫']),
+            SizedBox(height: _kRowGap),
+            _row4(const ['1', '2', '3', '%']),
+            SizedBox(height: _kRowGap),
+            _row4(const ['4', '5', '6', '/']),
+            SizedBox(height: _kRowGap),
+            _row4(const ['7', '8', '9', '-']),
+            SizedBox(height: _kRowGap),
+            _rowDecimalAndPlus(),
+          ],
+        ),
       ),
     );
   }
@@ -63,7 +59,7 @@ class CalculatorKeypad extends StatelessWidget {
     );
   }
 
-  /// [ . ] [ 0 عريض ] [ + ] [ = ] — دمج + مع بقية الصف (لا يستولي على عرض الشاشة)
+  /// [ . ] [ 0 ] [ = ] [ + ] — نفس عرض الأعمدة
   Widget _rowDecimalAndPlus() {
     return Row(
       children: [
@@ -78,7 +74,6 @@ class CalculatorKeypad extends StatelessWidget {
           ),
         ),
         Expanded(
-          flex: 2,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: _kKeyPadH),
             child: _PressableKey(
@@ -93,8 +88,8 @@ class CalculatorKeypad extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: _kKeyPadH),
             child: _PressableKey(
               keyHeight: _kKeyH,
-              label: '+',
-              onTap: () => onKeyTap('+'),
+              label: '=',
+              onTap: () => onKeyTap('='),
             ),
           ),
         ),
@@ -103,8 +98,8 @@ class CalculatorKeypad extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: _kKeyPadH),
             child: _PressableKey(
               keyHeight: _kKeyH,
-              label: '=',
-              onTap: () => onKeyTap('='),
+              label: '+',
+              onTap: () => onKeyTap('+'),
             ),
           ),
         ),

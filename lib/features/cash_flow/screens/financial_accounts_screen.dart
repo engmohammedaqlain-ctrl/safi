@@ -6,6 +6,7 @@ import 'package:safi/core/router/app_page_route.dart';
 
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
 import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
@@ -99,12 +100,7 @@ class FinancialAccountsScreen extends ConsumerWidget {
                         icon: LucideIcons.fileText,
                         label: 'تقرير عام',
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('تقرير المحافظ — قريباً'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                          showAppSnackBar(context, 'تقرير المحافظ — قريباً');
                         },
                       ),
                       const SizedBox(width: 12),
@@ -112,12 +108,7 @@ class FinancialAccountsScreen extends ConsumerWidget {
                         icon: LucideIcons.barChart2,
                         label: 'إحصائيات',
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('إحصائيات المحافظ — قريباً'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                          showAppSnackBar(context, 'إحصائيات المحافظ — قريباً');
                         },
                       ),
                     ],
@@ -556,11 +547,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   void _save() {
     final name = _name.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('الرجاء إدخال اسم المحفظة'),
-          backgroundColor: Colors.red,
-        ),
+      showAppSnackBar(
+        context,
+        'الرجاء إدخال اسم المحفظة',
+        backgroundColor: Colors.red,
       );
       return;
     }

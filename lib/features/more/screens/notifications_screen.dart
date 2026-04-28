@@ -6,6 +6,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/vault_subpage_scaffold.dart';
 
 /// صفحة الإشعارات (قابلة للربط لاحقاً بخدمة فعلية)
 class NotificationsScreen extends StatelessWidget {
@@ -13,10 +14,8 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('الإشعارات', style: AppTextStyles.titleLarge),
-      ),
+    return VaultSubpageScaffold(
+      title: 'الإشعارات',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,

@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../debts/widgets/calculator_keypad.dart';
 import '../../sales/models/cashbook_entry.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
@@ -164,11 +165,10 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
     if (accId == null && accounts.isNotEmpty) accId = accounts.first.id;
     if (accId == null) {
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('أضف محفظة أولاً من «المحافظ والبنوك»'),
-          backgroundColor: Colors.red,
-        ),
+      showAppSnackBar(
+        context,
+        'أضف محفظة أولاً من «المحافظ والبنوك»',
+        backgroundColor: Colors.red,
       );
       return;
     }

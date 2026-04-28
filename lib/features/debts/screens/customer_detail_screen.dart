@@ -9,6 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../cash_flow/data/financial_account_model.dart';
 import '../../cash_flow/providers/accounts_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../models/debt_category_model.dart';
 import '../providers/debt_categories_provider.dart';
 import '../providers/debts_ui_provider.dart';
@@ -825,9 +826,7 @@ class _TransactionDetailSheet extends ConsumerWidget {
                         }
                         Clipboard.setData(ClipboardData(text: lines.join('\n')));
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('تم نسخ تفاصيل المعاملة')),
-                        );
+                        showAppSnackBar(context, 'تم نسخ تفاصيل المعاملة');
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
@@ -885,9 +884,7 @@ class _TransactionDetailSheet extends ConsumerWidget {
                             .removeTransactionById(tx.id);
                         if (!context.mounted) return;
                         Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('تم حذف المعاملة')),
-                        );
+                        showAppSnackBar(context, 'تم حذف المعاملة');
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFFFE8E6),
@@ -1061,9 +1058,7 @@ class _CustomerInfoSheetState extends ConsumerState<_CustomerInfoSheet> {
                   ),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: widget.debtor.phone));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('تم نسخ رقم الجوال')),
-                    );
+                    showAppSnackBar(context, 'تم نسخ رقم الجوال');
                   },
                 ),
               ],
@@ -1147,13 +1142,7 @@ class _CustomerInfoSheetState extends ConsumerState<_CustomerInfoSheet> {
                                             _addressCtrl.text.trim(),
                                           );
                                       setState(() => _isEditingAddress = false);
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('تم حفظ الموقع'),
-                                        ),
-                                      );
+                                      showAppSnackBar(context, 'تم حفظ الموقع');
                                     },
                                     child: const Text(
                                       'حفظ',

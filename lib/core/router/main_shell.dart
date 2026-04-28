@@ -5,7 +5,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../bootstrap/prefs_keys.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import '../widgets/vault_branded_shell.dart';
 import 'nav_provider.dart';
 import '../../features/more/screens/more_home_screen.dart';
 import '../../features/sales/screens/sales_screen.dart';
@@ -89,112 +91,210 @@ class _MainShellState extends ConsumerState<MainShell> {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        scrolledUnderElevation: 0,
-        titleSpacing: 16,
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: AppColors.outlineSoft),
-        ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          textDirection: TextDirection.rtl,
-          children: [
-            // أول مُعرَف = يمين الشاشة: الاسم + أيقونة الدفتر
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              textDirection: TextDirection.rtl,
-              children: [
-                const Icon(LucideIcons.bookOpen, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Consumer(
-                  builder: (context, ref, _) {
-                    final asyncName = ref.watch(userNameProvider);
-                    return Text(
-                      asyncName.value ?? '',
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            // ثانياً = يسار الشاشة: زر إخفاء الأرقام
-            Consumer(
-              builder: (context, ref, _) {
-                final hidden = ref.watch(hideBalanceProvider);
-                return GestureDetector(
-                  onTap: () =>
-                      ref.read(hideBalanceProvider.notifier).toggle(),
-                  child: _TopBarIcon(
-                    icon: hidden ? LucideIcons.eyeOff : LucideIcons.eye,
-                    color: AppColors.primary,
-                    bgColor: AppColors.primary.withValues(alpha: 0.1),
+      backgroundColor: const Color(0xFF1A0A24),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const VaultBackgroundDecor(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.md,
                   ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      body: Material(
-        color: AppColors.background,
-        child: SafeArea(
-          top: false,
-          // ────────────────────────────────────────────────
-          // PageView مع تأثير تلاشٍ تدريجي أثناء التمرير
-          // ────────────────────────────────────────────────
-          child: _FadingPageView(
-            controller: _pageController,
-            pageCount: _pageCount,
-            onPageChanged: _onPageChanged,
-            pages: const [
-              RepaintBoundary(child: DebtsScreen()),
-              RepaintBoundary(child: SalesScreen()),
-              RepaintBoundary(child: MoreHomeScreen()),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    textDirection: TextDirection.rtl,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          textDirection: TextDirection.rtl,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.18),
+                                ),
+                              ),
+                              child: const Icon(
+                                LucideIcons.bookOpen,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Consumer(
+                                    builder: (context, ref, _) {
+                                      final asyncName =
+                                          ref.watch(userNameProvider);
+                                      return Text(
+                                        asyncName.value ?? '',
+                                        style: AppTextStyles.headlineSmall
+                                            .copyWith(
+                                          color: Colors.white,
+                                          letterSpacing: 0.5,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'خبرة بنكية مبسّطة لإدارة ديونك ومحافظك',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: Colors.white
+                                          .withValues(alpha: 0.78),
+                                      height: 1.45,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final hidden = ref.watch(hideBalanceProvider);
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => ref
+                                  .read(hideBalanceProvider.notifier)
+                                  .toggle(),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color:
+                                      Colors.white.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white
+                                        .withValues(alpha: 0.18),
+                                  ),
+                                ),
+                                child: Icon(
+                                  hidden
+                                      ? LucideIcons.eyeOff
+                                      : LucideIcons.eye,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2F4F8),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 30,
+                        offset: const Offset(0, -6),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: Material(
+                            color: const Color(0xFFF2F4F8),
+                            child: SafeArea(
+                              top: false,
+                              bottom: false,
+                              child: _FadingPageView(
+                                controller: _pageController,
+                                pageCount: _pageCount,
+                                onPageChanged: _onPageChanged,
+                                pages: const [
+                                  RepaintBoundary(child: DebtsScreen()),
+                                  RepaintBoundary(child: SalesScreen()),
+                                  RepaintBoundary(child: MoreHomeScreen()),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          decoration: const BoxDecoration(
+                            color: AppColors.backgroundSecondary,
+                            border: Border(
+                              top: BorderSide(
+                                color: AppColors.outlineSoft,
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                          child: SafeArea(
+                            top: false,
+                            child: NavigationBar(
+                              height: 65,
+                              backgroundColor: AppColors.backgroundSecondary,
+                              elevation: 0,
+                              selectedIndex: index,
+                              indicatorColor: AppColors.primary
+                                  .withValues(alpha: 0.1),
+                              onDestinationSelected: _onNavTap,
+                              destinations: const [
+                                NavigationDestination(
+                                  icon: Icon(LucideIcons.bookOpen, size: 22),
+                                  label: 'دفتر الديون',
+                                ),
+                                NavigationDestination(
+                                  icon: Icon(LucideIcons.wallet, size: 22),
+                                  label: 'الصافي',
+                                ),
+                                NavigationDestination(
+                                  icon:
+                                      Icon(LucideIcons.layoutGrid, size: 22),
+                                  label: 'المزيد',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.backgroundSecondary,
-          border: Border(
-            top: BorderSide(color: AppColors.outlineSoft, width: 1),
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: NavigationBar(
-            height: 65,
-            backgroundColor: AppColors.backgroundSecondary,
-            elevation: 0,
-            selectedIndex: index,
-            indicatorColor: AppColors.primary.withValues(alpha: 0.1),
-            onDestinationSelected: _onNavTap,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(LucideIcons.bookOpen, size: 22),
-                label: 'دفتر الديون',
-              ),
-              NavigationDestination(
-                icon: Icon(LucideIcons.wallet, size: 22),
-                label: 'دفتر النقدية',
-              ),
-              NavigationDestination(
-                icon: Icon(LucideIcons.layoutGrid, size: 22),
-                label: 'المزيد',
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -284,27 +384,3 @@ class _SmoothPagePhysics extends PageScrollPhysics {
   double get dragStartDistanceMotionThreshold => 3.5;
 }
 
-// ══════════════════════════════════════════════════════════════
-//  أيقونة شريط العنوان
-// ══════════════════════════════════════════════════════════════
-class _TopBarIcon extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final Color bgColor;
-
-  const _TopBarIcon(
-      {required this.icon, required this.color, required this.bgColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, color: color, size: 20),
-    );
-  }
-}

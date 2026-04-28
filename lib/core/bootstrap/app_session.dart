@@ -2,12 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'prefs_keys.dart';
+import 'startup_ledger_data.dart';
 
-/// مراحل دخول المستخدم: شاشة البداية → دخول → إعداد أولي → التطبيق
+/// مراحل دخول المستخدم: دخول → اسم → إعداد أولي → التطبيق.
+/// لا توجد مرحلة splash داخلية — شاشة النظام تغطّي الإقلاع.
 enum AppSessionPhase {
-  /// شعار وتحميل
-  splash,
-
   /// تسجيل دخول (هاتف / OTP) — مرة أو بعد تسجيل خروج
   login,
 
@@ -26,22 +25,15 @@ final appSessionProvider =
 
 class AppSessionNotifier extends Notifier<AppSessionPhase> {
   @override
-  AppSessionPhase build() => AppSessionPhase.splash;
-
-  Future<void> completeSplashGate() async {
-    final p = await SharedPreferences.getInstance();
-    final logged = p.getBool(PrefsKeys.loggedIn) ?? false;
-    final hasName = p.getString(PrefsKeys.userName) != null;
-    final done = p.getBool(PrefsKeys.onboardingDone) ?? false;
-    if (!logged) {
-      state = AppSessionPhase.login;
-    } else if (!hasName) {
-      state = AppSessionPhase.nameSetup;
-    } else if (!done) {
-      state = AppSessionPhase.onboarding;
-    } else {
-      state = AppSessionPhase.main;
-    }
+  AppSessionPhase build() {
+    // البيانات مُحمّلة قبل runApp في `main()` — نحسم المرحلة فوراً بدون انتظار.
+    final logged = StartupLedgerData.bootstrapLoggedIn;
+    final hasName = StartupLedgerData.bootstrapUserName != null;
+    final done = StartupLedgerData.bootstrapOnboardingDone;
+    if (!logged) return AppSessionPhase.login;
+    if (!hasName) return AppSessionPhase.nameSetup;
+    if (!done) return AppSessionPhase.onboarding;
+    return AppSessionPhase.main;
   }
 
   /// بعد إدخال رقم الهاتف (وتأكيد OTP) — يتبعها إدخال الاسم

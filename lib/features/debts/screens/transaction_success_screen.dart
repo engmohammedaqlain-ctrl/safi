@@ -21,20 +21,83 @@ class TransactionSuccessScreen extends StatefulWidget {
   final TransactionType type;
   final DateTime date;
 
+  /// انتقال بنمط تأكيد بنكي: تلاشي + انزلاق من الأسفح
+  static Route<bool> route({
+    required String customerName,
+    required double amount,
+    required TransactionType type,
+    required DateTime date,
+  }) {
+    return PageRouteBuilder<bool>(
+      pageBuilder: (context, animation, secondaryAnimation) => TransactionSuccessScreen(
+        customerName: customerName,
+        amount: amount,
+        type: type,
+        date: date,
+      ),
+      transitionDuration: const Duration(milliseconds: 420),
+      reverseTransitionDuration: const Duration(milliseconds: 320),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.11),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
   @override
   State<TransactionSuccessScreen> createState() =>
       _TransactionSuccessScreenState();
 }
 
-class _TransactionSuccessScreenState extends State<TransactionSuccessScreen> {
+class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
+    with SingleTickerProviderStateMixin {
   Timer? _countdownTimer;
   int _secondsLeft = 4;
+
+  late AnimationController _entrance;
 
   @override
   void initState() {
     super.initState();
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 820),
+    )..forward();
     HapticFeedback.mediumImpact();
     _startCountdown();
+  }
+
+  Animation<double> _interval(double begin, double end) {
+    return CurvedAnimation(
+      parent: _entrance,
+      curve: Interval(begin, end, curve: Curves.easeOutCubic),
+    );
+  }
+
+  Widget _stagger(double begin, double end, Widget child) {
+    final anim = _interval(begin, end);
+    return FadeTransition(
+      opacity: anim,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.075),
+          end: Offset.zero,
+        ).animate(anim),
+        child: child,
+      ),
+    );
   }
 
   void _startCountdown() {
@@ -56,6 +119,7 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _entrance.dispose();
     super.dispose();
   }
 
@@ -80,24 +144,31 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                 child: Column(
-                        children: [
-                          // ── أيقونة النجاح ──
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: bgColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.check_circle_rounded,
-                              color: accentColor,
-                              size: 52,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
+                  children: [
+                    _stagger(
+                      0.0,
+                      0.36,
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.check_circle_rounded,
+                          color: accentColor,
+                          size: 52,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
-                          // ── العنوان ──
+                    _stagger(
+                      0.13,
+                      0.46,
+                      Column(
+                        children: [
                           const Text(
                             'تمت العملية بنجاح',
                             style: TextStyle(
@@ -114,10 +185,18 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen> {
                               color: Colors.grey,
                             ),
                           ),
+                        ],
+                      ),
+                    ),
 
-                          const SizedBox(height: 28),
+                    const SizedBox(height: 28),
 
-                          // ── البطاقة ──
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: _stagger(
+                          0.30,
+                          0.76,
                           Container(
                             width: double.infinity,
                             decoration: BoxDecoration(
@@ -132,8 +211,8 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen> {
                               ],
                             ),
                             child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                // ── قسم المبلغ (ملوّن) ──
                                 Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
@@ -169,7 +248,6 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen> {
                                   ),
                                 ),
 
-                                // ── فاصل ──
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 20),
                                   child: Row(
@@ -194,7 +272,6 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen> {
                                   ),
                                 ),
 
-                                // ── تفاصيل الإيصال ──
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                                   child: Column(
@@ -210,7 +287,6 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen> {
                                   ),
                                 ),
 
-                                // ── شعار التطبيق ──
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 20),
                                   child: Row(
@@ -249,73 +325,76 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen> {
                               ],
                             ),
                           ),
+                        ),
+                      ),
+                    ),
 
-                          const Spacer(),
-
-                          // ── أزرار ──
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () {
-                                    // TODO: مشاركة الإيصال
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.primary,
-                                    side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
-                                    padding: const EdgeInsets.symmetric(vertical: 15),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.share_outlined, size: 18),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'مشاركة',
-                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                                      ),
-                                    ],
-                                  ),
+                    _stagger(
+                      0.60,
+                      1.0,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                // TODO: مشاركة الإيصال
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+                                padding: const EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: _navigateBack,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 15),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'إنهاء',
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.share_outlined, size: 18),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'مشاركة',
                                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                                   ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _navigateBack,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                            ],
+                              child: const Text(
+                                'إنهاء',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              ),
+                            ),
                           ),
-
-                          const SizedBox(height: 12),
                         ],
                       ),
-                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }
 
-// ── صف تفصيلة في الإيصال ──
 class _ReceiptRow extends StatelessWidget {
   const _ReceiptRow({required this.label, required this.value});
   final String label;
@@ -343,7 +422,6 @@ class _ReceiptRow extends StatelessWidget {
   }
 }
 
-// ── الدائرة الجانبية لفاصل الإيصال ──
 class _DashedCircle extends StatelessWidget {
   const _DashedCircle({required this.color});
   final Color color;
@@ -361,14 +439,12 @@ class _DashedCircle extends StatelessWidget {
   }
 }
 
-// ── تنسيق الوقت ──
 String _formatTime(DateTime date) {
   final h = date.hour.toString().padLeft(2, '0');
   final m = date.minute.toString().padLeft(2, '0');
   return '$h:$m';
 }
 
-// ── تنسيق التاريخ ──
 String _formatDate(DateTime date) {
   return '${date.day}/${date.month}/${date.year}';
 }

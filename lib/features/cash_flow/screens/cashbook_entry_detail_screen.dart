@@ -8,13 +8,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../sales/models/cashbook_entry.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
 import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
 
 // ════════════════════════════════════════════════════════════════
-//  تفاصيل حركة دفتر النقدية — تصميم سلس مطابق لطابع التطبيق
+//  تفاصيل حركة الصافي — تصميم سلس مطابق لطابع التطبيق
 // ════════════════════════════════════════════════════════════════
 class CashbookEntryDetailScreen extends ConsumerWidget {
   const CashbookEntryDetailScreen({super.key, required this.entry});
@@ -183,12 +184,7 @@ class CashbookEntryDetailScreen extends ConsumerWidget {
       'التاريخ: ${_formatWhen(e.date)}',
     ];
     Clipboard.setData(ClipboardData(text: lines.join('\n')));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('تم نسخ تفاصيل المعاملة'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    showAppSnackBar(context, 'تم نسخ تفاصيل المعاملة');
   }
 
   // ── تعديل ──
@@ -225,7 +221,7 @@ class CashbookEntryDetailScreen extends ConsumerWidget {
             style: TextStyle(fontWeight: FontWeight.w800),
           ),
           content: const Text(
-            'سيتم حذف الحركة نهائياً من دفتر النقدية.',
+            'سيتم حذف الحركة نهائياً من الصافي.',
             style: TextStyle(height: 1.4),
           ),
           actions: [
@@ -258,12 +254,7 @@ class CashbookEntryDetailScreen extends ConsumerWidget {
       ref.read(cashbookEntriesProvider.notifier).removeById(e.id);
       if (context.mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم حذف المعاملة'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        showAppSnackBar(context, 'تم حذف المعاملة');
       }
     }
   }
@@ -605,12 +596,7 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
     );
     widget.ref.read(cashbookEntriesProvider.notifier).update(updated);
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('تم حفظ التعديلات'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    showAppSnackBar(context, 'تم حفظ التعديلات');
   }
 
   Future<void> _pickImage() async {

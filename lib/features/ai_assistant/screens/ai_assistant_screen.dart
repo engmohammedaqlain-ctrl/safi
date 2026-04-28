@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/vault_subpage_scaffold.dart';
 import '../../../core/widgets/safi_button.dart';
 
 class AiAssistantScreen extends StatefulWidget {
@@ -25,10 +26,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('المساعد الذكي'),
-      ),
+    return VaultSubpageScaffold(
+      title: 'المساعد الذكي',
       body: Column(
         children: [
           Expanded(

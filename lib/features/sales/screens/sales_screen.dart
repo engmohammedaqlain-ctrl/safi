@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../cash_flow/screens/cash_entry_screen.dart';
 import '../../cash_flow/screens/cashbook_entry_detail_screen.dart';
 import '../../cash_flow/screens/cash_flow_screen.dart';
@@ -15,7 +16,7 @@ import '../models/cashbook_entry.dart';
 import '../providers/cashbook_ui_provider.dart';
 import 'package:safi/core/router/app_page_route.dart';
 
-/// دفتر النقدية — نفس ألوان / ثيم صفحة الديون + تخطيط RTL
+/// الصافي — نفس ألوان / ثيم صفحة الديون + تخطيط RTL
 class SalesScreen extends ConsumerWidget {
   const SalesScreen({super.key, this.bottomInset = 0});
 
@@ -80,12 +81,7 @@ class SalesScreen extends ConsumerWidget {
                     icon: LucideIcons.barChart2,
                     label: 'التقارير',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('تقرير مفصّل — قريباً'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                      showAppSnackBar(context, 'تقرير مفصّل — قريباً');
                     },
                     compact: true,
                   ),
@@ -452,7 +448,7 @@ class _TopCardAction extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  سطر في قائمة دفتر النقدية
+//  سطر في قائمة الصافي
 // ════════════════════════════════════════════════════════════════
 String _formatCashDate(DateTime d) {
   final now = DateTime.now();

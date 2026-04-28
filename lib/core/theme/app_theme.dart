@@ -97,6 +97,10 @@ class AppTheme {
         hintStyle: AppTextStyles.bodySmall,
       ),
       dividerColor: AppColors.divider,
+      // عائم حتى لا يُضغط جسم الصفحة وزر أسفل الشاشة عند ظهور رسائل التحقق والتنبيهات.
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+      ),
       listTileTheme: const ListTileThemeData(
         iconColor: AppColors.primary,
         textColor: AppColors.textPrimary,

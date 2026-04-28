@@ -9,6 +9,7 @@ import 'package:safi/core/router/app_page_route.dart';
 
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../sales/models/cashbook_entry.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
 import '../data/financial_account_model.dart';
@@ -159,12 +160,7 @@ class WalletDetailScreen extends ConsumerWidget {
                     icon: LucideIcons.fileText,
                     label: 'تقرير المحفظة',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('تقرير المحفظة — قريباً'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                      showAppSnackBar(context, 'تقرير المحفظة — قريباً');
                     },
                   ),
                 ),

@@ -1,4 +1,4 @@
-/// حركة في دفتر النقدية (وارد / صادر)
+/// حركة في الصافي (وارد / صادر)
 class CashbookEntry {
   const CashbookEntry({
     required this.id,
@@ -20,7 +20,7 @@ class CashbookEntry {
   final String note;
   final String? accountId;
 
-  /// تصنيف اختياري (معاملات دفتر النقدية)
+  /// تصنيف اختياري (معاملات الصافي)
   final String? category;
 
   /// مسار محلي لصورة مرفقة

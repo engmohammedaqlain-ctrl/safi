@@ -14,6 +14,10 @@ class StartupLedgerData {
   static List<TransactionUi> transactions = [];
   static List<CashbookEntry> cashbook = [];
 
+  static bool _sessionLoggedIn = false;
+  static bool _sessionOnboardingDone = false;
+  static String? _sessionUserName;
+
   static Future<void>? _loadFuture;
 
   /// يبدأ التحميل مرة واحدة؛ آمِن لاستدعائه من عدة أماكن.
@@ -21,10 +25,20 @@ class StartupLedgerData {
 
   static Future<void> load() async {
     final p = await SharedPreferences.getInstance();
+    _sessionLoggedIn = p.getBool(PrefsKeys.loggedIn) ?? false;
+    _sessionOnboardingDone = p.getBool(PrefsKeys.onboardingDone) ?? false;
+    _sessionUserName = p.getString(PrefsKeys.userName);
     debtors = _decodeDebtors(p.getString(PrefsKeys.debtors));
     transactions = _decodeTransactions(p.getString(PrefsKeys.transactions));
     cashbook = _decodeCashbook(p.getString(PrefsKeys.cashbook));
   }
+
+  /// تُقرأ مع [ensureLoaded] في نفس جولة [SharedPreferences] لتفادي انتظار إضافي عند فتح الجلسة.
+  static bool get bootstrapLoggedIn => _sessionLoggedIn;
+
+  static bool get bootstrapOnboardingDone => _sessionOnboardingDone;
+
+  static String? get bootstrapUserName => _sessionUserName;
 
   static List<DebtorUi> _decodeDebtors(String? raw) {
     if (raw == null || raw.isEmpty) return [];

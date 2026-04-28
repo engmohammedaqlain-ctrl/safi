@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../core/widgets/vault_subpage_scaffold.dart';
 import '../../../core/theme/app_colors.dart';
 import 'add_customer_detail_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,21 +76,8 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          widget.isSupplier ? 'إضافة مورد' : 'إضافة عميل',
-          style: const TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+    return VaultSubpageScaffold(
+      title: widget.isSupplier ? 'إضافة مورد' : 'إضافة عميل',
       body: Column(
         children: [
           Padding(

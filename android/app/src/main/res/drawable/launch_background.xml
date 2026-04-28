@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Pre-Android 12: لون خلفية + شعار في المنتصف -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_background" />
+    <item
+        android:drawable="@drawable/safi_logo"
+        android:gravity="center" />
 </layer-list>

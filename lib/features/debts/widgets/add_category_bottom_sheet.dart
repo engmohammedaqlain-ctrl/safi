@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../models/debt_category_model.dart';
 import '../providers/debt_categories_provider.dart';
 import 'category_color_palette.dart';
@@ -54,11 +55,10 @@ class _AddCategoryBodyState extends ConsumerState<_AddCategoryBody> {
   void _save() {
     final n = _name.text.trim();
     if (n.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('أدخل اسماً للتصنيف'),
-          backgroundColor: Colors.red,
-        ),
+      showAppSnackBar(
+        context,
+        'أدخل اسماً للتصنيف',
+        backgroundColor: Colors.red,
       );
       return;
     }

@@ -7,14 +7,15 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/vault_subpage_scaffold.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('الإعدادات')),
+    return VaultSubpageScaffold(
+      title: 'الإعدادات',
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [

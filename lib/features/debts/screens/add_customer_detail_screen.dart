@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../providers/debt_categories_provider.dart';
 import '../providers/debts_ui_provider.dart';
 import '../widgets/select_categories_bottom_sheet.dart';
@@ -374,24 +375,18 @@ class _AddCustomerDetailScreenState
                       '',
                     );
                     if (phoneDigits.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'الرجاء إدخال رقم الهاتف (أرقام إنجليزية)',
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
+                      showAppSnackBar(
+                        context,
+                        'الرجاء إدخال رقم الهاتف (أرقام إنجليزية)',
+                        backgroundColor: Colors.red,
                       );
                       return;
                     }
                     if (phoneDigits.length < 7) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'رقم الهاتف قصير جداً (على الأقل 7 أرقام)',
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
+                      showAppSnackBar(
+                        context,
+                        'رقم الهاتف قصير جداً (على الأقل 7 أرقام)',
+                        backgroundColor: Colors.red,
                       );
                       return;
                     }
@@ -407,13 +402,10 @@ class _AddCustomerDetailScreenState
                     });
 
                     if (phoneExists) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'رقم الهاتف مسجل مسبقاً، لا يمكن إضافة حسابين بنفس الرقم',
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
+                      showAppSnackBar(
+                        context,
+                        'رقم الهاتف مسجل مسبقاً، لا يمكن إضافة حسابين بنفس الرقم',
+                        backgroundColor: Colors.red,
                       );
                       return;
                     }
