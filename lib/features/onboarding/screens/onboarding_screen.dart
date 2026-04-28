@@ -14,14 +14,19 @@ class _OnboardingSlide {
     required this.headline,
     required this.body,
     required this.icon,
+    required this.gradientColors,
+    required this.cardTag,
   });
 
   final String headline;
   final String body;
   final IconData icon;
+  final List<Color> gradientColors;
+
+  /// سطر مختصر على شكل «بطاقة بنكية»
+  final String cardTag;
 }
 
-/// أونبوردينغ بهيكل يقترب من تطبيقات المال الرسمية: ترحيب ثابت، تقدّم واضح، لوحة مركّزة، ثقة خفيفة في النهاية.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -33,34 +38,40 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _page = PageController();
   int _i = 0;
 
-  static const _slides = <_OnboardingSlide>[
+  static final _slides = <_OnboardingSlide>[
     _OnboardingSlide(
-      headline: 'المحافظ والتدفّق النقدي',
+      headline: 'محافظك وأرصدتك في مكان واحد',
       body:
-          'سجّل واردك وصادرك عبر المحافظ لتعرف وضعك المالي في لحظة.',
+          'نظّم محافظك النقدية والبنكية، وتابع الوارد والصادر لصورة مالية موحّدة.',
       icon: LucideIcons.wallet,
+      gradientColors: const [Color(0xFF9C27B0), Color(0xFF6A1B9A), Color(0xFF4A148C)],
+      cardTag: 'ملخص الأرصدة',
     ),
     _OnboardingSlide(
-      headline: 'الديون والمستحقات',
+      headline: 'الديون والمستحقات تحت السيطرة',
       body:
-          'دوّن ما لك وما عليك، وتابع الأرصدة دون فقدان أي مبلغ.',
+          'سجّل ما لك وما عليك، وراقب المبالغ والمواعيد لتبقى صاف حسابك.',
       icon: LucideIcons.barChart2,
+      gradientColors: const [Color(0xFF66BB6A), Color(0xFF388E3C), Color(0xFF1B5E20)],
+      cardTag: 'المستحقات',
     ),
     _OnboardingSlide(
-      headline: 'عملاؤك وسجلّهم',
+      headline: 'عملاؤك ومديونيتهم',
       body:
-          'اربط المعاملات بالعملاء وراقب مديونية كل واحد على حدة.',
+          'أضف من تتعامل معهم، وتابع رصيد كل عميل وحركات السداد بتفاصيلها.',
       icon: LucideIcons.users,
+      gradientColors: const [Color(0xFFB39DDB), Color(0xFF7E57C2), Color(0xFF4527A0)],
+      cardTag: 'سجل العملاء',
     ),
     _OnboardingSlide(
-      headline: 'تذكيرات وتحصيل',
+      headline: 'تذكيرات ذكية للتحصيل',
       body:
-          'استخدم التذكيرات لتبقى التزامات السداد أمامك دائماً.',
-      icon: LucideIcons.bell,
+          'فعّل رسائل التذكير لتقليل التأخير، وتسريع استرداد حقوقك المالية.',
+      icon: LucideIcons.sparkles,
+      gradientColors: const [Color(0xFFCE93D8), Color(0xFF8E24AA), Color(0xFF4A148C)],
+      cardTag: 'التحصيل الذكي',
     ),
   ];
-
-  static const double _footnoteSlotHeight = 44;
 
   @override
   void dispose() {
@@ -68,18 +79,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
-  Future<void> _complete() async {
-    await ref.read(appSessionProvider.notifier).onOnboardingComplete();
-  }
-
   Future<void> _next() async {
     if (_i < _slides.length - 1) {
       await _page.nextPage(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 340),
         curve: Curves.easeOutCubic,
       );
     } else {
-      await _complete();
+      await ref.read(appSessionProvider.notifier).onOnboardingComplete();
     }
   }
 
@@ -88,371 +95,500 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppColors.lavender,
-              AppColors.background,
-            ],
-            stops: [0.0, 0.38],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      backgroundColor: const Color(0xFF1A0A24),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const _VaultBackgroundDecor(),
+          Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'صافي',
-                          style: AppTextStyles.labelLarge.copyWith(
-                            color: AppColors.primary,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: _complete,
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.textMuted,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm,
-                              vertical: 8,
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.18),
+                              ),
                             ),
-                            minimumSize: const Size(64, 40),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            'تخطي',
-                            style: AppTextStyles.labelLarge.copyWith(
-                              color: AppColors.textMuted,
-                              fontWeight: FontWeight.w600,
+                            child: const Icon(
+                              LucideIcons.landmark,
+                              color: Colors.white,
+                              size: 24,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      'مرحباً بك',
-                      style: AppTextStyles.headlineSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'محافظك، ديونك، وعملاؤك — من تنظيم واحد واضح',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  0,
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                ),
-                child: _SegmentedProgressBar(
-                  currentIndex: _i,
-                  segmentCount: _slides.length,
-                ),
-              ),
-              Expanded(
-                child: PageView.builder(
-                  controller: _page,
-                  onPageChanged: (v) => setState(() => _i = v),
-                  itemCount: _slides.length,
-                  itemBuilder: (context, index) {
-                    final slide = _slides[index];
-                    return LayoutBuilder(
-                      builder: (context, constraints) {
-                        return SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            4,
-                            AppSpacing.lg,
-                            AppSpacing.sm,
-                          ),
-                          physics: const BouncingScrollPhysics(),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: constraints.maxHeight,
-                            ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _OnboardingContentCard(
-                                  stepIndex: index,
-                                  stepCount: _slides.length,
-                                  slide: slide,
+                                Text(
+                                  'صافي',
+                                  style: AppTextStyles.headlineSmall.copyWith(
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'خبرة بنكية مبسّطة لإدارة ديونك ومحافظك',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.78),
+                                    height: 1.45,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                        );
-                      },
-                    );
-                  },
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Center(
+                        child: _PageDots(
+                          count: _slides.length,
+                          index: _i,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              SizedBox(
-                height: _footnoteSlotHeight,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  child: _i == _slides.length - 1
-                      ? Padding(
-                          key: const ValueKey('trust'),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2F4F8),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 30,
+                        offset: const Offset(0, -6),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: PageView.builder(
+                            controller: _page,
+                            onPageChanged: (v) => setState(() => _i = v),
+                            itemCount: _slides.length,
+                            itemBuilder: (context, index) {
+                              final slide = _slides[index];
+                              return LayoutBuilder(
+                                builder: (context, c) {
+                                  return SingleChildScrollView(
+                                    padding: EdgeInsets.fromLTRB(
+                                      AppSpacing.lg,
+                                      28,
+                                      AppSpacing.lg,
+                                      12,
+                                    ),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minHeight: c.maxHeight - 12,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          _BankPlasticCard(
+                                            slide: slide,
+                                          ),
+                                          const SizedBox(height: 28),
+                                          Text(
+                                            'الخطوة ${index + 1} من ${_slides.length}',
+                                            style: AppTextStyles.labelSmall
+                                                .copyWith(
+                                              color: AppColors.textMuted,
+                                              letterSpacing: 0.8,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            slide.headline,
+                                            textAlign: TextAlign.center,
+                                            style: AppTextStyles.headlineSmall
+                                                .copyWith(
+                                              height: 1.3,
+                                              color: const Color(0xFF12121F),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            slide.body,
+                                            textAlign: TextAlign.center,
+                                            style:
+                                                AppTextStyles.bodyMedium.copyWith(
+                                              height: 1.65,
+                                              color: AppColors.textSecondary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                        Container(
+                          width: double.infinity,
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.sm,
                           ),
-                          child: const Center(
-                            child: _TrustFootnote(),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            border: Border(
+                              top: BorderSide(
+                                color: AppColors.outlineSoft,
+                              ),
+                            ),
                           ),
-                        )
-                      : const SizedBox(
-                          key: ValueKey('empty'),
-                          width: double.infinity,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.shieldCheck,
+                                size: 18,
+                                color: AppColors.primary.withValues(alpha: 0.9),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'بياناتك محمية وفق معايير آمنة للتعاملات المالية',
+                                  textAlign: TextAlign.center,
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.textMuted,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  0,
-                  AppSpacing.lg,
-                  AppSpacing.lg + bottomInset,
-                ),
-                child: SafiButton(
-                  label: _i < _slides.length - 1
-                      ? 'التالي'
-                      : 'بدء استخدام صافي',
-                  onPressed: _next,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// شريط تقدّم مقسّم — خلفية مسار خفيفة لقراءة أوضح.
-class _SegmentedProgressBar extends StatelessWidget {
-  const _SegmentedProgressBar({
-    required this.currentIndex,
-    required this.segmentCount,
-  });
-
-  final int currentIndex;
-  final int segmentCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'الخطوة ${currentIndex + 1} من $segmentCount',
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: AppColors.outlineSoft.withValues(alpha: 0.45),
-          borderRadius: BorderRadius.circular(99),
-        ),
-        child: Row(
-          children: [
-            for (int j = 0; j < segmentCount; j++) ...[
-              if (j > 0) const SizedBox(width: 5),
-              Expanded(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 240),
-                  curve: Curves.easeOutCubic,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(99),
-                    color: j <= currentIndex
-                        ? AppColors.primary
-                        : Colors.transparent,
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.sm,
+                            AppSpacing.lg,
+                            AppSpacing.lg + bottomInset,
+                          ),
+                          child: SafiButton(
+                            label: _i < _slides.length - 1
+                                ? 'التالي'
+                                : 'ابدأ استخدام صافي',
+                            icon: _i < _slides.length - 1
+                                ? LucideIcons.arrowLeft
+                                : LucideIcons.check,
+                            onPressed: _next,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ],
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _OnboardingContentCard extends StatelessWidget {
-  const _OnboardingContentCard({
-    required this.stepIndex,
-    required this.stepCount,
+/// خلفية داكنة مع وهج خفيف تشبه واجهات البنوك الرقمية
+class _VaultBackgroundDecor extends StatelessWidget {
+  const _VaultBackgroundDecor();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1A0A24),
+                AppColors.primaryDark,
+                const Color(0xFF4A148C).withValues(alpha: 0.95),
+              ],
+              stops: const [0.0, 0.45, 1.0],
+            ),
+          ),
+        ),
+        Positioned(
+          top: -60,
+          left: -40,
+          child: Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primaryLight.withValues(alpha: 0.12),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 120,
+          right: -50,
+          child: Container(
+            width: 180,
+            height: 180,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.05),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 180,
+          left: 40,
+          child: IgnorePointer(
+            child: CustomPaint(
+              size: const Size(120, 120),
+              painter: _GridDotsPainter(
+                color: Colors.white.withValues(alpha: 0.04),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GridDotsPainter extends CustomPainter {
+  _GridDotsPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const spacing = 14.0;
+    final paint = Paint()..color = color;
+    for (double x = 0; x < size.width; x += spacing) {
+      for (double y = 0; y < size.height; y += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.2, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _PageDots extends StatelessWidget {
+  const _PageDots({
+    required this.count,
+    required this.index,
+  });
+
+  final int count;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(count, (j) {
+        final active = j == index;
+        final done = j < index;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          height: 6,
+          width: active ? 28 : 8,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(99),
+            color: active || done
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.28),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                    ),
+                  ]
+                : null,
+          ),
+        );
+      }),
+    );
+  }
+}
+
+/// بطاقة بلاستيكية بتفاصيل تشبه بطاقة بنك (شريحة + شعار + تدرج)
+class _BankPlasticCard extends StatelessWidget {
+  const _BankPlasticCard({
     required this.slide,
   });
 
-  final int stepIndex;
-  final int stepCount;
   final _OnboardingSlide slide;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xxl,
-      ),
+      constraints: const BoxConstraints(maxWidth: 420),
+      height: 196,
+      padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.rxxl,
-        border: Border.all(
-          color: AppColors.outline.withValues(alpha: 0.65),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.06),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'الخطوة ${stepIndex + 1} من $stepCount',
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          _SlideIcon(icon: slide.icon),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            slide.headline,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.titleMedium.copyWith(
-              color: AppColors.textPrimary,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            slide.body,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMedium.copyWith(
-              height: 1.62,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SlideIcon extends StatelessWidget {
-  const _SlideIcon({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 96,
-      height: 96,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(22),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.lavender,
-            AppColors.surfaceVariant,
-          ],
-        ),
-        border: Border.all(
-          color: AppColors.outlineSoft,
+          colors: slide.gradientColors,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.07),
-            blurRadius: 16,
+            color: slide.gradientColors.last.withValues(alpha: 0.45),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
-      ),
-      child: Icon(
-        icon,
-        size: 40,
-        color: AppColors.primary,
-      ),
-    );
-  }
-}
-
-/// لمسة ثقة خفيفة — بلا وعود بنكية؛ تتماشى مع دور التطبيق كمساعد تنظيم.
-class _TrustFootnote extends StatelessWidget {
-  const _TrustFootnote();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Icon(
-            LucideIcons.shieldCheck,
-            size: 16,
-            color: AppColors.primary.withValues(alpha: 0.85),
-          ),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.22),
+          width: 1,
         ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            'تنظيم مالي موثوق — بياناتك تبقى تحت سيطرتك',
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textMuted,
-              height: 1.4,
-              fontWeight: FontWeight.w600,
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Icon(
+              LucideIcons.circle,
+              size: 140,
+              color: Colors.white.withValues(alpha: 0.06),
             ),
           ),
-        ),
-      ],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(7),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFF0E6D2),
+                          Color(0xFFC9A66B),
+                          Color(0xFF9A7847),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: AppRadius.rfull,
+                    ),
+                    child: Text(
+                      'صافي',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          slide.cardTag,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: Colors.white.withValues(alpha: 0.78),
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '••••  ••••  ••••  8821',
+                          style: AppTextStyles.titleMedium.copyWith(
+                            color: Colors.white,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      slide.icon,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

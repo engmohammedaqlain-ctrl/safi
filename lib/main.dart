@@ -4,9 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'core/bootstrap/startup_ledger_data.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await StartupLedgerData.load();
+  // لا ننتظر تحميل الدفتر هنا — كان يُجمّد الإطار الأول ويُظهر شاشة بيضاء لثوانٍ.
+  StartupLedgerData.ensureLoaded();
   runApp(
     const ProviderScope(
       child: SafiApp(),

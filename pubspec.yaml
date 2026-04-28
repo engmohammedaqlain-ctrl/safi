@@ -44,6 +44,7 @@ dependencies:
   flutter_contacts: ^2.0.2
   permission_handler: ^12.0.1
   image_picker: ^1.2.1
+  flutter_native_splash: ^2.4.7
 
 dev_dependencies:
   flutter_test:
@@ -97,3 +98,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# شاشة إقلاع أصلية (Android 12+ / iOS) — يُحدَّث الشكل عبر: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#F3EFF7"
+  android_12:
+    color: "#F3EFF7"
+  android: true
+  ios: true
+  web: false

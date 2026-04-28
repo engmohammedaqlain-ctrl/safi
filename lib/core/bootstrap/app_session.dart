@@ -29,7 +29,6 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
   AppSessionPhase build() => AppSessionPhase.splash;
 
   Future<void> completeSplashGate() async {
-    await Future<void>.delayed(const Duration(milliseconds: 1600));
     final p = await SharedPreferences.getInstance();
     final logged = p.getBool(PrefsKeys.loggedIn) ?? false;
     final hasName = p.getString(PrefsKeys.userName) != null;

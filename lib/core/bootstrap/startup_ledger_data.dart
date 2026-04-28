@@ -14,6 +14,11 @@ class StartupLedgerData {
   static List<TransactionUi> transactions = [];
   static List<CashbookEntry> cashbook = [];
 
+  static Future<void>? _loadFuture;
+
+  /// يبدأ التحميل مرة واحدة؛ آمِن لاستدعائه من عدة أماكن.
+  static Future<void> ensureLoaded() => _loadFuture ??= load();
+
   static Future<void> load() async {
     final p = await SharedPreferences.getInstance();
     debtors = _decodeDebtors(p.getString(PrefsKeys.debtors));
