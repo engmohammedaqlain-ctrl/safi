@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// نظام الخطوط - يستخدم Cairo كبديل لـ Alexandria حتى يتم إضافتها كـ asset
+/// خط ThmanyahSans محلي حصريًا — الأسود للعناوين والمسائل المهمة، العادي للنص الجاري.
+abstract final class AppFonts {
+  static const family = 'ThmanyahSans';
+}
+
 class AppTextStyles {
   AppTextStyles._();
 
-  static TextStyle _base(double size, FontWeight weight, {Color? color}) {
-    return GoogleFonts.cairo(
+  static TextStyle _regular(double size, FontWeight weight, {Color? color}) {
+    return TextStyle(
+      fontFamily: AppFonts.family,
       fontSize: size,
       fontWeight: weight,
       color: color ?? AppColors.textPrimary,
@@ -16,29 +20,39 @@ class AppTextStyles {
     );
   }
 
-  // العناوين
-  static TextStyle displayLarge = _base(32, FontWeight.w900);
-  static TextStyle displayMedium = _base(28, FontWeight.w800);
-  static TextStyle headlineMedium = _base(26, FontWeight.w800);
-  static TextStyle headlineSmall = _base(22, FontWeight.w700);
+  static TextStyle _black(double size, {Color? color}) {
+    return TextStyle(
+      fontFamily: AppFonts.family,
+      fontSize: size,
+      fontWeight: FontWeight.w900,
+      color: color ?? AppColors.textPrimary,
+      height: 1.4,
+    );
+  }
 
-  // العناوين الفرعية
-  static TextStyle titleLarge = _base(20, FontWeight.w700);
-  static TextStyle titleMedium = _base(17, FontWeight.w700);
-  static TextStyle titleSmall = _base(15, FontWeight.w700);
+  // العناوين والعناصر البارزة
+  static TextStyle displayLarge = _black(32);
+  static TextStyle displayMedium = _black(28);
+  static TextStyle headlineMedium = _black(26);
+  static TextStyle headlineSmall = _black(22);
 
-  // النصوص العامة
-  static TextStyle bodyLarge = _base(16, FontWeight.w600);
-  static TextStyle bodyMedium = _base(14, FontWeight.w500, color: AppColors.textSecondary);
-  static TextStyle bodySmall = _base(13, FontWeight.w500, color: AppColors.textMuted);
+  static TextStyle titleLarge = _black(20);
+  static TextStyle titleMedium = _black(17);
+  static TextStyle titleSmall = _black(15);
 
-  // الملصقات
-  static TextStyle labelLarge = _base(14, FontWeight.w700);
-  static TextStyle labelMedium = _base(12, FontWeight.w700);
-  static TextStyle labelSmall = _base(11, FontWeight.w700);
+  // النصوص العامة — Regular
+  static TextStyle bodyLarge = _regular(16, FontWeight.w600);
+  static TextStyle bodyMedium = _regular(14, FontWeight.w500, color: AppColors.textSecondary);
+  static TextStyle bodySmall = _regular(13, FontWeight.w500, color: AppColors.textMuted);
 
-  /// أنماط للأرقام - دائماً tabular figures + bold
-  static TextStyle numberHuge = GoogleFonts.cairo(
+  // ملصقات وواجهة — أسود بوضوح ضمن الواجهة
+  static TextStyle labelLarge = _black(14);
+  static TextStyle labelMedium = _black(12);
+  static TextStyle labelSmall = _black(11);
+
+  /// أرقام — وزن ثقيل + أرقام ثابتة العرض
+  static TextStyle numberHuge = TextStyle(
+    fontFamily: AppFonts.family,
     fontSize: 32,
     fontWeight: FontWeight.w900,
     color: AppColors.textPrimary,
@@ -46,7 +60,8 @@ class AppTextStyles {
     height: 1.1,
   );
 
-  static TextStyle numberLarge = GoogleFonts.cairo(
+  static TextStyle numberLarge = TextStyle(
+    fontFamily: AppFonts.family,
     fontSize: 24,
     fontWeight: FontWeight.w900,
     color: AppColors.textPrimary,
@@ -54,9 +69,10 @@ class AppTextStyles {
     height: 1.1,
   );
 
-  static TextStyle numberMedium = GoogleFonts.cairo(
+  static TextStyle numberMedium = TextStyle(
+    fontFamily: AppFonts.family,
     fontSize: 18,
-    fontWeight: FontWeight.w800,
+    fontWeight: FontWeight.w900,
     color: AppColors.textPrimary,
     fontFeatures: const [FontFeature.tabularFigures()],
   );

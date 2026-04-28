@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../router/app_page_route.dart';
 import 'app_colors.dart';
@@ -15,7 +14,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.background,
-      fontFamily: GoogleFonts.cairo().fontFamily,
+      fontFamily: AppFonts.family,
       colorScheme: ColorScheme.light(
         primary: AppColors.primary,
         onPrimary: AppColors.onPrimary,
@@ -30,16 +29,14 @@ class AppTheme {
         outline: AppColors.outline,
         outlineVariant: AppColors.outlineSoft,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.backgroundSecondary,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
+        titleTextStyle: AppTextStyles.titleLarge.copyWith(
           color: AppColors.primary,
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
         ),
         iconTheme: IconThemeData(color: AppColors.primary),
         foregroundColor: AppColors.textPrimary,
