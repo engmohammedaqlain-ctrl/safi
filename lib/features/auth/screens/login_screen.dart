@@ -9,6 +9,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/safi_button.dart';
+import '../../../core/widgets/vault_branded_shell.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -60,206 +61,202 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [Color(0xFFFFFFFF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
+    return VaultBrandedShell(
+      headerSubtitle: _showOtp
+          ? 'أدخل الرمز الستّي المرسل عبر الرسائل'
+          : 'تسجيل دخول آمن',
+      belowBrand: Center(
+        child: _LoginStepIndicator(onOtpStep: _showOtp),
+      ),
+      sheet: Column(
+        children: [
+          Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.xl,
+              padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
-                AppSpacing.xl,
-                bottomInset + AppSpacing.lg,
+                24,
+                AppSpacing.lg,
+                12,
               ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  children: [
-                    // ── شعار مضغوط ──
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(
-                                  alpha: 0.30,
-                                ),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
+              child: Column(
+                children: [
+                  Material(
+                    color: AppColors.backgroundSecondary,
+                    borderRadius: AppRadius.rxl,
+                    elevation: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: AppRadius.rxl,
+                        border: Border.all(color: AppColors.outlineSoft),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.07),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
                           ),
-                          child: const Icon(
-                            LucideIcons.store,
-                            color: Colors.white,
-                            size: 26,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'صافي',
-                          style: AppTextStyles.headlineMedium.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'تسجيل دخول آمن',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // ── البطاقة الرئيسية ──
-                    Material(
-                      color: AppColors.backgroundSecondary,
-                      borderRadius: AppRadius.rxl,
-                      elevation: 0,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: AppRadius.rxl,
-                          border: Border.all(color: AppColors.outlineSoft),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.07),
-                              blurRadius: 20,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (!_showOtp) ...[
-                              // ── مرحلة الهاتف ──
-                              Text(
-                                'رقم الهاتف',
-                                style: AppTextStyles.titleSmall,
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (!_showOtp) ...[
+                            Text(
+                              'رقم الهاتف',
+                              style: AppTextStyles.titleSmall.copyWith(
+                                color: const Color(0xFF12121F),
                               ),
-                              const SizedBox(height: 8),
-                              TextField(
-                                controller: _phone,
-                                keyboardType: TextInputType.phone,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
-                                decoration: const InputDecoration(
-                                  hintText: 'مثال: 599123456',
-                                  prefixIcon: Icon(
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _phone,
+                              keyboardType: TextInputType.phone,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              decoration: const InputDecoration(
+                                hintText: 'مثال: 599123456',
+                                prefixIcon: Icon(
+                                  LucideIcons.smartphone,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
                                     LucideIcons.smartphone,
+                                    size: 16,
                                     color: AppColors.primary,
                                   ),
                                 ),
-                              ),
-                            ] else ...[
-                              // ── مرحلة رمز التحقق — مضغوطة ──
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                      LucideIcons.smartphone,
-                                      size: 16,
-                                      color: AppColors.primary,
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _phone.text,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _phone.text,
-                                      style: AppTextStyles.bodyMedium.copyWith(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'أدخل رمز التحقق المُرسل عبر SMS',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: AppColors.textMuted,
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              OtpCodeField(
-                                key: _otpKey,
-                                onCodeChanged: (s) {
-                                  setState(() => _otpCode = s);
-                                },
-                              ),
-                            ],
-                            const SizedBox(height: AppSpacing.md),
-                            SafiButton(
-                              label: _showOtp
-                                  ? (_submitting
-                                        ? 'جاري التحقق...'
-                                        : 'تأكيد والدخول')
-                                  : 'إرسال رمز التحقق',
-                              onPressed: _submitting ? null : _continue,
+                              ],
                             ),
-                            if (_showOtp) ...[
-                              const SizedBox(height: 6),
-                              TextButton(
-                                onPressed: _submitting
-                                    ? null
-                                    : () {
-                                        setState(() {
-                                          _showOtp = false;
-                                          _otpCode = '';
-                                        });
-                                        _otpKey.currentState?.clear();
-                                      },
-                                child: const Text('تصحيح رقم الهاتف'),
+                            const SizedBox(height: 2),
+                            Text(
+                              'أدخل رمز التحقق المُرسل عبر SMS',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textMuted,
                               ),
-                            ],
+                            ),
+                            const SizedBox(height: 12),
+                            OtpCodeField(
+                              key: _otpKey,
+                              onCodeChanged: (s) {
+                                setState(() => _otpCode = s);
+                              },
+                            ),
                           ],
-                        ),
+                          if (_showOtp) ...[
+                            const SizedBox(height: 6),
+                            TextButton(
+                              onPressed: _submitting
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _showOtp = false;
+                                        _otpCode = '';
+                                      });
+                                      _otpKey.currentState?.clear();
+                                    },
+                              child: const Text('تصحيح رقم الهاتف'),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      'بمتابعة الدخول تؤكد موافقتك على استخدام التطبيق لإدارة متجرك.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.textMuted,
-                        height: 1.4,
-                      ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'بمتابعة الدخول تؤكد موافقتك على استخدام التطبيق لإدارة متجرك.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.textMuted,
+                      height: 1.4,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-        ),
+          const VaultTrustStrip(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            child: SafiButton(
+              label: _showOtp
+                  ? (_submitting ? 'جاري التحقق...' : 'تأكيد والدخول')
+                  : 'إرسال رمز التحقق',
+              icon: _showOtp ? LucideIcons.check : null,
+              onPressed: _submitting ? null : _continue,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// مؤشر خطوتين تحت شعار صافي (نفس أسلوب نقاط الأونبوردنغ).
+class _LoginStepIndicator extends StatelessWidget {
+  const _LoginStepIndicator({required this.onOtpStep});
+
+  final bool onOtpStep;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _stepDot(active: !onOtpStep, done: onOtpStep),
+        const SizedBox(width: 8),
+        _stepDot(active: onOtpStep, done: false),
+      ],
+    );
+  }
+
+  Widget _stepDot({required bool active, required bool done}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      height: 6,
+      width: active ? 28 : 8,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(99),
+        color: active || done
+            ? Colors.white
+            : Colors.white.withValues(alpha: 0.28),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  blurRadius: 8,
+                ),
+              ]
+            : null,
       ),
     );
   }
