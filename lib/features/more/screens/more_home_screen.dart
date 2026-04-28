@@ -1,240 +1,273 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/bootstrap/prefs_keys.dart';
+import '../../../core/router/app_page_route.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/glass_card.dart';
 import '../../ai_assistant/screens/ai_assistant_screen.dart';
-import '../../cash_flow/screens/cash_entry_screen.dart';
-import '../../cash_flow/screens/cash_flow_screen.dart';
-import '../../debts/screens/add_debt_screen.dart';
 import '../../debts/screens/all_customers_screen.dart';
-import '../../debts/screens/record_payment_screen.dart';
-import '../../home/screens/home_screen.dart';
-import '../../inventory/screens/add_product_screen.dart';
-import '../../inventory/screens/delete_products_screen.dart';
-import '../../inventory/screens/inventory_screen.dart';
 import '../../reports/screens/reports_screen.dart';
-import '../../sales/screens/new_sale_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import 'notifications_screen.dart';
-import 'package:safi/core/router/app_page_route.dart';
 
-/// مركز وصول لبقية أقسام التطبيق
-class MoreHomeScreen extends StatelessWidget {
+/// مركز الوصول — تصميم سلس ومُبسَّط بلا تكرار
+/// كل ما هنا غير موجود في تبويبات التطبيق الأخرى.
+class MoreHomeScreen extends ConsumerWidget {
   const MoreHomeScreen({super.key});
 
-  void _push(BuildContext context, Widget page) {
-    Navigator.push<void>(
-      context,
-      AppPageRoute<void>(builder: (_) => page),
-    );
-  }
-
   @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.lg,
-        100,
-      ),
-      children: [
-        // ── وصول سريع ──
-        _SectionLabel('الوصول السريع'),
-        GlassCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _NavTile(
-                icon: LucideIcons.bell,
-                title: 'الإشعارات',
-                onTap: () => _push(context, const NotificationsScreen()),
-              ),
-              const Divider(height: 1, indent: 52),
-              _NavTile(
-                icon: LucideIcons.layoutGrid,
-                title: 'لوحة التحكم',
-                onTap: () =>
-                    _push(context, const HomeScreen(bottomContentPadding: 32)),
-              ),
-              const Divider(height: 1, indent: 52),
-              _NavTile(
-                icon: LucideIcons.users,
-                title: 'عملائي',
-                onTap: () => _push(context, const AllCustomersScreen()),
-              ),
-              const Divider(height: 1, indent: 52),
-              _NavTile(
-                icon: LucideIcons.package,
-                title: 'المخزون',
-                onTap: () => _push(
-                  context,
-                  const InventoryScreen(bottomContentPadding: 32),
+  Widget build(BuildContext context, WidgetRef ref) {
+    void push(Widget page) {
+      Navigator.push<void>(
+        context,
+        AppPageRoute<void>(builder: (_) => page),
+      );
+    }
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+          children: [
+            // ── بطاقة المستخدم ──
+            const _UserHeaderCard(),
+            const SizedBox(height: 22),
+
+            // ── 5 أزرار رئيسية ──
+            _SoftMenu(
+              items: [
+                _MenuItem(
+                  icon: LucideIcons.users,
+                  title: 'عملائي',
+                  subtitle: 'كل العملاء والموردين',
+                  onTap: () => push(const AllCustomersScreen()),
                 ),
-              ),
-              const Divider(height: 1, indent: 52),
-              _NavTile(
-                icon: LucideIcons.barChart2,
-                title: 'التقارير',
-                onTap: () => _push(
-                  context,
-                  const ReportsScreen(bottomContentPadding: 32),
+                _MenuItem(
+                  icon: LucideIcons.bell,
+                  title: 'الإشعارات',
+                  subtitle: 'التذكيرات والتنبيهات',
+                  onTap: () => push(const NotificationsScreen()),
                 ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-
-        // ── عمليات ──
-        _SectionLabel('العمليات'),
-        GlassCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _NavTile(
-                icon: LucideIcons.userPlus,
-                title: 'تسجيل دين',
-                onTap: () => _push(context, const AddDebtScreen()),
-              ),
-              const Divider(height: 1, indent: 52),
-              _NavTile(
-                icon: LucideIcons.banknote,
-                title: 'تسجيل دفعة',
-                onTap: () => _push(context, const RecordPaymentScreen()),
-              ),
-              const Divider(height: 1, indent: 52),
-              _NavTile(
-                icon: LucideIcons.plusCircle,
-                title: 'بيع جديد',
-                onTap: () => _push(context, const NewSaleScreen()),
-              ),
-              const Divider(height: 1, indent: 52),
-              _NavTile(
-                icon: LucideIcons.arrowLeftRight,
-                title: 'قيد مالي (وارد / صادر)',
-                onTap: () => _push(context, const CashEntryScreen()),
-              ),
-              const Divider(height: 1, indent: 52),
-              _NavTile(
-                icon: LucideIcons.archive,
-                title: 'أرشيف المعاملات',
-                onTap: () => _push(context, const CashFlowScreen()),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-
-        // ── المخزون ──
-        _SectionLabel('المخزون'),
-        GlassCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _NavTile(
-                icon: LucideIcons.packagePlus,
-                title: 'إضافة منتج',
-                onTap: () => _push(context, const AddProductScreen()),
-              ),
-              const Divider(height: 1, indent: 52),
-              _NavTile(
-                icon: LucideIcons.trash2,
-                title: 'حذف أو أرشفة منتج',
-                iconColor: AppColors.error,
-                onTap: () => _push(context, const DeleteProductsScreen()),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-
-        // ── الحساب ──
-        _SectionLabel('الحساب'),
-        GlassCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _NavTile(
-                icon: LucideIcons.sparkles,
-                title: 'المساعد الذكي',
-                onTap: () => _push(context, const AiAssistantScreen()),
-              ),
-              const Divider(height: 1, indent: 52),
-              _NavTile(
-                icon: LucideIcons.settings,
-                title: 'الإعدادات',
-                onTap: () => _push(context, const SettingsScreen()),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── عنوان القسم ──
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.label);
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8, right: 4),
-      child: Text(
-        label,
-        style: AppTextStyles.labelSmall.copyWith(
-          color: AppColors.textSecondary,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.35,
+                _MenuItem(
+                  icon: LucideIcons.barChart2,
+                  title: 'التقارير',
+                  subtitle: 'تحليل الديون والمعاملات',
+                  onTap: () => push(
+                    const ReportsScreen(bottomContentPadding: 32),
+                  ),
+                ),
+                _MenuItem(
+                  icon: LucideIcons.sparkles,
+                  title: 'المساعد الذكي',
+                  subtitle: 'إجابات سريعة عن أعمالك',
+                  onTap: () => push(const AiAssistantScreen()),
+                ),
+                _MenuItem(
+                  icon: LucideIcons.settings,
+                  title: 'الإعدادات',
+                  subtitle: 'الحساب، المزامنة، الجلسة',
+                  onTap: () => push(const SettingsScreen()),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── صف تنقل ──
-class _NavTile extends StatelessWidget {
-  const _NavTile({
+// ════════════════════════════════════════════════════════════════
+//  بطاقة المستخدم — بنفس روح بطاقة الرصيد في صفحة الديون
+// ════════════════════════════════════════════════════════════════
+class _UserHeaderCard extends ConsumerWidget {
+  const _UserHeaderCard();
+
+  Future<String> _loadName() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getString(PrefsKeys.userName) ?? 'المستخدم';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return FutureBuilder<String>(
+      future: _loadName(),
+      builder: (context, snap) {
+        final name = snap.data ?? '...';
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  LucideIcons.user,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'مرحباً بك في صافي',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  قائمة ناعمة — بطاقة بيضاء واحدة بصفوف مفصولة بخطوط رفيعة
+//  مطابقة لروح بطاقات صفحة الديون
+// ════════════════════════════════════════════════════════════════
+class _SoftMenu extends StatelessWidget {
+  const _SoftMenu({required this.items});
+
+  final List<_MenuItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.outlineSoft),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 18),
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFFF3F0F7),
+                ),
+              ),
+            items[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  const _MenuItem({
     required this.icon,
     required this.title,
+    required this.subtitle,
     required this.onTap,
-    this.iconColor,
   });
 
   final IconData icon;
   final String title;
+  final String subtitle;
   final VoidCallback onTap;
-  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
-    final c = iconColor ?? AppColors.primary;
-    return ListTile(
-      onTap: onTap,
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: c.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 21),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                LucideIcons.chevronLeft,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+            ],
+          ),
         ),
-        child: Icon(icon, color: c, size: 20),
       ),
-      title: Text(title, style: AppTextStyles.titleSmall),
-      trailing: const Icon(
-        LucideIcons.chevronLeft,
-        size: 18,
-        color: AppColors.textMuted,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-      dense: true,
-      minVerticalPadding: 8,
     );
   }
 }

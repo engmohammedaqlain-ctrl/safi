@@ -13,7 +13,6 @@ import '../../cash_flow/screens/cash_flow_screen.dart';
 import '../../cash_flow/screens/financial_accounts_screen.dart';
 import '../models/cashbook_entry.dart';
 import '../providers/cashbook_ui_provider.dart';
-import 'new_sale_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
 
 /// دفتر النقدية — نفس ألوان / ثيم صفحة الديون + تخطيط RTL
@@ -58,16 +57,6 @@ class SalesScreen extends ConsumerWidget {
             Row(
               textDirection: TextDirection.rtl,
               children: [
-                // RTL: من اليسار = تقارير، أرشيف، محافظ، نقطة بيع
-                Expanded(
-                  child: _TopCardAction(
-                    icon: LucideIcons.shoppingCart,
-                    label: 'نقطة البيع',
-                    onTap: () => push(const NewSaleScreen()),
-                    compact: true,
-                  ),
-                ),
-                const SizedBox(width: 2),
                 Expanded(
                   child: _TopCardAction(
                     icon: LucideIcons.wallet,
