@@ -1,7 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../../core/bootstrap/app_session.dart';
+import '../../../core/router/app_page_route.dart';
+import '../../../core/services/ledger_team_access.dart';
+import '../../../core/sync/post_login_loading.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -9,14 +15,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/reports_style_shell.dart';
 import '../../debts/providers/debts_ui_provider.dart';
-import '../../../core/router/app_page_route.dart';
 import '../../debts/screens/customer_detail_screen.dart';
 import '../../settings/providers/team_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../../core/bootstrap/app_session.dart';
-import '../../../core/services/ledger_team_access.dart';
-import '../../../core/sync/post_login_loading.dart';
 
 /// صفحة الإشعارات المربوطة بالديون
 class NotificationsScreen extends ConsumerWidget {
@@ -77,7 +77,8 @@ class NotificationsScreen extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: GestureDetector(
-                        onTap: () => _handleInviteTap(context, ref, invite),
+                        onTap: () =>
+                            _handleNotificationInviteTap(context, ref, invite),
                         child: _NotifTile(
                           icon: LucideIcons.store,
                           color: AppColors.primary,
@@ -123,9 +124,9 @@ class NotificationsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.push(
+                    Navigator.push<void>(
                       context,
-                      AppPageRoute(
+                      AppPageRoute<void>(
                         builder: (_) => CustomerDetailScreen(debtor: d),
                       ),
                     );
@@ -158,9 +159,9 @@ class NotificationsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.push(
+                    Navigator.push<void>(
                       context,
-                      AppPageRoute(
+                      AppPageRoute<void>(
                         builder: (_) => CustomerDetailScreen(debtor: d),
                       ),
                     );
@@ -182,113 +183,110 @@ class NotificationsScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Future<void> _handleInviteTap(
-    BuildContext context,
-    WidgetRef ref,
-    TeamInvite invite,
-  ) async {
-    final accept = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('دعوة انضمام لفريق'),
-          content: Text(
-            'تمت دعوتك للانضمام إلى متجر "${invite.storeName}" بصلاحية "${invite.role == 'cashier' ? 'كاشير' : 'مشاهد'}". هل تقبل الدعوة؟',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('رفض'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text('قبول'),
-            ),
-          ],
+Future<void> _handleNotificationInviteTap(
+  BuildContext context,
+  WidgetRef ref,
+  TeamInvite invite,
+) async {
+  final accept = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        title: const Text('دعوة انضمام لفريق'),
+        content: Text(
+          'تمت دعوتك للانضمام إلى متجر "${invite.storeName}" بصلاحية "${invite.role == 'cashier' ? 'كاشير' : 'مشاهد'}". هل تقبل الدعوة؟',
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('رفض'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('قبول'),
+          ),
+        ],
       ),
-    );
+    ),
+  );
 
-    if (accept == null) return;
+  if (accept == null) return;
 
-    // ◀ تحديث فوري للواجهة قبل أي await
+  if (accept) {
+    ref
+        .read(userRoleNotifierProvider.notifier)
+        .setRole(invite.role, invite.permissions);
+  }
+
+  ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(accept);
+
+  try {
     if (accept) {
-      ref
-          .read(userRoleNotifierProvider.notifier)
-          .setRole(invite.role, invite.permissions);
-    }
+      await FirebaseFirestore.instance
+          .collection('team_invites')
+          .doc(invite.id)
+          .update({'status': 'active'});
 
-    ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(accept);
+      await LedgerTeamAccess.grantForActiveMember(
+        ownerUid: invite.ownerUid,
+        phoneDocId: invite.id,
+        role: invite.role,
+        permissions: invite.permissions,
+      );
 
-    try {
-      if (accept) {
-        await FirebaseFirestore.instance
-            .collection('team_invites')
-            .doc(invite.id)
-            .update({'status': 'active'});
-
-        await LedgerTeamAccess.grantForActiveMember(
-          ownerUid: invite.ownerUid,
-          phoneDocId: invite.id,
-          role: invite.role,
-          permissions: invite.permissions,
-        );
-
-        await ref
-            .read(appSessionProvider.notifier)
-            .onLoginSuccess(
-              phoneDocId: invite.id,
-              ownerUidOverride: invite.ownerUid,
-              role: invite.role,
-              permissions: invite.permissions,
-            );
-
-        if (context.mounted) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'مرحباً! انضممت إلى متجر "${invite.storeName}" بصلاحية '
-                '${invite.role == 'cashier' ? 'كاشير' : 'مشاهد'}',
-              ),
-              backgroundColor: AppColors.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
+      await ref.read(appSessionProvider.notifier).onLoginSuccess(
+            phoneDocId: invite.id,
+            ownerUidOverride: invite.ownerUid,
+            role: invite.role,
+            permissions: invite.permissions,
           );
-        }
-      } else {
-        final authUid = FirebaseAuth.instance.currentUser?.uid;
-        if (authUid != null) {
-          await LedgerTeamAccess.revokeMember(
-            ownerUid: invite.ownerUid,
-            memberAuthUid: authUid,
-          );
-        }
-        await FirebaseFirestore.instance
-            .collection('team_invites')
-            .doc(invite.id)
-            .delete();
 
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(invite.ownerUid)
-            .collection('team')
-            .doc(invite.id)
-            .delete();
-      }
-    } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('حدث خطأ: $e')));
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'مرحباً! انضممت إلى متجر "${invite.storeName}" بصلاحية '
+              '${invite.role == 'cashier' ? 'كاشير' : 'مشاهد'}',
+            ),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
-    } finally {
-      ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(false);
+    } else {
+      final authUid = FirebaseAuth.instance.currentUser?.uid;
+      if (authUid != null) {
+        await LedgerTeamAccess.revokeMember(
+          ownerUid: invite.ownerUid,
+          memberAuthUid: authUid,
+        );
+      }
+      await FirebaseFirestore.instance
+          .collection('team_invites')
+          .doc(invite.id)
+          .delete();
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(invite.ownerUid)
+          .collection('team')
+          .doc(invite.id)
+          .delete();
     }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حدث خطأ: $e')),
+      );
+    }
+  } finally {
+    ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(false);
   }
 }
 
