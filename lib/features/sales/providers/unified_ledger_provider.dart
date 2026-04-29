@@ -12,7 +12,7 @@ export 'unified_ledger_math.dart' show UnifiedLedgerMath, UnifiedLedgerRowUi;
 /// كل حركات الصافي (صندوق + ديون) — الأحدث أولاً.
 /// للأرشيف والشاشات التي تعرض كل الحركات معاً.
 final unifiedLedgerRowsProvider = Provider<List<UnifiedLedgerRowUi>>((ref) {
-  final cash = ref.watch(cashbookEntriesProvider);
+  final cash = ref.watch(activeCashbookEntriesProvider);
   final txs = ref.watch(transactionsProvider);
   final debtors = ref.watch(debtorsUiProvider);
   return UnifiedLedgerMath.buildRowsNewestFirst(
@@ -24,7 +24,7 @@ final unifiedLedgerRowsProvider = Provider<List<UnifiedLedgerRowUi>>((ref) {
 
 /// صندوق فقط لتبويب «الصافي» — بدون معاملات دين/سداد (تظهر في الأرشيف).
 final safiCashOnlyLedgerRowsProvider = Provider<List<UnifiedLedgerRowUi>>((ref) {
-  final cash = ref.watch(cashbookEntriesProvider);
+  final cash = ref.watch(activeCashbookEntriesProvider);
   final debtors = ref.watch(debtorsUiProvider);
   return UnifiedLedgerMath.buildRowsNewestFirst(
     cash: cash,
@@ -34,20 +34,20 @@ final safiCashOnlyLedgerRowsProvider = Provider<List<UnifiedLedgerRowUi>>((ref) 
 });
 
 final unifiedNetSignedProvider = Provider<double>((ref) {
-  final cash = ref.watch(cashbookEntriesProvider);
+  final cash = ref.watch(activeCashbookEntriesProvider);
   final txs = ref.watch(transactionsProvider);
   return UnifiedLedgerMath.netSignedTotal(cash: cash, txs: txs);
 });
 
 /// صافي الصندوق فقط — يطابق قائمة المعاملات في تبويب «الصافي».
 final safiCashOnlyNetSignedProvider = Provider<double>((ref) {
-  final cash = ref.watch(cashbookEntriesProvider);
+  final cash = ref.watch(activeCashbookEntriesProvider);
   return UnifiedLedgerMath.netSignedTotal(cash: cash, txs: const []);
 });
 
 final unifiedInflowOutflowProvider =
     Provider<({double inflow, double outflow})>((ref) {
-  final cash = ref.watch(cashbookEntriesProvider);
+  final cash = ref.watch(activeCashbookEntriesProvider);
   final txs = ref.watch(transactionsProvider);
   return UnifiedLedgerMath.inflowOutflowSplit(cash: cash, txs: txs);
 });
@@ -55,7 +55,7 @@ final unifiedInflowOutflowProvider =
 /// دخل/مصروف الصندوق فقط — يطابق بطاقة «الصافي» عند عرض حركات الصندوق فقط.
 final safiCashOnlyInflowOutflowProvider =
     Provider<({double inflow, double outflow})>((ref) {
-  final cash = ref.watch(cashbookEntriesProvider);
+  final cash = ref.watch(activeCashbookEntriesProvider);
   return UnifiedLedgerMath.inflowOutflowSplit(cash: cash, txs: const []);
 });
 

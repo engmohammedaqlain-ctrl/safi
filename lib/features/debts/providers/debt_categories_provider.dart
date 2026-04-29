@@ -18,20 +18,35 @@ class DebtCategoriesNotifier extends Notifier<List<DebtCategory>> {
   }
 
   void add(DebtCategory c) {
-    state = [...state, c];
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final withTs = c.editedMs > 0 ? c : c.copyWith(editedMs: now);
+    state = [...state, withTs];
     _persist();
   }
 
   void update(DebtCategory c) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final u = c.copyWith(editedMs: now);
     state = [
       for (final x in state)
-        if (x.id == c.id) c else x,
+        if (x.id == c.id) u else x,
     ];
     _persist();
   }
 
   void removeById(String id) {
-    state = [for (final x in state) if (x.id != id) x];
+    final now = DateTime.now().millisecondsSinceEpoch;
+    state = [
+      for (final x in state)
+        if (x.id == id)
+          x.copyWith(
+            isDeleted: true,
+            deletedMs: now,
+            editedMs: now,
+          )
+        else
+          x,
+    ];
     _persist();
   }
 }
@@ -40,6 +55,13 @@ final debtCategoriesProvider =
     NotifierProvider<DebtCategoriesNotifier, List<DebtCategory>>(
   DebtCategoriesNotifier.new,
 );
+
+/// تصنيفات غير محذوفة للعرض والاختيار.
+final activeDebtCategoriesProvider = Provider<List<DebtCategory>>((ref) {
+  return [
+    for (final c in ref.watch(debtCategoriesProvider)) if (!c.isDeleted) c,
+  ];
+});
 
 /// عدد العملاء المرتبطين بتصنيف (للعناوين الفرعية في إدارة التصنيفات)
 final categoryCustomerCountProvider = Provider.family<int, String>((

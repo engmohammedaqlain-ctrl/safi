@@ -52,6 +52,7 @@ double netCashbookSignedForWallet(
 ) {
   var s = 0.0;
   for (final e in entries) {
+    if (e.isDeleted) continue;
     final rid = resolvedCashAccountIdForEntry(e, accounts);
     if (rid != walletId) continue;
     s += e.isIncome ? e.amount : -e.amount;
@@ -67,6 +68,7 @@ double netDebtSignedForWallet(
 ) {
   var s = 0.0;
   for (final t in txs) {
+    if (t.isDeleted) continue;
     if (!debtPayTouchesWallet(t, acc, accounts)) continue;
     switch (t.type) {
       case TransactionType.received:

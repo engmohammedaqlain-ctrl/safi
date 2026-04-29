@@ -34,6 +34,9 @@ class FinancialAccount {
   final double balance;
   final String? accountNumber;
   final String? accountOwner;
+  final int editedMs;
+  final bool isDeleted;
+  final int deletedMs;
 
   const FinancialAccount({
     required this.id,
@@ -42,6 +45,9 @@ class FinancialAccount {
     this.balance = 0.0,
     this.accountNumber,
     this.accountOwner,
+    this.editedMs = 0,
+    this.isDeleted = false,
+    this.deletedMs = 0,
   });
 
   FinancialAccount copyWith({
@@ -50,6 +56,9 @@ class FinancialAccount {
     double? balance,
     String? accountNumber,
     String? accountOwner,
+    int? editedMs,
+    bool? isDeleted,
+    int? deletedMs,
   }) {
     return FinancialAccount(
       id: id,
@@ -58,6 +67,9 @@ class FinancialAccount {
       balance: balance ?? this.balance,
       accountNumber: accountNumber ?? this.accountNumber,
       accountOwner: accountOwner ?? this.accountOwner,
+      editedMs: editedMs ?? this.editedMs,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedMs: deletedMs ?? this.deletedMs,
     );
   }
 }

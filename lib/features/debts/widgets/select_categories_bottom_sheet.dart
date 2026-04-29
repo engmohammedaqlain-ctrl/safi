@@ -59,7 +59,7 @@ class _SelectBodyState extends ConsumerState<_SelectBody> {
 
   @override
   Widget build(BuildContext context) {
-    final list = ref.watch(debtCategoriesProvider);
+    final list = ref.watch(activeDebtCategoriesProvider);
     final maxH = MediaQuery.sizeOf(context).height * 0.58;
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
 

@@ -14,7 +14,7 @@ class CategoryManagementScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final categories = ref.watch(debtCategoriesProvider);
+    final categories = ref.watch(activeDebtCategoriesProvider);
 
     return Directionality(
       textDirection: TextDirection.rtl,

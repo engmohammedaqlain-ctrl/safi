@@ -60,7 +60,7 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
     super.didChangeDependencies();
     if (_accountSynced) return;
     _accountSynced = true;
-    final list = ref.read(accountsProvider);
+    final list = ref.read(activeAccountsProvider);
     if (list.isEmpty) return;
     final id = _accountId;
     final valid = id != null && list.any((a) => a.id == id);
@@ -162,7 +162,7 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
       return;
     }
 
-    final accounts = ref.read(accountsProvider);
+    final accounts = ref.read(activeAccountsProvider);
     var accId = _accountId;
     if (accId == null && accounts.isNotEmpty) accId = accounts.first.id;
     if (accId == null) {
@@ -226,7 +226,7 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accounts = ref.watch(accountsProvider);
+    final accounts = ref.watch(activeAccountsProvider);
 
     return Directionality(
       textDirection: TextDirection.rtl,

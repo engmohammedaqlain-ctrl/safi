@@ -55,7 +55,7 @@ class _AddCustomerDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    final allCategories = ref.watch(debtCategoriesProvider);
+    final allCategories = ref.watch(activeDebtCategoriesProvider);
 
     return Directionality(
       textDirection: TextDirection.rtl,

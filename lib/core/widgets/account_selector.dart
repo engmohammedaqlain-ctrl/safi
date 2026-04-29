@@ -20,7 +20,7 @@ class AccountSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accounts = ref.watch(accountsProvider);
+    final accounts = ref.watch(activeAccountsProvider);
 
     if (accounts.isEmpty) {
       return Text(

@@ -17,12 +17,19 @@ class AccountsNotifier extends Notifier<List<FinancialAccount>> {
   }
 
   void addAccount(FinancialAccount acc) {
-    state = [...state, StartupLedgerData.normalizeFinancialAccount(acc)];
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final withTs = acc.editedMs > 0
+        ? acc
+        : acc.copyWith(editedMs: now);
+    state = [...state, StartupLedgerData.normalizeFinancialAccount(withTs)];
     _persist();
   }
 
   void updateAccount(FinancialAccount acc) {
-    final n = StartupLedgerData.normalizeFinancialAccount(acc);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final n = StartupLedgerData.normalizeFinancialAccount(
+      acc.copyWith(editedMs: now),
+    );
     state = [
       for (final a in state)
         if (a.id == n.id) n else a,
@@ -31,7 +38,18 @@ class AccountsNotifier extends Notifier<List<FinancialAccount>> {
   }
 
   void deleteAccount(String id) {
-    state = state.where((a) => a.id != id).toList();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    state = [
+      for (final a in state)
+        if (a.id == id)
+          a.copyWith(
+            isDeleted: true,
+            deletedMs: now,
+            editedMs: now,
+          )
+        else
+          a,
+    ];
     _persist();
   }
 }
@@ -40,3 +58,10 @@ final accountsProvider =
     NotifierProvider<AccountsNotifier, List<FinancialAccount>>(
   AccountsNotifier.new,
 );
+
+/// محافظ/حسابات نشطة فقط (للواجهة والاختيار).
+final activeAccountsProvider = Provider<List<FinancialAccount>>((ref) {
+  return [
+    for (final a in ref.watch(accountsProvider)) if (!a.isDeleted) a,
+  ];
+});

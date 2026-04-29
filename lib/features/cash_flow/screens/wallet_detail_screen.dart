@@ -47,7 +47,7 @@ class WalletDetailScreen extends ConsumerWidget {
       ),
     );
 
-    if (acc.id == '_missing') {
+    if (acc.id == '_missing' || acc.isDeleted) {
       return Directionality(
         textDirection: TextDirection.rtl,
         child: VaultInsetPageShell(
@@ -78,17 +78,23 @@ class WalletDetailScreen extends ConsumerWidget {
     }
 
     final hidden = ref.watch(hideBalanceProvider);
+    final activeAccounts = ref.watch(activeAccountsProvider);
     final allEntries = ref.watch(cashbookEntriesProvider);
     final allTx = ref.watch(transactionsProvider);
     final debtors = ref.watch(debtorsUiProvider);
 
     final cashEntries = allEntries.where((e) {
-      final rid = resolvedCashAccountIdForEntry(e, accounts);
+      if (e.isDeleted) return false;
+      final rid = resolvedCashAccountIdForEntry(e, activeAccounts);
       return rid == acc.id;
     }).toList(growable: false);
 
     final debtTxs = allTx
-        .where((t) => debtPayTouchesWallet(t, acc, accounts))
+        .where(
+          (t) =>
+              !t.isDeleted &&
+              debtPayTouchesWallet(t, acc, activeAccounts),
+        )
         .toList(growable: false);
 
     final cashIncome = cashEntries
@@ -122,7 +128,7 @@ class WalletDetailScreen extends ConsumerWidget {
       acc: acc,
       entries: allEntries,
       txs: allTx,
-      accounts: accounts,
+      accounts: activeAccounts,
     );
 
     return Directionality(

@@ -591,7 +591,7 @@ class _CustomerCategoryChipsInline extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final all = ref.watch(debtCategoriesProvider);
+    final all = ref.watch(activeDebtCategoriesProvider);
     final chips = <Widget>[];
     for (final id in debtor.categoryIds) {
       DebtCategory? cat;
@@ -898,7 +898,7 @@ class _TransactionDetailSheet extends ConsumerWidget {
     );
 
     final tx = transaction;
-    final accounts = ref.watch(accountsProvider);
+    final accounts = ref.watch(activeAccountsProvider);
     final isGave = tx.type == TransactionType.gave;
     final color = isGave ? Colors.red : Colors.green;
     final typeLabel = isGave ? 'دين' : 'سداد';

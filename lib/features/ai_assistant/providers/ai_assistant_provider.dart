@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:characters/characters.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,11 +118,12 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     try {
       final userName = StartupLedgerData.bootstrapUserName ?? 'صاحب المتجر';
       final systemPrompt = '''
-أنت خبير مالي معتمد؛ صِغْ نصاً واحداً جاهزاً للإرسال عبر واتساب بلغة عربية فصحى مرتبة، رسمية، وهادئة، مع لمسة أصيلة كما يجري في التواصل المالي المهني في فلسطين.
+أنت خبير مالي معتمد؛ صِغْ نصاً واحداً جاهزاً للإرسال عبر واتساب بلغة عربية فصحى مرتبة، رسمية، وهادئة، مع أسلوب مهني كما يجري في المراسلات المالية في فلسطين.
 سياق التطبيق: «الصافي». المستخدم ($userName). المقصود: العميل (${debtor.name})؛ قيمة المطلوب تذكيره بها: (${debtor.amount} شيكل).
 موعد السداد: ${debtor.dueDate != null ? '${debtor.dueDate!.year}/${debtor.dueDate!.month}/${debtor.dueDate!.day}' : 'غير محدد'}.
 التعليمات الإضافية من المستخدم: "$customPrompt"
 المخرجات: فقرة أو فقرتان قصيرتان فقط؛ دون عنوان أو توقيع افتراضي منك؛ دون مبالغة أو عامية؛ بلهجة مهنية ومهذبة.
+الالتزامات الإلزامية: لا تستخدم أي إيموجي أو رموزاً تعبيرية (Emoji) ولا رموزاً زخرفية؛ النص حروف عربية وعلامات ترقيم عادية فقط.
 ''';
 
       final res = await http.post(
@@ -136,13 +138,14 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
             {'role': 'system', 'content': systemPrompt},
             {'role': 'user', 'content': 'اكتب الرسالة الآن.'}
           ],
-          'temperature': 0.7,
+          'temperature': 0.45,
         }),
       );
 
       if (res.statusCode == 200) {
         final data = jsonDecode(utf8.decode(res.bodyBytes));
-        return data['choices'][0]['message']['content']?.trim() ?? 'عذراً، حدث خطأ.';
+        final raw = data['choices'][0]['message']['content']?.trim() ?? 'عذراً، حدث خطأ.';
+        return _stripEmojiAndDecorativeSymbols(raw);
       } else {
         return 'عذراً، حدث خطأ في الاتصال.';
       }
@@ -175,9 +178,10 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
       final systemPrompt = '''
 $contextStr
 
-أنت خبير مالي معتمد؛ تتحدث بالعربية الفصحى المرتبة بأسلوب رسمي ومهني، مع فهم واقعي للتجارة والتزامات الديون كما يمارَس في فلسطين.
-قدّم جواباً واضحاً ومنظّماً (فقرات أو نقاط عند الحاجة)، بلا عامية ثقيلة ولا تهريج، وبلا اختراع لأرقام أو أسماء غير واردة في السياق أعلاه.
-إن كان المستخدم كاشيراً أو مشاهدًا فقط، التزم بنطاق الصلاحيات الظاهر من بيانات الدفتر ولا تطلب تنفيذ ما يخرج عن الدور.
+أنت خبير مالي معتمد تتحدث بالعربية الفصحى الموجزة بأسلوب رسمي ومهني دائماً، مع فهم عملي للتجارة والتزامات الديون كما يمارَس في فلسطين.
+قدّم إجابة واضحة ومنظّمة (فقرات قصيرة أو نقاط مرقّمة عند الحاجة). تجنّب العامية والتهريج والعبارات الترويجية أو الخفيفة.
+لا تخترع أرقاماً أو أسماء عملاء غير واردة في السياق أعلاه. إن كان المستخدم كاشيراً أو مشاهدًا فقط، التزم بنطاق الصلاحيات الظاهر من بيانات الدفتر.
+إلزامي: لا تستخدم أي إيموجي أو رموزاً تعبيرية (Emoji أو رموز يونيكود الزخرفية) ولا رموزاً بديلة مثل ":)" أو "؛)"؛ اكتفِ بالحروف العربية وعلامات الترقيم المعتادة.
 ''';
 
       final recentHistory = updatedHistory
@@ -326,11 +330,11 @@ $contextStr
           'model': 'deepseek-chat',
           'messages': messages,
           'tools': tools,
-          'temperature': 0.7,
+          'temperature': 0.45,
         }),
       );
 
-      String reply = 'عذراً لا أستطيع الإجابة حالياً.';
+      String reply = 'عذراً، تعذّر تقديم إجابة في الوقت الحالي.';
       if (res.statusCode == 200) {
         final data = jsonDecode(utf8.decode(res.bodyBytes));
         final message = data['choices'][0]['message'];
@@ -460,7 +464,7 @@ $contextStr
 
       final aiMsg = ChatMessage(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
-        text: reply,
+        text: _stripEmojiAndDecorativeSymbols(reply),
         isUser: false,
         timestamp: DateTime.now(),
       );
@@ -479,6 +483,29 @@ $contextStr
       final finalHistory = [...updatedHistory, errorMsg];
       state = state.copyWith(history: finalHistory, isTyping: false);
     }
+  }
+
+  /// إزالة الإيموجي والرموز التعبيرية من مخرجات النموذج عند الحاجة.
+  String _stripEmojiAndDecorativeSymbols(String input) {
+    final out = StringBuffer();
+    for (final g in input.characters) {
+      if (_graphemeIsEmojiLike(g)) continue;
+      out.write(g);
+    }
+    return out.toString().replaceAll(RegExp(r' {2,}'), ' ').trim();
+  }
+
+  bool _graphemeIsEmojiLike(String g) {
+    for (final r in g.runes) {
+      if (r >= 0x1F300 && r <= 0x1FAFF) return true;
+      if (r >= 0x2600 && r <= 0x26FF) return true;
+      if (r >= 0x2700 && r <= 0x27BF) return true;
+      if (r >= 0xFE00 && r <= 0xFE0F) return true;
+      if (r >= 0x1F600 && r <= 0x1F64F) return true;
+      if (r >= 0x1F680 && r <= 0x1F6FF) return true;
+      if (r >= 0x1F1E6 && r <= 0x1F1FF) return true;
+    }
+    return false;
   }
 
   String _buildContext() {

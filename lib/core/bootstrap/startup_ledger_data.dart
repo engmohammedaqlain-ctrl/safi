@@ -305,6 +305,9 @@ class StartupLedgerData {
     'balance': a.balance,
     'accountNumber': a.accountNumber,
     'accountOwner': a.accountOwner,
+    'editedMs': a.editedMs,
+    'isDeleted': a.isDeleted,
+    'deletedMs': a.deletedMs,
   };
 
   static FinancialAccount _financialAccountFromMap(Map<String, dynamic> m) {
@@ -318,6 +321,9 @@ class StartupLedgerData {
       balance: (m['balance'] as num?)?.toDouble() ?? 0,
       accountNumber: m['accountNumber'] as String?,
       accountOwner: m['accountOwner'] as String?,
+      editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
+      isDeleted: m['isDeleted'] as bool? ?? false,
+      deletedMs: (m['deletedMs'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -325,6 +331,9 @@ class StartupLedgerData {
     'id': c.id,
     'name': c.name,
     'colorValue': c.colorValue,
+    'editedMs': c.editedMs,
+    'isDeleted': c.isDeleted,
+    'deletedMs': c.deletedMs,
   };
 
   static DebtCategory _debtCategoryFromMap(Map<String, dynamic> m) {
@@ -332,6 +341,9 @@ class StartupLedgerData {
       id: m['id'] as String,
       name: m['name'] as String,
       colorValue: (m['colorValue'] as num?)?.toInt() ?? 0xFF000000,
+      editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
+      isDeleted: m['isDeleted'] as bool? ?? false,
+      deletedMs: (m['deletedMs'] as num?)?.toInt() ?? 0,
     );
   }
 

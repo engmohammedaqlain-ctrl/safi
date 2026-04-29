@@ -179,7 +179,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
   @override
   Widget build(BuildContext context) {
     final c = widget.forCustomer;
-    final accounts = ref.watch(accountsProvider);
+    final accounts = ref.watch(activeAccountsProvider);
     final dateStr =
         '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
 

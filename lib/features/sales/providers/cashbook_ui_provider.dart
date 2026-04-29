@@ -36,7 +36,18 @@ class CashbookNotifier extends Notifier<List<CashbookEntry>> {
   }
 
   void removeById(String id) {
-    state = [for (final x in state) if (x.id != id) x];
+    final now = DateTime.now().millisecondsSinceEpoch;
+    state = [
+      for (final x in state)
+        if (x.id == id)
+          x.copyWith(
+            isDeleted: true,
+            deletedMs: now,
+            editedMs: now,
+          )
+        else
+          x,
+    ];
     _persist();
   }
 
@@ -57,8 +68,16 @@ final cashbookEntriesProvider =
   CashbookNotifier.new,
 );
 
+/// حركات الصندوق المعروضة فقط — بدون محذوفة ناعمة (لا تزال في الحالة للمزامنة).
+final activeCashbookEntriesProvider = Provider<List<CashbookEntry>>((ref) {
+  return [
+    for (final e in ref.watch(cashbookEntriesProvider))
+      if (!e.isDeleted) e,
+  ];
+});
+
 final cashbookSummaryProvider = Provider<CashbookSummary>((ref) {
-  final list = ref.watch(cashbookEntriesProvider);
+  final list = ref.watch(activeCashbookEntriesProvider);
   double inc = 0, exp = 0;
   for (final e in list) {
     if (e.isIncome) {
