@@ -35,7 +35,7 @@ class DebtTransactionReceiptCard extends StatelessWidget {
     final accentColor = isGave ? const Color(0xFFE53935) : const Color(0xFF43A047);
     final bgColor = isGave ? const Color(0xFFFFEBEE) : const Color(0xFFE8F5E9);
     final label = isGave ? 'دين جديد' : 'سداد';
-    final sign = isGave ? '+' : '-';
+    final sign = isGave ? '-' : '+';
 
     final timeStr = formatReceiptTime(date);
     final dateStr = formatReceiptDate(date);

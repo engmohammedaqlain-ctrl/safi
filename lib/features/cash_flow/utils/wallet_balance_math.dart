@@ -80,6 +80,8 @@ double netDebtSignedForWallet(
   return s;
 }
 
+double _moneyRound2(double v) => (v * 100).round() / 100;
+
 /// الرصيد الفعلي المعروض: الرصيد المخزَّن في المحفظة + تأثير كل حركات الصندوق والديون المرتبطة بها.
 ///
 /// الحقل [FinancialAccount.balance] لا يُحدَّث تلقائياً عند كل إدخال حركة؛ لهذا يُضاف صافي الحركات.
@@ -89,7 +91,8 @@ double effectiveWalletBalance({
   required List<TransactionUi> txs,
   required List<FinancialAccount> accounts,
 }) {
-  return acc.balance +
+  final raw = acc.balance +
       netCashbookSignedForWallet(acc.id, entries, accounts) +
       netDebtSignedForWallet(acc, txs, accounts);
+  return _moneyRound2(raw);
 }

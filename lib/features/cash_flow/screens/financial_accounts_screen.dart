@@ -10,9 +10,12 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../../../core/widgets/vault_branded_shell.dart';
+import '../../debts/providers/debts_ui_provider.dart';
+import '../../sales/models/cashbook_entry.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
 import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
+import '../utils/wallet_balance_math.dart';
 import 'wallet_detail_screen.dart';
 
 /// شاشة المحافظ والبنوك — إطار الخزينة وبطاقات بنكية كما في الأونبوردينغ
@@ -22,11 +25,16 @@ class FinancialAccountsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accounts = ref.watch(accountsProvider);
+    final entries = ref.watch(cashbookEntriesProvider);
+    final txs = ref.watch(transactionsProvider);
     final hidden = ref.watch(hideBalanceProvider);
-    final total = accounts.fold<double>(0, (s, a) => s + a.balance);
-    final highest = accounts.isEmpty
-        ? 0.0
-        : accounts.map((a) => a.balance).reduce((a, b) => a > b ? a : b);
+
+    double effectiveBal(FinancialAccount a) => effectiveWalletBalance(
+          acc: a,
+          entries: entries,
+          txs: txs,
+          accounts: accounts,
+        );
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
@@ -49,9 +57,9 @@ class FinancialAccountsScreen extends ConsumerWidget {
               children: [
                 _WalletsOverviewPlasticCard(
                   accounts: accounts,
+                  entries: entries,
+                  txs: txs,
                   hidden: hidden,
-                  total: total,
-                  highest: highest,
                   onReport: () =>
                       showAppSnackBar(context, 'تقرير المحافظ — قريباً'),
                   onStats: () =>
@@ -96,6 +104,7 @@ class FinancialAccountsScreen extends ConsumerWidget {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _WalletAccountCard(
                       account: a,
+                      effectiveBalance: effectiveBal(a),
                       hidden: hidden,
                       onTap: () => Navigator.push<void>(
                         context,
@@ -148,17 +157,17 @@ class FinancialAccountsScreen extends ConsumerWidget {
 class _WalletsOverviewPlasticCard extends StatelessWidget {
   const _WalletsOverviewPlasticCard({
     required this.accounts,
+    required this.entries,
+    required this.txs,
     required this.hidden,
-    required this.total,
-    required this.highest,
     required this.onReport,
     required this.onStats,
   });
 
   final List<FinancialAccount> accounts;
+  final List<CashbookEntry> entries;
+  final List<TransactionUi> txs;
   final bool hidden;
-  final double total;
-  final double highest;
   final VoidCallback onReport;
   final VoidCallback onStats;
 
@@ -180,18 +189,30 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
         bankSum = 0.0,
         walletSum = 0.0;
     var cashN = 0, bankN = 0, walletN = 0;
+    var totalEff = 0.0;
+    var highestEff = 0.0;
+
     for (final a in accounts) {
+      final bal = effectiveWalletBalance(
+        acc: a,
+        entries: entries,
+        txs: txs,
+        accounts: accounts,
+      );
+      totalEff += bal;
+      if (bal > highestEff) highestEff = bal;
+
       switch (a.type) {
         case AccountType.cash:
-          cashSum += a.balance;
+          cashSum += bal;
           cashN++;
           break;
         case AccountType.bank:
-          bankSum += a.balance;
+          bankSum += bal;
           bankN++;
           break;
         case AccountType.wallet:
-          walletSum += a.balance;
+          walletSum += bal;
           walletN++;
           break;
       }
@@ -368,7 +389,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                           Text(
                             hidden
                                 ? '  ****'
-                                : '  ₪ ${formatShekelAmount(total)}',
+                                : '  ₪ ${formatShekelAmount(totalEff)}',
                             style: val.copyWith(fontSize: 12),
                           ),
                         ],
@@ -385,7 +406,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                             Text(
                               hidden
                                   ? '  ****'
-                                  : '  ₪ ${formatShekelAmount(highest)}',
+                                  : '  ₪ ${formatShekelAmount(highestEff)}',
                               style: val.copyWith(fontSize: 10.5),
                             ),
                           ],
@@ -543,11 +564,13 @@ class _TypeMiniPill extends StatelessWidget {
 class _WalletAccountCard extends StatelessWidget {
   const _WalletAccountCard({
     required this.account,
+    required this.effectiveBalance,
     required this.hidden,
     required this.onTap,
   });
 
   final FinancialAccount account;
+  final double effectiveBalance;
   final bool hidden;
   final VoidCallback onTap;
 
@@ -578,7 +601,7 @@ class _WalletAccountCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final amountStr = hidden
         ? '****'
-        : '₪ ${formatShekelAmount(account.balance)}';
+        : '₪ ${formatShekelAmount(effectiveBalance)}';
     final subtitle = _subtitle(account);
     final accent = _accent(account.type);
 

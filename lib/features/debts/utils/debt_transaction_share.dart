@@ -159,7 +159,7 @@ String _shareTextFallback({
 }) {
   final isGave = type == TransactionType.gave;
   final label = isGave ? 'دين جديد' : 'سداد';
-  final sign = isGave ? '+' : '-';
+  final sign = isGave ? '-' : '+';
   final buf = StringBuffer()
     ..writeln(customerName)
     ..writeln('$label: $sign${amount.toStringAsFixed(2)} ₪')

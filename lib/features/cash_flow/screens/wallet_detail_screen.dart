@@ -20,50 +20,10 @@ import '../../sales/providers/cashbook_ui_provider.dart';
 import '../../sales/providers/unified_ledger_math.dart';
 import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
+import '../utils/wallet_balance_math.dart';
 import 'cashbook_entry_detail_screen.dart';
 import 'cash_entry_screen.dart';
 import 'financial_accounts_screen.dart' show AccountFormScreen;
-
-String? _resolvedCashAccountId(
-  CashbookEntry e,
-  List<FinancialAccount> accs,
-) {
-  final a = e.accountId;
-  if (a != null && a.isNotEmpty) return a;
-  return accs.isNotEmpty ? accs.first.id : null;
-}
-
-/// هل هذه المعاملة المالية الدينية مستخدمة على هذه المحفظة (`payMethodId` أو قيم legacy).
-bool _payTouchesWallet(
-  TransactionUi tx,
-  FinancialAccount acc,
-  List<FinancialAccount> accounts,
-) {
-  final pid = tx.payMethodId;
-  if (pid == null || pid.isEmpty) return false;
-  if (pid == acc.id) return true;
-
-  AccountType? legacyType;
-  switch (pid) {
-    case 'cash':
-      legacyType = AccountType.cash;
-      break;
-    case 'wallet':
-      legacyType = AccountType.wallet;
-      break;
-    case 'bank':
-      legacyType = AccountType.bank;
-      break;
-    default:
-      return false;
-  }
-
-  if (acc.type != legacyType) return false;
-  final same = accounts.where((a) => a.type == legacyType).toList()
-    ..sort((a, b) => a.id.compareTo(b.id));
-  if (same.isEmpty) return false;
-  return same.first.id == acc.id;
-}
 
 /// تفاصيل محفظة واحدة:
 /// - بطاقة الرصيد + معلومات الحساب
@@ -123,12 +83,12 @@ class WalletDetailScreen extends ConsumerWidget {
     final debtors = ref.watch(debtorsUiProvider);
 
     final cashEntries = allEntries.where((e) {
-      final rid = _resolvedCashAccountId(e, accounts);
+      final rid = resolvedCashAccountIdForEntry(e, accounts);
       return rid == acc.id;
     }).toList(growable: false);
 
     final debtTxs = allTx
-        .where((t) => _payTouchesWallet(t, acc, accounts))
+        .where((t) => debtPayTouchesWallet(t, acc, accounts))
         .toList(growable: false);
 
     final cashIncome = cashEntries
@@ -157,6 +117,13 @@ class WalletDetailScreen extends ConsumerWidget {
       combined.add((t: t.date, c: null, d: t));
     }
     combined.sort((a, b) => b.t.compareTo(a.t));
+
+    final effectiveBalance = effectiveWalletBalance(
+      acc: acc,
+      entries: allEntries,
+      txs: allTx,
+      accounts: accounts,
+    );
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -209,7 +176,11 @@ class WalletDetailScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           children: [
-            _WalletHeroPlasticCard(account: acc, hidden: hidden),
+            _WalletHeroPlasticCard(
+              account: acc,
+              hidden: hidden,
+              effectiveBalance: effectiveBalance,
+            ),
             const SizedBox(height: 18),
             _IncomeExpenseStrip(
               income: income,
@@ -473,17 +444,21 @@ class _WalletHeroPlasticCard extends StatelessWidget {
   const _WalletHeroPlasticCard({
     required this.account,
     required this.hidden,
+    required this.effectiveBalance,
   });
 
   final FinancialAccount account;
   final bool hidden;
+
+  /// الرصيد بعد استيفاء الحقل المخزَّن وجميع حركات الصندوق والديون لهذه المحفظة.
+  final double effectiveBalance;
 
   @override
   Widget build(BuildContext context) {
     final gradient = _WalletUi.plasticGradient(account.type);
     final amount = hidden
         ? obscureAmountText()
-        : formatShekelAmount(account.balance);
+        : formatShekelAmount(effectiveBalance);
 
     final infoLines = <String>[
       if (account.accountOwner != null && account.accountOwner!.isNotEmpty)
