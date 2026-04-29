@@ -151,7 +151,7 @@ class DebtTransactionReceiptCard extends StatelessWidget {
                 const SafiBrandMark(size: 24),
                 const SizedBox(width: 6),
                 const Text(
-                  'صافي',
+                  'الصافي',
                   style: TextStyle(
                     fontFamily: AppFonts.family,
                     fontSize: 14,

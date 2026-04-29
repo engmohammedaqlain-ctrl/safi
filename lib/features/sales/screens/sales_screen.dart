@@ -27,9 +27,16 @@ class SalesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final unifiedRows = ref.watch(unifiedLedgerRowsProvider);
-    final netSigned = ref.watch(unifiedNetSignedProvider);
-    final io = ref.watch(unifiedInflowOutflowProvider);
+    final mergeDebtsIntoSafi = ref.watch(mergeDebtsIntoSafiProvider);
+    final unifiedRows = mergeDebtsIntoSafi
+        ? ref.watch(unifiedLedgerRowsProvider)
+        : ref.watch(safiCashOnlyLedgerRowsProvider);
+    final netSigned = mergeDebtsIntoSafi
+        ? ref.watch(unifiedNetSignedProvider)
+        : ref.watch(safiCashOnlyNetSignedProvider);
+    final io = mergeDebtsIntoSafi
+        ? ref.watch(unifiedInflowOutflowProvider)
+        : ref.watch(safiCashOnlyInflowOutflowProvider);
     final hidden = ref.watch(hideBalanceProvider);
 
     void push(Widget page) {

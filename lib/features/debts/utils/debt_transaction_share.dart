@@ -68,7 +68,7 @@ Future<void> shareDebtTransactionReceipt({
           paymentMethod: paymentMethod,
           note: note,
         ),
-        subject: 'معاملة — صافي',
+        subject: 'معاملة — الصافي',
         sharePositionOrigin: rect,
       ),
     );
@@ -92,7 +92,7 @@ Future<void> shareDebtTransactionReceipt({
 
   await SharePlus.instance.share(
     ShareParams(
-      text: 'معاملة من تطبيق صافي',
+      text: 'معاملة من تطبيق الصافي',
       files: files,
       sharePositionOrigin: rect,
     ),
@@ -172,6 +172,6 @@ String _shareTextFallback({
   if (note != null && note.isNotEmpty) {
     buf.writeln(note);
   }
-  buf.writeln('صافي');
+  buf.writeln('الصافي');
   return buf.toString();
 }

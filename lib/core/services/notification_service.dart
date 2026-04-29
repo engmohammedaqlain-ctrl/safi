@@ -109,7 +109,7 @@ class NotificationService {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
       'smart_insights_channel',
-      'رؤى صافي الذكية',
+      'رؤى الصافي الذكية',
       channelDescription: 'إشعارات يومية برؤى حول مبيعاتك وديونك',
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
@@ -120,7 +120,7 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id: 999999, // Fixed ID for daily notification
-      title: 'صافي الذكي 💡',
+      title: 'الصافي الذكي 💡',
       body: 'لا تنسَ مراجعة ملخص مبيعاتك وديونك لهذا اليوم!',
       scheduledDate: scheduledDate,
       notificationDetails: platformChannelSpecifics,

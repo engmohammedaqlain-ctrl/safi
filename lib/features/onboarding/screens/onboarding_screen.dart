@@ -219,7 +219,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               AppSpacing.lg,
             ),
             child: SafiButton(
-              label: _i < _slides.length - 1 ? 'التالي' : 'ابدأ استخدام صافي',
+              label: _i < _slides.length - 1 ? 'التالي' : 'ابدأ استخدام الصافي',
               icon: _i < _slides.length - 1
                   ? LucideIcons.arrowLeft
                   : LucideIcons.check,
@@ -756,7 +756,7 @@ class _BankPlasticCard extends StatelessWidget {
                           borderRadius: AppRadius.rfull,
                         ),
                         child: Text(
-                          'صافي',
+                          'الصافي',
                           style: AppTextStyles.labelSmall.copyWith(
                             color: Colors.white,
                             letterSpacing: 1.2,

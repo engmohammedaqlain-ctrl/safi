@@ -244,7 +244,7 @@ class VaultBrandedShell extends StatelessWidget {
     super.key,
     this.belowBrand,
     required this.sheet,
-    this.headerSubtitle = 'كاش: ديونك وكل محافظك معاً',
+    this.headerSubtitle = 'الصافي: ديونك وكل محافظك معاً',
   });
 
   /// يُعرض تحت صف العلامة (مثلاً نقاط الشرائح).
@@ -298,7 +298,7 @@ class VaultBrandedShell extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'صافي',
+                                  'الصافي',
                                   style: AppTextStyles.headlineSmall.copyWith(
                                     color: Colors.white,
                                     letterSpacing: 0.5,

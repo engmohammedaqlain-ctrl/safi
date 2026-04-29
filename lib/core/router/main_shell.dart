@@ -32,6 +32,23 @@ final userNameProvider = FutureProvider<String>((ref) async {
   return p.getString(PrefsKeys.userName) ?? 'المستخدم الأول';
 });
 
+/// عنوان وبطّاقة المتجر من التخزين — يُفعَّل تجديد الواجهة بعد «إعدادات المتجر».
+final storeCardDisplayProvider =
+    FutureProvider.autoDispose<({String title, String subtitle})>((ref) async {
+  final p = await SharedPreferences.getInstance();
+  final rawName = (p.getString(PrefsKeys.userName) ?? '').trim();
+  final title = rawName.isEmpty ? 'المستخدم الأول' : rawName;
+
+  final curRaw =
+      (p.getString(PrefsKeys.storeCurrencyLabel) ?? 'شيكل (₪)').trim();
+  final addrRaw = (p.getString(PrefsKeys.storeAddress) ?? 'رام الله').trim();
+  final currency = curRaw.isEmpty ? 'شيكل (₪)' : curRaw;
+  final address = addrRaw.isEmpty ? 'رام الله' : addrRaw;
+  final subtitle = '$currency · $address';
+
+  return (title: title, subtitle: subtitle);
+});
+
 // ──────────────────────────────────────────────────────────────
 // Shell رئيسية مع PageView قابل للسحب ← تلاشٍ خفيف بين الصفحات
 // ──────────────────────────────────────────────────────────────
@@ -165,7 +182,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'صافي: ديونك وكل محافظك معاً',
+                              'الصافي: ديونك وكل محافظك معاً',
                               maxLines: 1,
                               softWrap: false,
                               overflow: TextOverflow.ellipsis,

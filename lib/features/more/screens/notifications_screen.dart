@@ -7,7 +7,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/vault_subpage_scaffold.dart';
+import '../../../core/widgets/reports_style_shell.dart';
 import '../../debts/providers/debts_ui_provider.dart';
 import '../../../core/router/app_page_route.dart';
 import '../../debts/screens/customer_detail_screen.dart';
@@ -33,9 +33,10 @@ class NotificationsScreen extends ConsumerWidget {
       return amt > 0 && d.dueDate!.isAfter(now) && d.dueDate!.difference(now).inDays <= 3;
     }).toList();
 
-    return VaultSubpageScaffold(
+    return ReportsStylePage(
       title: 'الإشعارات',
-      body: ListView(
+      subtitle: 'تذكيرات الديون ومواعيد السداد',
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
           AppSpacing.md,

@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/bootstrap/prefs_keys.dart';
 import '../../../core/router/app_page_route.dart';
+import '../../../core/router/main_shell.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/reports_style_shell.dart';
 import '../../ai_assistant/screens/ai_assistant_screen.dart';
-import '../../debts/screens/all_customers_screen.dart';
 import '../../reports/screens/unified_reports_screen.dart';
 import '../../reports/screens/statistics_screen.dart';
 import '../../settings/screens/settings_screen.dart';
@@ -30,7 +30,7 @@ class MoreHomeScreen extends ConsumerWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: ReportsStyleSurfaces.bodyBackdrop,
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           children: [
@@ -38,15 +38,9 @@ class MoreHomeScreen extends ConsumerWidget {
             const _UserHeaderCard(),
             const SizedBox(height: 22),
 
-            // ── 5 أزرار رئيسية ──
+            // ── أزرار رئيسية ──
             _SoftMenu(
               items: [
-                _MenuItem(
-                  icon: LucideIcons.users,
-                  title: 'عملائي',
-                  subtitle: 'كل العملاء والموردين',
-                  onTap: () => push(const AllCustomersScreen()),
-                ),
                 _MenuItem(
                   icon: LucideIcons.bell,
                   title: 'الإشعارات',
@@ -94,24 +88,41 @@ class MoreHomeScreen extends ConsumerWidget {
 class _UserHeaderCard extends ConsumerWidget {
   const _UserHeaderCard();
 
-  Future<String> _loadName() async {
-    final p = await SharedPreferences.getInstance();
-    return p.getString(PrefsKeys.userName) ?? 'المستخدم';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder<String>(
-      future: _loadName(),
-      builder: (context, snap) {
-        final name = snap.data ?? '...';
-        return Container(
+    final nameAsync = ref.watch(userNameProvider);
+    return nameAsync.when(
+      loading: () => Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey.shade200),
-            borderRadius: BorderRadius.circular(18),
-          ),
+          decoration: ReportsStyleSurfaces.whiteCardDecoration(radius: 18),
+          child: Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  LucideIcons.user,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(child: CircularProgressIndicator(strokeWidth: 2)),
+            ],
+          )),
+      error: (_, __) => Container(
+          padding: const EdgeInsets.all(20),
+          decoration: ReportsStyleSurfaces.whiteCardDecoration(radius: 18),
+          child: const Text('خطأ في تحميل الاسم')),
+      data: (name) => Container(
+          padding: const EdgeInsets.all(20),
+          decoration:
+              ReportsStyleSurfaces.whiteCardDecoration(radius: 18),
           child: Row(
             textDirection: TextDirection.rtl,
             children: [
@@ -136,7 +147,7 @@ class _UserHeaderCard extends ConsumerWidget {
                   children: [
                     Text(
                       name,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
@@ -147,7 +158,7 @@ class _UserHeaderCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'مرحباً بك في صافي',
+                      'مرحباً بك في الصافي',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 14,
@@ -159,8 +170,7 @@ class _UserHeaderCard extends ConsumerWidget {
               ),
             ],
           ),
-        );
-      },
+        ),
     );
   }
 }
@@ -177,11 +187,8 @@ class _SoftMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.outlineSoft),
-      ),
+      decoration:
+          ReportsStyleSurfaces.whiteCardDecoration(radius: 20),
       child: Column(
         children: [
           for (var i = 0; i < items.length; i++) ...[

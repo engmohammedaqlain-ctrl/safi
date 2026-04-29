@@ -42,7 +42,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'صافي، جاري التحميل',
+      label: 'الصافي، جاري التحميل',
       child: Scaffold(
         backgroundColor: SplashScreen.nativeSplashColor,
         body: DecoratedBox(

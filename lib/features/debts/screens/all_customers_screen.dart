@@ -6,7 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/vault_subpage_scaffold.dart';
+import '../../../core/widgets/reports_style_shell.dart';
 import '../providers/debts_ui_provider.dart';
 import '../utils/debtor_filter.dart';
 import 'add_debt_screen.dart';
@@ -37,23 +37,22 @@ class _AllCustomersScreenState extends ConsumerState<AllCustomersScreen> {
     final all = ref.watch(debtorsUiProvider);
     final list = filterDebtors(all, _q);
 
-    return VaultSubpageScaffold(
+    return ReportsStylePage(
       title: 'عملائي',
-      actions: [
-        IconButton(
-          tooltip: 'تسجيل دين لعميل',
-          onPressed: () {
-            Navigator.push<void>(
-              context,
-              AppPageRoute<void>(
-                builder: (_) => const AddDebtScreen(),
-              ),
-            );
-          },
-          icon: const Icon(LucideIcons.userPlus),
-        ),
-      ],
-      body: ListView(
+      subtitle: 'كل العملاء والموردين وذممهم في مكان واحد',
+      headerTrailing: IconButton(
+        tooltip: 'تسجيل دين لعميل',
+        onPressed: () {
+          Navigator.push<void>(
+            context,
+            AppPageRoute<void>(
+              builder: (_) => const AddDebtScreen(),
+            ),
+          );
+        },
+        icon: const Icon(LucideIcons.userPlus, color: Colors.white),
+      ),
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
           AppSpacing.md,

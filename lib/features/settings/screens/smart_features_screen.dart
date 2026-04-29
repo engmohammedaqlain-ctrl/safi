@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/vault_subpage_scaffold.dart';
+import '../../../core/widgets/reports_style_shell.dart';
 
 class SmartFeaturesScreen extends StatefulWidget {
   const SmartFeaturesScreen({super.key});
@@ -18,9 +18,10 @@ class _SmartFeaturesScreenState extends State<SmartFeaturesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return VaultSubpageScaffold(
+    return ReportsStylePage(
       title: 'الميزات الذكية',
-      body: ListView(
+      subtitle: 'المساعد، التذكيرات التلقائية والنسخ الاحتياطي',
+      child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Container(
@@ -38,7 +39,7 @@ class _SmartFeaturesScreenState extends State<SmartFeaturesScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'صافي الذكي',
+                        'الصافي الذكي',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,

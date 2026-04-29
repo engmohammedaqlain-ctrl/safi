@@ -108,6 +108,7 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     }
     await _advanceAfterName(p);
     ref.invalidate(main_shell_router.userNameProvider);
+    ref.invalidate(main_shell_router.storeCardDisplayProvider);
   }
 
   /// عند الضغط على «إنهاء» في الإعداد الأولي
@@ -126,6 +127,8 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     await p.remove(PrefsKeys.phoneDocId);
     await p.remove(PrefsKeys.ledgerOwnerUid);
     await p.remove(PrefsKeys.userName);
+    await p.remove(PrefsKeys.storeCurrencyLabel);
+    await p.remove(PrefsKeys.storeAddress);
     await p.remove(PrefsKeys.onboardingDone);
 
     await StartupLedgerData.reloadFromDiskIntoMemory();
@@ -138,6 +141,7 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
 
     _invalidateLedgerUi();
     ref.invalidate(main_shell_router.userNameProvider);
+    ref.invalidate(main_shell_router.storeCardDisplayProvider);
 
     state = AppSessionPhase.login;
   }

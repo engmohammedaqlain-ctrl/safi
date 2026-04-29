@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/vault_subpage_scaffold.dart';
+import '../../../core/widgets/reports_style_shell.dart';
 
 class TeamSettingsScreen extends StatelessWidget {
   const TeamSettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return VaultSubpageScaffold(
+    return ReportsStylePage(
       title: 'الفريق والصلاحيات',
-      body: ListView(
+      subtitle: 'أعضاء الفريق ومستقبلاً مستويات الصلاحيات',
+      child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           const Text(

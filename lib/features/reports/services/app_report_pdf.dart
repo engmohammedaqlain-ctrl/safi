@@ -190,10 +190,10 @@ class AppReportPdfBuilder {
     // App name badge (top-left)
     _rect(
       g,
-      Rect.fromLTWH(8, 8, 42, 18),
+      Rect.fromLTWH(8, 8, 56, 18),
       fill: PdfSolidBrush(PdfColor(255, 255, 255, 40)),
     );
-    _txt(g, 'صافي', _r(8), _cWhite, Rect.fromLTWH(8, 9, 42, 16), fmt: _fmtC);
+    _txt(g, 'الصافي', _r(8), _cWhite, Rect.fromLTWH(8, 9, 56, 16), fmt: _fmtC);
 
     // Title
     _txt(
@@ -361,7 +361,7 @@ class AppReportPdfBuilder {
     // Left: app name
     _txt(
       g,
-      'تطبيق صافي',
+      'تطبيق الصافي',
       font,
       _cPurple,
       Rect.fromLTWH(0, y + 5, W / 2, 16),
@@ -693,7 +693,7 @@ class AppReportPdfBuilder {
       W,
       (storeName != null && storeName.trim().isNotEmpty)
           ? _safe(storeName, max: 50)
-          : 'تقرير صافي',
+          : 'تقرير الصافي',
       filterLbl,
       'من ${_date(fromInclusive)}  إلى  ${_date(toInclusive)}',
       fB17,

@@ -193,7 +193,7 @@ class DrawerHeaderBrand extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'صافي',
+                  'الصافي',
                   style: AppTextStyles.headlineSmall.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,

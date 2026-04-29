@@ -10,8 +10,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/vault_subpage_scaffold.dart';
+import '../../../core/widgets/reports_style_shell.dart';
 import '../../../core/router/app_page_route.dart';
+import '../../../core/router/main_shell.dart';
+import '../../sales/providers/unified_ledger_provider.dart';
 import 'store_settings_screen.dart';
 import 'team_settings_screen.dart';
 import 'smart_features_screen.dart';
@@ -21,9 +23,10 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return VaultSubpageScaffold(
+    return ReportsStylePage(
       title: 'الإعدادات',
-      body: ListView(
+      subtitle: 'الحساب، المتجر، المزامنة والجلسة',
+      child: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           // ── بطاقة المتجر ──
@@ -32,7 +35,7 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.push(
                 context,
                 AppPageRoute(builder: (_) => const StoreSettingsScreen()),
-              );
+              ).then((_) => ref.invalidate(storeCardDisplayProvider));
             },
             child: GlassCard(
               child: Row(
@@ -51,19 +54,67 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('سوبرماركت صافي', style: AppTextStyles.titleSmall),
-                        const SizedBox(height: 2),
-                        Text(
-                          '₪ شيكل · رام الله',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textMuted,
+                    child: ref.watch(storeCardDisplayProvider).when(
+                          data: (card) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                card.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.titleSmall,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                card.subtitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                          loading: () => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                height: 14,
+                                width: 160,
+                                decoration: BoxDecoration(
+                                  color: AppColors.textMuted
+                                      .withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                height: 12,
+                                width: 200,
+                                decoration: BoxDecoration(
+                                  color: AppColors.textMuted
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ],
+                          ),
+                          error: (_, __) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'إعدادات المتجر',
+                                style: AppTextStyles.titleSmall,
+                              ),
+                              Text(
+                                'اضغط للتعديل',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
                   ),
                   const Icon(
                     LucideIcons.chevronLeft,
@@ -74,6 +125,40 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(height: AppSpacing.lg),
+
+          _SectionLabel('الصافي والعرض'),
+          GlassCard(
+            padding: EdgeInsets.zero,
+            child: SwitchListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              secondary: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(LucideIcons.wallet, color: AppColors.primary, size: 20),
+              ),
+              title: Text(
+                'دمج حركات الديون في الصافي',
+                style: AppTextStyles.titleSmall,
+              ),
+              subtitle: Text(
+                'عند الإيقاف: الصندوق وحده في بطاقة «الصافي»؛ الديون في الأرشيف. '
+                'عند التفعيل: تُحسب معاملات الدين والسداد مع قائمة وبطاقة الصافي كما قبل.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textMuted,
+                ),
+              ),
+              value: ref.watch(mergeDebtsIntoSafiProvider),
+              onChanged: (v) =>
+                  ref.read(mergeDebtsIntoSafiProvider.notifier).setMerged(v),
+            ),
+          ),
+
           const SizedBox(height: AppSpacing.lg),
 
           // ── إعدادات الحساب ──

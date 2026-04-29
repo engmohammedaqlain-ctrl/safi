@@ -30,6 +30,7 @@ class StartupLedgerData {
   static bool _sessionLoggedIn = false;
   static bool _sessionOnboardingDone = false;
   static String? _sessionUserName;
+  static bool _sessionMergeDebtsIntoSafiTab = false;
 
   static Future<void>? _loadFuture;
 
@@ -135,6 +136,8 @@ class StartupLedgerData {
     debtCategories = _decodeDebtCategories(
       p.getString(PrefsKeys.debtCategories),
     );
+    _sessionMergeDebtsIntoSafiTab =
+        p.getBool(PrefsKeys.mergeDebtsIntoSafiTab) ?? false;
   }
 
   /// تُقرأ مع [ensureLoaded] في نفس جولة [SharedPreferences] لتفادي انتظار إضافي عند فتح الجلسة.
@@ -143,6 +146,9 @@ class StartupLedgerData {
   static bool get bootstrapOnboardingDone => _sessionOnboardingDone;
 
   static String? get bootstrapUserName => _sessionUserName;
+
+  /// يُقرأ مع [ensureLoaded] — يغذّي [mergeDebtsIntoSafiProvider].
+  static bool get bootstrapMergeDebtsIntoSafiTab => _sessionMergeDebtsIntoSafiTab;
 
   static List<DebtorUi> _decodeDebtors(String? raw) {
     if (raw == null || raw.isEmpty) return [];

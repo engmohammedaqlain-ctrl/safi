@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/reports_style_shell.dart';
 import '../../debts/providers/debts_ui_provider.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
 
@@ -134,28 +135,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     maxLineY = maxLineY * 1.2;
     if (maxLineY < 10) maxLineY = 10;
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          centerTitle: true,
-          title: const Text(
-            'الإحصائيات',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          leading: IconButton(
-            icon: const Icon(LucideIcons.arrowRight, color: AppColors.primary),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        body: ListView(
+    return ReportsStylePage(
+      title: 'الإحصائيات',
+      subtitle: 'تحليل سريع ورسوم بحسب الفترة',
+      child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             // Time Period Selector
@@ -422,7 +405,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 

@@ -111,7 +111,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     try {
       final userName = StartupLedgerData.bootstrapUserName ?? 'صاحب المتجر';
       final systemPrompt = '''
-أنت مساعد ذكي لتطبيق مالي اسمه "صافي".
+أنت مساعد ذكي لتطبيق مالي اسمه "الصافي".
 المستخدم ($userName) يريد إرسال رسالة واتساب إلى العميل (${debtor.name}) لتذكيره بسداد دين قيمته (${debtor.amount} شيكل).
 موعد السداد: ${debtor.dueDate != null ? '${debtor.dueDate!.year}/${debtor.dueDate!.month}/${debtor.dueDate!.day}' : 'غير محدد'}.
 المطلوب: اكتب رسالة واتساب قصيرة، مهذبة، وواضحة بناءً على طلب المستخدم التالي:
@@ -470,7 +470,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     }
 
     return '''
-### سياق بيانات تطبيق (صافي - Safi) الخاص بالمستخدم:
+### سياق بيانات تطبيق (الصافي) الخاص بالمستخدم:
 - اسم المستخدم: $userName
 - عدد العملاء/الموردين المسجلين: $debtorCount
 - المبالغ الإجمالية التي للمستخدم: $totalReceivables شيكل.
@@ -479,7 +479,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
 **أرشيف حسابات جميع العملاء / الموردين:**
 ${detailsBuffer.toString()}
 
-أنت بصفتك "المساعد الذكي لتطبيق صافي"، مهمتك مساعدة المستخدم في فهم تقاريره المالية، وتحديد أكبر مدين، وكتابة رسائل ديون، والرد على الاستفسارات. 
+أنت بصفتك "المساعد الذكي لتطبيق الصافي"، مهمتك مساعدة المستخدم في فهم تقاريره المالية، وتحديد أكبر مدين، وكتابة رسائل ديون، والرد على الاستفسارات. 
 تحدث باختصار واحترافية وبلهجة عربية مبسطة.
 ''';
   }

@@ -5,7 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/vault_subpage_scaffold.dart';
+import '../../../core/widgets/reports_style_shell.dart';
 import '../providers/ai_assistant_provider.dart';
 
 class AiAssistantScreen extends ConsumerStatefulWidget {
@@ -54,17 +54,17 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     // Scroll to bottom on new messages
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
-    return VaultSubpageScaffold(
+    return ReportsStylePage(
       title: 'المساعد الذكي',
-      actions: [
-        IconButton(
-          icon: const Icon(LucideIcons.trash2, color: AppColors.textMuted),
-          onPressed: () {
-            ref.read(aiAssistantProvider.notifier).clearHistory();
-          },
-        ),
-      ],
-      body: Column(
+      subtitle: 'أسئلة ومسودات وفق حساباتك في الصافي',
+      headerTrailing: IconButton(
+        icon: const Icon(LucideIcons.trash2, color: Colors.white),
+        tooltip: 'مسح المحادثة',
+        onPressed: () {
+          ref.read(aiAssistantProvider.notifier).clearHistory();
+        },
+      ),
+      child: Column(
         children: [
           Expanded(
             child: ListView.separated(
@@ -79,7 +79,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       _bubble(
                         isUser: false,
                         text:
-                            'أهلاً بك! أنا المساعد الذكي لتطبيق صافي، جاهز للإجابة عن أسئلتك، كتابة خطابات للعملاء، أو تحليل ديونك.',
+                            'أهلاً بك! أنا المساعد الذكي لتطبيق الصافي، جاهز للإجابة عن أسئلتك، كتابة خطابات للعملاء، أو تحليل ديونك.',
                       ),
                       if (history.isEmpty) ...[
                         const SizedBox(height: 16),

@@ -18,9 +18,10 @@ import 'cashbook_entry_detail_screen.dart';
 import 'cash_entry_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
 
-enum _LedgerFilter { all, income, expense }
+enum _LedgerFilter { all, debts, income, expense }
 
 /// أرشيف — كل المعاملات (صندوق + ديون) بترتيب زمني وزر تصفية.
+/// التصفية: ديون منفصلة؛ وارد/صادر للصندوق فقط (لا يختلط سداد/دين جديد مع النقد).
 class CashFlowScreen extends ConsumerStatefulWidget {
   const CashFlowScreen({super.key});
 
@@ -35,15 +36,26 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
     switch (_filter) {
       case _LedgerFilter.all:
         return List<UnifiedLedgerRowUi>.from(all);
+      case _LedgerFilter.debts:
+        return [for (final r in all) if (!r.isCashbook) r];
       case _LedgerFilter.income:
-        return [for (final r in all) if (r.deltaSigned > 0) r];
+        return [
+          for (final r in all)
+            if (r.isCashbook && r.cashbookEntry != null && r.cashbookEntry!.isIncome)
+              r,
+        ];
       case _LedgerFilter.expense:
-        return [for (final r in all) if (r.deltaSigned < 0) r];
+        return [
+          for (final r in all)
+            if (r.isCashbook && r.cashbookEntry != null && !r.cashbookEntry!.isIncome)
+              r,
+        ];
     }
   }
 
   String _filterLabel() => switch (_filter) {
         _LedgerFilter.all => 'كل الحركات',
+        _LedgerFilter.debts => 'ديون فقط',
         _LedgerFilter.income => 'وارد فقط',
         _LedgerFilter.expense => 'صادر فقط',
       };
@@ -78,6 +90,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                     ),
                   ),
                   _sheetTile('كل الحركات', _LedgerFilter.all),
+                  _sheetTile('ديون فقط', _LedgerFilter.debts),
                   _sheetTile('وارد فقط', _LedgerFilter.income),
                   _sheetTile('صادر فقط', _LedgerFilter.expense),
                 ],
