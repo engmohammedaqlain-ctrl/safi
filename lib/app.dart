@@ -11,6 +11,11 @@ import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/name_setup_screen.dart';
 import 'features/onboarding/screens/onboarding_screen.dart';
 
+import 'core/services/notification_service.dart';
+import 'features/debts/screens/customer_detail_screen.dart';
+import 'features/debts/providers/debts_ui_provider.dart';
+import 'features/reports/screens/statistics_screen.dart';
+
 class SafiApp extends ConsumerWidget {
   const SafiApp({super.key});
 
@@ -19,6 +24,7 @@ class SafiApp extends ConsumerWidget {
     return MaterialApp(
       title: 'صافي',
       debugShowCheckedModeBanner: false,
+      navigatorKey: NotificationService().navigatorKey,
       theme: AppTheme.light,
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar'), Locale('en')],
@@ -27,6 +33,22 @@ class SafiApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      onGenerateRoute: (settings) {
+        if (settings.name == '/customer') {
+          final id = settings.arguments as String;
+          final debtor = ref.read(debtorByIdProvider(id));
+          if (debtor != null) {
+            return MaterialPageRoute(
+              builder: (_) => CustomerDetailScreen(debtor: debtor),
+            );
+          }
+        } else if (settings.name == '/statistics') {
+          return MaterialPageRoute(
+            builder: (_) => const StatisticsScreen(),
+          );
+        }
+        return null;
+      },
       builder: (context, child) {
         return Directionality(
           textDirection: TextDirection.rtl,

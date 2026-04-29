@@ -7,8 +7,8 @@ import '../providers/debts_ui_provider.dart';
 import '../utils/debtor_filter.dart';
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import 'add_customer_screen.dart';
-import 'record_payment_screen.dart';
 import 'customer_detail_screen.dart';
+import 'debt_collection_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
 import '../../reports/screens/unified_reports_screen.dart';
 
@@ -19,15 +19,81 @@ class DebtsScreen extends ConsumerStatefulWidget {
   ConsumerState<DebtsScreen> createState() => _DebtsScreenState();
 }
 
+enum DebtFilter { all, oweMe, iOwe }
+
 class _DebtsScreenState extends ConsumerState<DebtsScreen> {
   final _search = TextEditingController();
   String _q = '';
   int _selectedTab = 0;
+  DebtFilter _filterType = DebtFilter.all;
 
   @override
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  void _showFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'تصفية حسب الرصيد',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: const Text('الكل'),
+                  trailing: _filterType == DebtFilter.all
+                      ? const Icon(LucideIcons.check, color: AppColors.primary)
+                      : null,
+                  onTap: () {
+                    setState(() => _filterType = DebtFilter.all);
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: const Text('عليهم ديون (أعطيت)'),
+                  trailing: _filterType == DebtFilter.oweMe
+                      ? const Icon(LucideIcons.check, color: AppColors.primary)
+                      : null,
+                  onTap: () {
+                    setState(() => _filterType = DebtFilter.oweMe);
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: const Text('لهم ديون (أخذت)'),
+                  trailing: _filterType == DebtFilter.iOwe
+                      ? const Icon(LucideIcons.check, color: AppColors.primary)
+                      : null,
+                  onTap: () {
+                    setState(() => _filterType = DebtFilter.iOwe);
+                    Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -39,7 +105,18 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
     final my = isSuppliersTab
         ? ref.watch(suppliersNumbersProvider)
         : ref.watch(customersNumbersProvider);
-    final list = filterDebtors(source, _q);
+    var list = filterDebtors(source, _q);
+    if (_filterType == DebtFilter.oweMe) {
+      list = list.where((d) {
+        final amt = double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
+        return amt > 0;
+      }).toList();
+    } else if (_filterType == DebtFilter.iOwe) {
+      list = list.where((d) {
+        final amt = double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
+        return amt < 0;
+      }).toList();
+    }
     final hidden = ref.watch(hideBalanceProvider);
 
     final entityLabel = isSuppliersTab ? 'الموردين' : 'العملاء';
@@ -141,7 +218,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                         onTap: () => Navigator.push<void>(
                           context,
                           AppPageRoute<void>(
-                            builder: (_) => const RecordPaymentScreen(),
+                            builder: (_) => const DebtCollectionScreen(),
                           ),
                         ),
                       ),
@@ -214,9 +291,11 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              _FilterIconButton(icon: LucideIcons.slidersHorizontal),
-              const SizedBox(width: 8),
-              _FilterIconButton(icon: LucideIcons.fileText),
+              _FilterIconButton(
+                icon: LucideIcons.slidersHorizontal,
+                isActive: _filterType != DebtFilter.all,
+                onTap: _showFilterSheet,
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -459,19 +538,26 @@ class _ActionButton extends StatelessWidget {
 
 class _FilterIconButton extends StatelessWidget {
   final IconData icon;
+  final VoidCallback? onTap;
+  final bool isActive;
 
-  const _FilterIconButton({required this.icon});
+  const _FilterIconButton({required this.icon, this.onTap, this.isActive = false});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: isActive ? Border.all(color: AppColors.primary.withValues(alpha: 0.3)) : null,
+        ),
+        child: Icon(icon, color: AppColors.primary, size: 20),
       ),
-      child: Icon(icon, color: AppColors.primary, size: 20),
     );
   }
 }

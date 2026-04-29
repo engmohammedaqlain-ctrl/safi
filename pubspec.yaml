@@ -43,6 +43,9 @@ dependencies:
   printing: ^5.13.3
   syncfusion_flutter_pdf: ^33.2.4
   http: ^1.6.0
+  url_launcher: ^6.3.2
+  flutter_local_notifications: ^21.0.0
+  timezone: ^0.11.0
 
 dev_dependencies:
   flutter_test:

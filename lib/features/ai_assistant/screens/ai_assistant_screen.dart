@@ -214,7 +214,10 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.82,
         ),
-        margin: EdgeInsets.only(left: isUser ? 32 : 0, right: isUser ? 0 : 32),
+        margin: EdgeInsets.only(
+          left: isUser ? 32 : 0,
+          right: isUser ? 0 : 32,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isUser ? AppColors.primary : AppColors.backgroundSecondary,
@@ -232,29 +235,31 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             ),
           ],
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!isUser) ...[
-              const Icon(
-                LucideIcons.sparkles,
-                color: AppColors.aiPurple,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-            ],
-            Flexible(
-              child: Text(
-                text,
-                textDirection: TextDirection.rtl,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: isUser ? Colors.white : AppColors.textPrimary,
-                  height: 1.4,
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isUser) ...[
+                const Icon(
+                  LucideIcons.sparkles,
+                  color: AppColors.aiPurple,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: Text(
+                  text,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isUser ? Colors.white : AppColors.textPrimary,
+                    height: 1.4,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

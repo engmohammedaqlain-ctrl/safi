@@ -86,6 +86,7 @@ class DebtorUi {
     this.isSupplier = false,
     this.editedMs = 0,
     this.doubleLedger = false,
+    this.dueDate,
   });
 
   final String id;
@@ -105,6 +106,9 @@ class DebtorUi {
 
   /// دفتر/حساب مزدوج اختياري للعميل
   final bool doubleLedger;
+
+  /// موعد استحقاق الدين
+  final DateTime? dueDate;
 }
 
 Color urgencyToColor(DebtUrgency u) {
@@ -158,6 +162,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
             isSupplier: customer.isSupplier,
             editedMs: _touchMs(),
             doubleLedger: customer.doubleLedger,
+            dueDate: customer.dueDate,
           )
         : customer;
     state = [...state, c];
@@ -180,6 +185,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
             isSupplier: d.isSupplier,
             editedMs: _touchMs(),
             doubleLedger: d.doubleLedger,
+            dueDate: d.dueDate,
           )
         else
           d,
@@ -208,7 +214,32 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
           isSupplier: d.isSupplier,
           editedMs: _touchMs(),
           doubleLedger: d.doubleLedger,
+          dueDate: d.dueDate,
         ),
+    ];
+    _persist();
+  }
+
+  void updateCustomerDueDate(String customerId, DateTime? dueDate) {
+    state = [
+      for (final d in state)
+        if (d.id == customerId)
+          DebtorUi(
+            id: d.id,
+            name: d.name,
+            phone: d.phone,
+            address: d.address,
+            amount: d.amount,
+            status: d.status,
+            urgency: d.urgency,
+            categoryIds: d.categoryIds,
+            isSupplier: d.isSupplier,
+            editedMs: _touchMs(),
+            doubleLedger: d.doubleLedger,
+            dueDate: dueDate,
+          )
+        else
+          d,
     ];
     _persist();
   }
@@ -232,6 +263,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
             isSupplier: d.isSupplier,
             editedMs: _touchMs(),
             doubleLedger: d.doubleLedger,
+            dueDate: d.dueDate,
           )
         else
           d,

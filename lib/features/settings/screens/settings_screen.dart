@@ -11,6 +11,10 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/vault_subpage_scaffold.dart';
+import '../../../core/router/app_page_route.dart';
+import 'store_settings_screen.dart';
+import 'team_settings_screen.dart';
+import 'smart_features_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -23,43 +27,51 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           // ── بطاقة المتجر ──
-          GlassCard(
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(14),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                AppPageRoute(builder: (_) => const StoreSettingsScreen()),
+              );
+            },
+            child: GlassCard(
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      LucideIcons.store,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
-                  child: const Icon(
-                    LucideIcons.store,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('سوبرماركت صافي', style: AppTextStyles.titleSmall),
-                      const SizedBox(height: 2),
-                      Text(
-                        '₪ شيكل · رام الله',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textMuted,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('سوبرماركت صافي', style: AppTextStyles.titleSmall),
+                        const SizedBox(height: 2),
+                        Text(
+                          '₪ شيكل · رام الله',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textMuted,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const Icon(
-                  LucideIcons.chevronLeft,
-                  color: AppColors.textMuted,
-                  size: 18,
-                ),
-              ],
+                  const Icon(
+                    LucideIcons.chevronLeft,
+                    color: AppColors.textMuted,
+                    size: 18,
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -74,6 +86,12 @@ class SettingsScreen extends ConsumerWidget {
                   icon: LucideIcons.users,
                   title: 'الفريق والصلاحيات',
                   subtitle: 'المالك، كاشير، مشرف',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      AppPageRoute(builder: (_) => const TeamSettingsScreen()),
+                    );
+                  },
                 ),
                 const Divider(height: 1, indent: 52),
                 _SettingsTile(
@@ -108,6 +126,12 @@ class SettingsScreen extends ConsumerWidget {
                   icon: LucideIcons.sparkles,
                   title: 'الميزات الذكية',
                   subtitle: 'مفعّل',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      AppPageRoute(builder: (_) => const SmartFeaturesScreen()),
+                    );
+                  },
                 ),
               ],
             ),

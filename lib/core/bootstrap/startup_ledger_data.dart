@@ -292,6 +292,7 @@ class StartupLedgerData {
     'isSupplier': d.isSupplier,
     'editedMs': d.editedMs,
     'doubleLedger': d.doubleLedger,
+    'dueDate': d.dueDate?.toIso8601String(),
   };
 
   static DebtorUi _debtorFromMap(Map<String, dynamic> m) {
@@ -312,6 +313,7 @@ class StartupLedgerData {
       isSupplier: m['isSupplier'] as bool? ?? false,
       editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
       doubleLedger: m['doubleLedger'] as bool? ?? false,
+      dueDate: m['dueDate'] != null ? DateTime.tryParse(m['dueDate'] as String) : null,
     );
   }
 

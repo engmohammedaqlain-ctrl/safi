@@ -8,8 +8,12 @@ import 'core/bootstrap/auth_prefs_sync.dart';
 import 'core/bootstrap/startup_ledger_data.dart';
 import 'firebase_options.dart';
 
+import 'core/services/notification_service.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await NotificationService().init();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 

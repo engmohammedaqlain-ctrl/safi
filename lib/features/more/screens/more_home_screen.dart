@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../ai_assistant/screens/ai_assistant_screen.dart';
 import '../../debts/screens/all_customers_screen.dart';
 import '../../reports/screens/unified_reports_screen.dart';
+import '../../reports/screens/statistics_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import 'notifications_screen.dart';
 
@@ -51,6 +52,12 @@ class MoreHomeScreen extends ConsumerWidget {
                   title: 'الإشعارات',
                   subtitle: 'التذكيرات والتنبيهات',
                   onTap: () => push(const NotificationsScreen()),
+                ),
+                _MenuItem(
+                  icon: LucideIcons.pieChart,
+                  title: 'الإحصائيات',
+                  subtitle: 'تحليل ذكي ورسوم بيانية',
+                  onTap: () => push(const StatisticsScreen()),
                 ),
                 _MenuItem(
                   icon: LucideIcons.barChart2,

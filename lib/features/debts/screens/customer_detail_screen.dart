@@ -44,6 +44,34 @@ class CustomerDetailScreen extends ConsumerWidget {
         : 'لا يوجد رصيد';
     final displayAmountWest = numericAmount.abs().toStringAsFixed(1);
 
+    String formatTime(DateTime date) {
+      final h = date.hour;
+      final m = date.minute.toString().padLeft(2, '0');
+      final ampm = h >= 12 ? 'م' : 'ص';
+      final h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+      return '$h12:$m $ampm';
+    }
+
+    String formatTimeRemaining(DateTime date) {
+      final now = DateTime.now();
+      final diff = date.difference(now);
+      if (diff.isNegative) {
+        final days = diff.inDays.abs();
+        if (days == 0) return 'متأخر منذ اليوم';
+        return 'متأخر منذ $days يوم';
+      } else {
+        final days = diff.inDays;
+        if (days == 0) {
+          final hours = diff.inHours;
+          if (hours == 0) {
+            return 'متبقي ${diff.inMinutes} دقيقة';
+          }
+          return 'متبقي $hours ساعة';
+        }
+        return 'متبقي $days يوم';
+      }
+    }
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -98,46 +126,110 @@ class CustomerDetailScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      textDirection: TextDirection.rtl,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                'الرصيد',
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          textDirection: TextDirection.rtl,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'الرصيد',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    balanceLabel,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '$displayAmountWest ₪',
+                                    textDirection: TextDirection.ltr,
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      color: balanceColor,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                balanceLabel,
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 13,
-                                ),
+                            ),
+                            Flexible(
+                              child: _CustomerCategoryChipsInline(
+                                debtor: currentDebtor,
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '$displayAmountWest ₪',
-                                textDirection: TextDirection.ltr,
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  color: balanceColor,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        _CustomerCategoryChipsInline(debtor: currentDebtor),
+                        if (currentDebtor.dueDate != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: currentDebtor.dueDate!.isBefore(
+                                DateTime.now(),
+                              )
+                                  ? Colors.red.shade50
+                                  : Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              textDirection: TextDirection.rtl,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Icon(
+                                    LucideIcons.calendarClock,
+                                    size: 16,
+                                    color: currentDebtor.dueDate!.isBefore(
+                                      DateTime.now(),
+                                    )
+                                        ? Colors.red
+                                        : Colors.orange.shade800,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'موعد السداد: ${currentDebtor.dueDate!.year}/${currentDebtor.dueDate!.month}/${currentDebtor.dueDate!.day} ${formatTime(currentDebtor.dueDate!)} (${formatTimeRemaining(currentDebtor.dueDate!)})',
+                                    style: TextStyle(
+                                      color: currentDebtor.dueDate!.isBefore(
+                                        DateTime.now(),
+                                      )
+                                          ? Colors.red
+                                          : Colors.orange.shade800,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

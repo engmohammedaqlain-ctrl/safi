@@ -19,6 +19,8 @@ class ReportsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final spots = ref.watch(pnlSpotsProvider);
     final bars = ref.watch(salesBarsProvider);
+    final selectedTimeframe = ref.watch(selectedTimeframeProvider);
+    final summary = ref.watch(analyticsSummaryProvider);
 
     return VaultSubpageScaffold(
       title: 'التقارير',
@@ -41,21 +43,23 @@ class ReportsScreen extends ConsumerWidget {
                     padding: const EdgeInsetsDirectional.only(end: 8),
                     child: FilterChip(
                       label: Text(label),
-                      selected: label == 'أسبوع',
-                      onSelected: (_) {},
+                      selected: label == selectedTimeframe,
+                      onSelected: (_) {
+                        ref.read(selectedTimeframeProvider.notifier).setTimeframe(label);
+                      },
                       showCheckmark: false,
                       selectedColor: AppColors.primary.withValues(alpha: 0.15),
                       backgroundColor: AppColors.backgroundSecondary,
                       side: BorderSide(
-                        color: label == 'أسبوع'
+                        color: label == selectedTimeframe
                             ? AppColors.primary.withValues(alpha: 0.5)
                             : AppColors.outlineSoft,
                       ),
                       labelStyle: AppTextStyles.labelMedium.copyWith(
-                        color: label == 'أسبوع'
+                        color: label == selectedTimeframe
                             ? AppColors.primary
                             : AppColors.textPrimary,
-                        fontWeight: label == 'أسبوع'
+                        fontWeight: label == selectedTimeframe
                             ? FontWeight.bold
                             : FontWeight.normal,
                       ),
@@ -67,9 +71,8 @@ class ReportsScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.lg),
 
           // ── ملخص ذكي ──
-          const AiInsightCard(
-            message:
-                'هامش الربح تحسّن 8٪ عن الأسبوع الماضي مع ثبات تكاليف المخزون.',
+          AiInsightCard(
+            message: summary,
           ),
           const SizedBox(height: AppSpacing.lg),
 
@@ -80,8 +83,6 @@ class ReportsScreen extends ConsumerWidget {
               height: 200,
               child: LineChart(
                 LineChartData(
-                  minY: 0,
-                  maxY: 8,
                   borderData: FlBorderData(show: false),
                   gridData: FlGridData(
                     show: true,
@@ -129,8 +130,6 @@ class ReportsScreen extends ConsumerWidget {
               height: 200,
               child: BarChart(
                 BarChartData(
-                  minY: 0,
-                  maxY: 12,
                   borderData: FlBorderData(show: false),
                   gridData: FlGridData(
                     show: true,
