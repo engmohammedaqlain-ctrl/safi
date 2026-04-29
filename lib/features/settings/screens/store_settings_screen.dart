@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/bootstrap/app_session.dart';
 import '../../../core/bootstrap/prefs_keys.dart';
-import '../../../core/router/main_shell.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/reports_style_shell.dart';
 
@@ -35,7 +34,7 @@ class _StoreSettingsScreenState extends ConsumerState<StoreSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    Future<void>(() async {
+    Future.microtask(() async {
       final p = await SharedPreferences.getInstance();
       if (!mounted) return;
       setState(() {
@@ -47,7 +46,7 @@ class _StoreSettingsScreenState extends ConsumerState<StoreSettingsScreen> {
             : (p.getString(PrefsKeys.storeCurrencyLabel) ?? 'شيكل (₪)')
                 .trim();
         final addr = (p.getString(PrefsKeys.storeAddress) ?? '').trim();
-        _address.text = addr.isEmpty ? 'رام الله' : addr;
+        _address.text = addr.isEmpty ? 'غزة العزة' : addr;
         _prefsLoaded = true;
       });
     });
@@ -63,17 +62,16 @@ class _StoreSettingsScreenState extends ConsumerState<StoreSettingsScreen> {
     }
 
     final cur = _currency.text.trim().isEmpty ? 'شيكل (₪)' : _currency.text.trim();
-    final adr = _address.text.trim().isEmpty ? 'رام الله' : _address.text.trim();
-
-    await ref.read(appSessionProvider.notifier).saveName(name);
+    final adr =
+        _address.text.trim().isEmpty ? 'غزة العزة' : _address.text.trim();
 
     final p = await SharedPreferences.getInstance();
     await p.setString(PrefsKeys.storeCurrencyLabel, cur);
     await p.setString(PrefsKeys.storeAddress, adr);
 
+    await ref.read(appSessionProvider.notifier).saveName(name);
+
     if (!mounted) return;
-    ref.invalidate(userNameProvider);
-    ref.invalidate(storeCardDisplayProvider);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('تم حفظ الإعدادات بنجاح')),

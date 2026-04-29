@@ -6,13 +6,16 @@ import 'package:safi/core/router/app_page_route.dart';
 
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_snackbar.dart';
+import '../../../core/widgets/vault_branded_shell.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
 import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
 import 'wallet_detail_screen.dart';
 
-/// شاشة المحافظ والبنوك — نفس ثيم دفتر الديون بالضبط
+/// شاشة المحافظ والبنوك — إطار الخزينة وبطاقات بنكية كما في الأونبوردينغ
 class FinancialAccountsScreen extends ConsumerWidget {
   const FinancialAccountsScreen({super.key});
 
@@ -25,165 +28,452 @@ class FinancialAccountsScreen extends ConsumerWidget {
         ? 0.0
         : accounts.map((a) => a.balance).reduce((a, b) => a > b ? a : b);
 
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
+
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          surfaceTintColor: Colors.transparent,
-          scrolledUnderElevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.arrowRight, color: AppColors.primary),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          title: const Text(
-            'المحافظ والبنوك',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+      child: VaultInsetPageShell(
+        title: const Text(
+          'المحافظ والبنوك',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        body: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            // ── بطاقة الملخص (نفس قالب بطاقة دفتر الديون) ──
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade200),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // يمين: عناصر القياس (مثل سداد/دين جديد في الديون)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _SummaryMetricRow(
-                        label: 'الإجمالي',
-                        value: hidden
-                            ? '****'
-                            : '₪ ${formatShekelAmount(total)}',
-                        valueColor: Colors.green,
+            ListView(
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 96 + bottomPad),
+              children: [
+                _WalletsOverviewPlasticCard(
+                  accounts: accounts,
+                  hidden: hidden,
+                  total: total,
+                  highest: highest,
+                  onReport: () =>
+                      showAppSnackBar(context, 'تقرير المحافظ — قريباً'),
+                  onStats: () =>
+                      showAppSnackBar(context, 'إحصائيات المحافظ — قريباً'),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.creditCard,
+                      size: 20,
+                      color: AppColors.primary.withValues(alpha: 0.85),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'محافظك (${accounts.length})',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(height: 6),
-                      _SummaryMetricRow(
-                        label: 'أعلى رصيد',
-                        value: hidden
-                            ? '****'
-                            : '₪ ${formatShekelAmount(highest)}',
-                        valueColor: AppColors.primary,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'المحافظ: ${accounts.length}',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (accounts.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 28),
+                    child: Center(
+                      child: Text(
+                        'لا توجد محافظ بعد.\nاضغط «إضافة محفظة» للبدء.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 15,
+                          height: 1.45,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                  // يسار: أيقونات الإجراءات (مثل دفتر الديون)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _ActionButton(
-                        icon: LucideIcons.fileText,
-                        label: 'تقرير عام',
-                        onTap: () {
-                          showAppSnackBar(context, 'تقرير المحافظ — قريباً');
-                        },
+                ...accounts.map(
+                  (a) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _WalletAccountCard(
+                      account: a,
+                      hidden: hidden,
+                      onTap: () => Navigator.push<void>(
+                        context,
+                        AppPageRoute<void>(
+                          builder: (_) =>
+                              WalletDetailScreen(accountId: a.id),
+                        ),
                       ),
-                      const SizedBox(width: 12),
-                      _ActionButton(
-                        icon: LucideIcons.barChart2,
-                        label: 'إحصائيات',
-                        onTap: () {
-                          showAppSnackBar(context, 'إحصائيات المحافظ — قريباً');
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // ── عنوان «المحافظ (N)» ──
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text(
-                  'المحافظ (${accounts.length})',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-
-            // ── القائمة ──
-            if (accounts.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 32),
-                child: Center(
-                  child: Text(
-                    'لا توجد محافظ بعد',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ...accounts.map(
-              (a) => _AccountTile(
-                account: a,
-                hidden: hidden,
-                onTap: () => Navigator.push<void>(
+            PositionedDirectional(
+              bottom: 16 + bottomPad,
+              end: 16,
+              child: FloatingActionButton.extended(
+                heroTag: 'financial_accounts_fab',
+                onPressed: () => Navigator.push<void>(
                   context,
                   AppPageRoute<void>(
-                    builder: (_) => WalletDetailScreen(accountId: a.id),
+                    builder: (_) => const AccountFormScreen(),
+                  ),
+                ),
+                backgroundColor: AppColors.primary,
+                elevation: 3,
+                highlightElevation: 6,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                icon: const Icon(LucideIcons.plus, color: Colors.white),
+                label: const Text(
+                  'إضافة محفظة',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 80),
           ],
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => Navigator.push<void>(
-            context,
-            AppPageRoute<void>(
-              builder: (_) => const AccountFormScreen(),
+      ),
+    );
+  }
+}
+
+/// بطاقة ملخص بلاستيكية — حبوب نوع + مبلغ + عدد المحافظ (شبيهة بمعاينة الأونبوردينغ).
+class _WalletsOverviewPlasticCard extends StatelessWidget {
+  const _WalletsOverviewPlasticCard({
+    required this.accounts,
+    required this.hidden,
+    required this.total,
+    required this.highest,
+    required this.onReport,
+    required this.onStats,
+  });
+
+  final List<FinancialAccount> accounts;
+  final bool hidden;
+  final double total;
+  final double highest;
+  final VoidCallback onReport;
+  final VoidCallback onStats;
+
+  static const List<Color> _gradientColors = [
+    Color(0xFF9C27B0),
+    Color(0xFF6A1B9A),
+    Color(0xFF4A148C),
+  ];
+
+  static String _countPhrase(int n) {
+    if (n == 0) return 'لا يوجد';
+    if (n == 1) return 'محفظة واحدة';
+    return '$n محافظ';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var cashSum = 0.0,
+        bankSum = 0.0,
+        walletSum = 0.0;
+    var cashN = 0, bankN = 0, walletN = 0;
+    for (final a in accounts) {
+      switch (a.type) {
+        case AccountType.cash:
+          cashSum += a.balance;
+          cashN++;
+          break;
+        case AccountType.bank:
+          bankSum += a.balance;
+          bankN++;
+          break;
+        case AccountType.wallet:
+          walletSum += a.balance;
+          walletN++;
+          break;
+      }
+    }
+
+    final cap = AppTextStyles.labelSmall.copyWith(
+      color: Colors.white.withValues(alpha: 0.82),
+      fontSize: 10,
+      height: 1.2,
+    );
+    final val = AppTextStyles.labelSmall.copyWith(
+      color: Colors.white,
+      fontWeight: FontWeight.w700,
+      fontSize: 11,
+      height: 1.2,
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _gradientColors,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _gradientColors.last.withValues(alpha: 0.42),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            right: -16,
+            top: -18,
+            child: Icon(
+              LucideIcons.circle,
+              size: 120,
+              color: Colors.white.withValues(alpha: 0.06),
             ),
           ),
-          backgroundColor: AppColors.primary,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(7),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFF0E6D2),
+                          Color(0xFFC9A66B),
+                          Color(0xFF9A7847),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.22),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: AppRadius.rfull,
+                    ),
+                    child: Text(
+                      'الصافي',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: Colors.white,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  _GlassIconButton(
+                    icon: LucideIcons.fileText,
+                    onTap: onReport,
+                  ),
+                  const SizedBox(width: 8),
+                  _GlassIconButton(
+                    icon: LucideIcons.barChart2,
+                    onTap: onStats,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.22),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _TypeMiniPill(
+                              icon: LucideIcons.banknote,
+                              label: 'كاش',
+                              amountText: hidden
+                                  ? '****'
+                                  : '₪ ${formatShekelAmount(cashSum)}',
+                              countPhrase: _countPhrase(cashN),
+                              captionStyle: cap,
+                              valueStyle: val,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _TypeMiniPill(
+                              icon: LucideIcons.landmark,
+                              label: 'بنك',
+                              amountText: hidden
+                                  ? '****'
+                                  : '₪ ${formatShekelAmount(bankSum)}',
+                              countPhrase: _countPhrase(bankN),
+                              captionStyle: cap,
+                              valueStyle: val,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _TypeMiniPill(
+                              icon: LucideIcons.smartphone,
+                              label: 'محفظة',
+                              amountText: hidden
+                                  ? '****'
+                                  : '₪ ${formatShekelAmount(walletSum)}',
+                              countPhrase: _countPhrase(walletN),
+                              captionStyle: cap,
+                              valueStyle: val,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('الرصيد الموحّد', style: cap.copyWith(fontSize: 11)),
+                          Text(
+                            hidden
+                                ? '  ****'
+                                : '  ₪ ${formatShekelAmount(total)}',
+                            style: val.copyWith(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'أعلى رصيد في محفظة واحدة',
+                              style: cap.copyWith(fontSize: 9.5),
+                            ),
+                            Text(
+                              hidden
+                                  ? '  ****'
+                                  : '  ₪ ${formatShekelAmount(highest)}',
+                              style: val.copyWith(fontSize: 10.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ملخص الأرصدة',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: Colors.white.withValues(alpha: 0.78),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '••••  ••••  ••••  ${accounts.length.toString().padLeft(4, '0')}',
+                          style: AppTextStyles.titleSmall.copyWith(
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(11),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      LucideIcons.wallet,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlassIconButton extends StatelessWidget {
+  const _GlassIconButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
             borderRadius: BorderRadius.circular(12),
-          ),
-          icon: const Icon(LucideIcons.plus, color: Colors.white),
-          label: const Text(
-            'إضافة محفظة',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.2),
             ),
+          ),
+          child: Icon(
+            icon,
+            color: Colors.white.withValues(alpha: 0.95),
+            size: 20,
           ),
         ),
       ),
@@ -191,11 +481,67 @@ class FinancialAccountsScreen extends ConsumerWidget {
   }
 }
 
+class _TypeMiniPill extends StatelessWidget {
+  const _TypeMiniPill({
+    required this.icon,
+    required this.label,
+    required this.amountText,
+    required this.countPhrase,
+    required this.captionStyle,
+    required this.valueStyle,
+  });
+
+  final IconData icon;
+  final String label;
+  final String amountText;
+  final String countPhrase;
+  final TextStyle captionStyle;
+  final TextStyle valueStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: Colors.white.withValues(alpha: 0.88),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: captionStyle.copyWith(fontSize: 8.5),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            amountText,
+            style: valueStyle.copyWith(fontSize: 9.5),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            countPhrase,
+            style: captionStyle.copyWith(fontSize: 8),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ════════════════════════════════════════════════════════════════
-//  بطاقة محفظة في القائمة — مطابقة لصف العميل في دفتر الديون
+//  بطاقة محفظة — ظل وبُعد ملوّن حسب نوع الحساب (كاش / بنك / محفظة)
 // ════════════════════════════════════════════════════════════════
-class _AccountTile extends StatelessWidget {
-  const _AccountTile({
+class _WalletAccountCard extends StatelessWidget {
+  const _WalletAccountCard({
     required this.account,
     required this.hidden,
     required this.onTap,
@@ -205,85 +551,182 @@ class _AccountTile extends StatelessWidget {
   final bool hidden;
   final VoidCallback onTap;
 
+  static Color _accent(AccountType t) {
+    switch (t) {
+      case AccountType.cash:
+        return const Color(0xFF2E7D32);
+      case AccountType.bank:
+        return const Color(0xFF1565C0);
+      case AccountType.wallet:
+        return AppColors.primaryDark;
+    }
+  }
+
+  /// نفس أسماء الحبوب في بطاقة الملخص — مختصرة لتجنّب الزحمة في البطاقة.
+  static String _typeChipShort(AccountType t) {
+    switch (t) {
+      case AccountType.cash:
+        return 'كاش';
+      case AccountType.bank:
+        return 'بنك';
+      case AccountType.wallet:
+        return 'محفظة';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final amountStr = hidden
         ? '****'
         : '₪ ${formatShekelAmount(account.balance)}';
     final subtitle = _subtitle(account);
+    final accent = _accent(account.type);
 
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 17, horizontal: 8),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.shade200),
+    return Material(
+      color: Colors.white,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.outlineSoft),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.12),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // يمين: أيقونة + الاسم
-            Row(
-              mainAxisSize: MainAxisSize.min,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 5,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    account.type.icon,
-                    color: AppColors.primary,
-                    size: 23,
+                    color: accent,
+                    borderRadius: const BorderRadius.horizontal(
+                      right: Radius.circular(17),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 200),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        account.name,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (subtitle.isNotEmpty)
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 14,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                accent.withValues(alpha: 0.14),
+                                accent.withValues(alpha: 0.06),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            account.type.icon,
+                            color: accent,
+                            size: 24,
+                          ),
                         ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                account.name,
+                                style: AppTextStyles.titleSmall.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: accent.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      _typeChipShort(account.type),
+                                      style: AppTextStyles.labelSmall.copyWith(
+                                        color: accent,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                  if (subtitle.isNotEmpty) ...[
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        subtitle,
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: AppColors.textMuted,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              amountStr,
+                              textDirection: TextDirection.ltr,
+                              style: AppTextStyles.titleSmall.copyWith(
+                                color: AppColors.flowIn,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Icon(
+                              LucideIcons.chevronLeft,
+                              size: 18,
+                              color: AppColors.textMuted.withValues(alpha: 0.65),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-            // يسار: المبلغ
-            Text(
-              amountStr,
-              textDirection: TextDirection.ltr,
-              style: const TextStyle(
-                color: Colors.green,
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -297,86 +740,6 @@ class _AccountTile extends StatelessWidget {
       return a.accountNumber!;
     }
     return '';
-  }
-}
-
-// ════════════════════════════════════════════════════════════════
-//  ودجات مشتركة مأخوذة من قالب دفتر الديون
-// ════════════════════════════════════════════════════════════════
-class _SummaryMetricRow extends StatelessWidget {
-  const _SummaryMetricRow({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final Color valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          value,
-          textDirection: TextDirection.ltr,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            height: 1.1,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: AppColors.primary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-          ),
-        ],
-      ),
-    );
   }
 }
 

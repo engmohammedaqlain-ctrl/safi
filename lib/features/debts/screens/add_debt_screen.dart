@@ -174,7 +174,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
             fontFamily: AppFonts.family,
             color: Colors.white,
             fontWeight: FontWeight.w600,
-            fontSize: 17,
+            fontSize: 18,
           ),
         ),
         child: Column(

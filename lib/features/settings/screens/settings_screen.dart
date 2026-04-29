@@ -35,7 +35,7 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.push(
                 context,
                 AppPageRoute(builder: (_) => const StoreSettingsScreen()),
-              ).then((_) => ref.invalidate(storeCardDisplayProvider));
+              );
             },
             child: GlassCard(
               child: Row(
@@ -99,7 +99,7 @@ class SettingsScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          error: (_, __) => Column(
+                          error: (err, _) => Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(

@@ -4,7 +4,7 @@ abstract final class PrefsKeys {
   static const onboardingDone = 'safi_onboarding_done';
   static const userName = 'safi_user_name';
 
-  /// عنوان فرعية بطاقة المتجر (محلياً؛ التقارير تستخدم الاسم مع [userName]).
+  /// العملة والموقع للبطاقة والتقارير (محليّان؛ الاسم من [userName]).
   static const storeCurrencyLabel = 'safi_store_currency_label';
   static const storeAddress = 'safi_store_address';
 

@@ -9,7 +9,10 @@ import 'package:safi/core/router/app_page_route.dart';
 
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_snackbar.dart';
+import '../../../core/widgets/vault_branded_shell.dart';
 import '../../debts/providers/debts_ui_provider.dart';
 import '../../debts/screens/customer_detail_screen.dart';
 import '../../sales/models/cashbook_entry.dart';
@@ -87,19 +90,28 @@ class WalletDetailScreen extends ConsumerWidget {
     if (acc.id == '_missing') {
       return Directionality(
         textDirection: TextDirection.rtl,
-        child: Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            leading: IconButton(
-              icon:
-                  const Icon(LucideIcons.arrowRight, color: AppColors.primary),
-              onPressed: () => Navigator.of(context).pop(),
+        child: VaultInsetPageShell(
+          title: const Text(
+            'المحفظة',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          body: const Center(
-            child: Text('تم حذف هذه المحفظة'),
+          child: const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'تم حذف هذه المحفظة',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
         ),
       );
@@ -148,45 +160,63 @@ class WalletDetailScreen extends ConsumerWidget {
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          surfaceTintColor: Colors.transparent,
-          scrolledUnderElevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.arrowRight, color: AppColors.primary),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          title: Text(
-            acc.name,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+      child: VaultInsetPageShell(
+        headerExtent: 72,
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              acc.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            overflow: TextOverflow.ellipsis,
-          ),
-          actions: [
-            IconButton(
-              tooltip: 'تعديل',
-              onPressed: () => _editWallet(context, ref, acc),
-              icon: const Icon(LucideIcons.edit, color: AppColors.primary),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.14),
+                borderRadius: AppRadius.rfull,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.22),
+                ),
+              ),
+              child: Text(
+                _WalletUi.typeChipShort(acc.type),
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
+              ),
             ),
           ],
         ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        trailing: [
+          IconButton(
+            tooltip: 'تعديل',
+            onPressed: () => _editWallet(context, ref, acc),
+            icon: Icon(
+              LucideIcons.edit,
+              color: Colors.white.withValues(alpha: 0.95),
+            ),
+          ),
+        ],
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           children: [
-            _BalanceCard(account: acc, hidden: hidden),
-            const SizedBox(height: 16),
+            _WalletHeroPlasticCard(account: acc, hidden: hidden),
+            const SizedBox(height: 18),
             _IncomeExpenseStrip(
               income: income,
               expense: expense,
               hidden: hidden,
               count: movementCount,
+              accent: _WalletUi.typeAccent(acc.type),
             ),
             const SizedBox(height: 16),
             Row(
@@ -195,7 +225,8 @@ class WalletDetailScreen extends ConsumerWidget {
                   child: _SoftCta(
                     label: '+ دخل',
                     bg: AppColors.successLight,
-                    fg: Colors.green,
+                    fg: AppColors.flowIn,
+                    icon: LucideIcons.trendingUp,
                     onTap: () => Navigator.push<void>(
                       context,
                       AppPageRoute<void>(
@@ -212,7 +243,8 @@ class WalletDetailScreen extends ConsumerWidget {
                   child: _SoftCta(
                     label: '− مصروف',
                     bg: AppColors.errorLight,
-                    fg: Colors.deepOrange,
+                    fg: AppColors.flowOut,
+                    icon: LucideIcons.trendingDown,
                     onTap: () => Navigator.push<void>(
                       context,
                       AppPageRoute<void>(
@@ -226,13 +258,13 @@ class WalletDetailScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
                   child: _OutlineAction(
                     icon: LucideIcons.fileText,
-                    label: 'تقرير المحفظة',
+                    label: 'تقرير',
                     onTap: () {
                       showAppSnackBar(context, 'تقرير المحفظة — قريباً');
                     },
@@ -251,38 +283,44 @@ class WalletDetailScreen extends ConsumerWidget {
                   child: _OutlineAction(
                     icon: LucideIcons.trash2,
                     label: 'حذف',
-                    color: Colors.red,
+                    color: AppColors.error,
                     onTap: () => _deleteWallet(context, ref, acc),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
             Row(
               children: [
+                Icon(
+                  LucideIcons.clipboardList,
+                  size: 20,
+                  color: AppColors.primary.withValues(alpha: 0.85),
+                ),
+                const SizedBox(width: 8),
                 Text(
                   'الحركات ($movementCount)',
-                  style: const TextStyle(
+                  style: AppTextStyles.titleSmall.copyWith(
                     color: AppColors.primary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             if (combined.isEmpty)
-              const _EmptyMovements()
+              _EmptyMovements(accent: _WalletUi.typeAccent(acc.type))
             else
               ...combined.map(
                 (row) {
                   if (row.c != null) {
                     final e = row.c!;
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: 10),
                       child: _MovementTile(
                         entry: e,
                         hidden: hidden,
+                        accent: _WalletUi.typeAccent(acc.type),
                         onOpen: () {
                           Navigator.push<void>(
                             context,
@@ -297,11 +335,12 @@ class WalletDetailScreen extends ConsumerWidget {
                   }
                   final t = row.d!;
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.only(bottom: 10),
                     child: _DebtWalletTile(
                       tx: t,
                       debtors: debtors,
                       hidden: hidden,
+                      accent: _WalletUi.typeAccent(acc.type),
                       onOpen: () {
                         final debtor =
                             ref.read(debtorByIdProvider(t.customerId));
@@ -367,15 +406,81 @@ class WalletDetailScreen extends ConsumerWidget {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  بطاقة رصيد المحفظة
+//  ألوان وتدرّجات متسقة مع قائمة المحافظ وبطاقة الأونبوردينغ
 // ════════════════════════════════════════════════════════════════
-class _BalanceCard extends StatelessWidget {
-  const _BalanceCard({required this.account, required this.hidden});
+abstract final class _WalletUi {
+  static Color typeAccent(AccountType t) {
+    switch (t) {
+      case AccountType.cash:
+        return const Color(0xFF2E7D32);
+      case AccountType.bank:
+        return const Color(0xFF1565C0);
+      case AccountType.wallet:
+        return AppColors.primaryDark;
+    }
+  }
+
+  static String typeChipShort(AccountType t) {
+    switch (t) {
+      case AccountType.cash:
+        return 'كاش';
+      case AccountType.bank:
+        return 'بنك';
+      case AccountType.wallet:
+        return 'محفظة';
+    }
+  }
+
+  static List<Color> plasticGradient(AccountType t) {
+    switch (t) {
+      case AccountType.cash:
+        return const [
+          Color(0xFF43A047),
+          Color(0xFF2E7D32),
+          Color(0xFF1B5E20),
+        ];
+      case AccountType.bank:
+        return const [
+          Color(0xFF42A5F5),
+          Color(0xFF1565C0),
+          Color(0xFF0D47A1),
+        ];
+      case AccountType.wallet:
+        return const [
+          Color(0xFF9C27B0),
+          Color(0xFF6A1B9A),
+          Color(0xFF4A148C),
+        ];
+    }
+  }
+
+  static String _tailDigits(String id) {
+    final only = id.replaceAll(RegExp(r'[^0-9]'), '');
+    if (only.isEmpty) return '0000';
+    final tail =
+        only.length <= 4 ? only : only.substring(only.length - 4);
+    return tail.padLeft(4, '0');
+  }
+
+  static String decorativePan(FinancialAccount a) {
+    final tail = _tailDigits(a.id);
+    return '••••  ••••  ••••  $tail';
+  }
+}
+
+/// بطاقة بلاستيكية للرصيد وتفاصيل الحساب — مطابقة لفكرة بطاقات المحافظ.
+class _WalletHeroPlasticCard extends StatelessWidget {
+  const _WalletHeroPlasticCard({
+    required this.account,
+    required this.hidden,
+  });
+
   final FinancialAccount account;
   final bool hidden;
 
   @override
   Widget build(BuildContext context) {
+    final gradient = _WalletUi.plasticGradient(account.type);
     final amount = hidden
         ? obscureAmountText()
         : formatShekelAmount(account.balance);
@@ -388,97 +493,184 @@ class _BalanceCard extends StatelessWidget {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradient,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: gradient.last.withValues(alpha: 0.4),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Positioned(
+            left: -18,
+            bottom: -24,
+            child: Icon(
+              LucideIcons.circle,
+              size: 110,
+              color: Colors.white.withValues(alpha: 0.06),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(7),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFF0E6D2),
+                          Color(0xFFC9A66B),
+                          Color(0xFF9A7847),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.22),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: AppRadius.rfull,
+                    ),
+                    child: Text(
+                      'الصافي',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: Colors.white,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.14),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Icon(
+                      account.type.icon,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'الرصيد الحالي',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  letterSpacing: 0.6,
                 ),
-                child: Icon(
-                  account.type.icon,
-                  color: AppColors.primary,
-                  size: 22,
+              ),
+              const SizedBox(height: 6),
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      amount,
+                      style: AppTextStyles.headlineSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 34,
+                        height: 1.05,
+                      ),
+                    ),
+                    Text(
+                      ' ₪',
+                      style: AppTextStyles.titleLarge.copyWith(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (infoLines.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.13),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.22),
+                    ),
+                  ),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: Column(
+                      children: [
+                        for (final l in infoLines)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Text(
+                              l,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: Colors.white.withValues(alpha: 0.92),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Text(
+                _WalletUi.decorativePan(account),
+                textAlign: TextAlign.center,
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: Colors.white.withValues(alpha: 0.88),
+                  letterSpacing: 1.15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          const Text(
-            'الرصيد الحالي',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  amount,
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w600,
-                    height: 1.1,
-                  ),
-                ),
-                const Text(
-                  ' ₪',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (infoLines.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  for (final l in infoLines)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 1),
-                      child: Text(
-                        l,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -494,12 +686,14 @@ class _IncomeExpenseStrip extends StatelessWidget {
     required this.expense,
     required this.hidden,
     required this.count,
+    required this.accent,
   });
 
   final double income;
   final double expense;
   final bool hidden;
   final int count;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -508,14 +702,26 @@ class _IncomeExpenseStrip extends StatelessWidget {
       required String label,
       required String amount,
       required Color color,
+      Color? bgTint,
+      Color? borderTint,
+      bool showCurrencySuffix = true,
     }) {
+      final bg = bgTint ?? Colors.white;
+      final bd = borderTint ?? AppColors.outlineSoft;
       return Expanded(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey.shade200),
-            borderRadius: BorderRadius.circular(12),
+            color: bg,
+            border: Border.all(color: bd),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -525,34 +731,43 @@ class _IncomeExpenseStrip extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 child: Directionality(
                   textDirection: TextDirection.ltr,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        amount,
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                  child: showCurrencySuffix
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              amount,
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              ' ₪',
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          amount,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      Text(
-                        ' ₪',
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: AppColors.textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
@@ -573,49 +788,26 @@ class _IncomeExpenseStrip extends StatelessWidget {
           icon: LucideIcons.trendingUp,
           label: 'الدخل',
           amount: incStr,
-          color: Colors.green,
+          color: AppColors.flowIn,
+          bgTint: AppColors.successLight,
         ),
         const SizedBox(width: 8),
         cell(
           icon: LucideIcons.trendingDown,
           label: 'المصروف',
           amount: expStr,
-          color: Colors.deepOrange,
+          color: AppColors.flowOut,
+          bgTint: AppColors.errorLight,
         ),
         const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.shade200),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                const Icon(LucideIcons.list,
-                    color: AppColors.primary, size: 18),
-                const SizedBox(height: 6),
-                Text(
-                  '$count',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'حركات',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        cell(
+          icon: LucideIcons.layers,
+          label: 'عدد الحركات',
+          amount: '$count',
+          color: accent,
+          bgTint: accent.withValues(alpha: 0.08),
+          borderTint: accent.withValues(alpha: 0.28),
+          showCurrencySuffix: false,
         ),
       ],
     );
@@ -630,32 +822,47 @@ class _SoftCta extends StatelessWidget {
     required this.label,
     required this.bg,
     required this.fg,
+    required this.icon,
     required this.onTap,
   });
 
   final String label;
   final Color bg;
   final Color fg;
+  final IconData icon;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
+      elevation: 0,
+      shadowColor: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          height: 48,
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: fg,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: fg, size: 20),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -731,18 +938,20 @@ class _DebtWalletTile extends StatelessWidget {
     required this.tx,
     required this.debtors,
     required this.hidden,
+    required this.accent,
     required this.onOpen,
   });
 
   final TransactionUi tx;
   final List<DebtorUi> debtors;
   final bool hidden;
+  final Color accent;
   final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final isGave = tx.type == TransactionType.gave;
-    final c = isGave ? Colors.deepOrange : Colors.green;
+    final c = isGave ? AppColors.flowOut : AppColors.flowIn;
     final amount =
         hidden ? obscureAmountText() : formatShekelAmount(tx.amount);
     final name = UnifiedLedgerMath.debtName(debtors, tx.customerId);
@@ -750,91 +959,125 @@ class _DebtWalletTile extends StatelessWidget {
         isGave ? 'دين جديد — عبر المحفظة' : 'سداد — إلى المحفظة';
 
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onOpen,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 13),
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-          ),
-          child: Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: c.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  LucideIcons.bookMarked,
-                  color: c,
-                  size: 21,
-                ),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.outlineSoft),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.1),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      headline,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      name,
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      _formatDate(tx.date),
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Directionality(
-                textDirection: TextDirection.ltr,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${isGave ? '-' : '+'} $amount',
-                      style: TextStyle(
-                        color: c,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      ' ₪',
-                      style: TextStyle(
-                        color: c,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
             ],
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              textDirection: TextDirection.rtl,
+              children: [
+                Container(
+                  width: 4,
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: const BorderRadius.horizontal(
+                      right: Radius.circular(13),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    child: Row(
+                      textDirection: TextDirection.rtl,
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: c.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(11),
+                          ),
+                          child: Icon(
+                            LucideIcons.bookMarked,
+                            color: c,
+                            size: 21,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                headline,
+                                style: AppTextStyles.titleSmall.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                name,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                _formatDate(tx.date),
+                                style: TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${isGave ? '-' : '+'} $amount',
+                                style: TextStyle(
+                                  color: c,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                ' ₪',
+                                style: TextStyle(
+                                  color: c,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -846,118 +1089,155 @@ class _MovementTile extends StatelessWidget {
   const _MovementTile({
     required this.entry,
     required this.hidden,
+    required this.accent,
     required this.onOpen,
   });
 
   final CashbookEntry entry;
   final bool hidden;
+  final Color accent;
   final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
-    final c = entry.isIncome ? Colors.green : Colors.deepOrange;
+    final c = entry.isIncome ? AppColors.flowIn : AppColors.flowOut;
     final amount = hidden
         ? obscureAmountText()
         : formatShekelAmount(entry.amount);
 
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onOpen,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 13),
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-        ),
-        child: Row(
-          textDirection: TextDirection.rtl,
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: c.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.outlineSoft),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.1),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: (!kIsWeb &&
-                      entry.imagePath != null &&
-                      entry.imagePath!.isNotEmpty)
-                  ? Image.file(
-                      File(entry.imagePath!),
-                      fit: BoxFit.cover,
-                    )
-                  : Icon(
-                      entry.isIncome
-                          ? LucideIcons.trendingUp
-                          : LucideIcons.trendingDown,
-                      color: c,
-                      size: 21,
-                    ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (entry.category != null && entry.category!.isNotEmpty)
-                    Text(
-                      entry.category!,
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  Text(
-                    _formatDate(entry.date),
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
-            ),
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${entry.isIncome ? '+' : '-'} $amount',
-                    style: TextStyle(
-                      color: c,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+            ],
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              textDirection: TextDirection.rtl,
+              children: [
+                Container(
+                  width: 4,
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: const BorderRadius.horizontal(
+                      right: Radius.circular(13),
                     ),
                   ),
-                  Text(
-                    ' ₪',
-                    style: TextStyle(
-                      color: c,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    child: Row(
+                      textDirection: TextDirection.rtl,
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: c.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(11),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: (!kIsWeb &&
+                                  entry.imagePath != null &&
+                                  entry.imagePath!.isNotEmpty)
+                              ? Image.file(
+                                  File(entry.imagePath!),
+                                  fit: BoxFit.cover,
+                                )
+                              : Icon(
+                                  entry.isIncome
+                                      ? LucideIcons.trendingUp
+                                      : LucideIcons.trendingDown,
+                                  color: c,
+                                  size: 21,
+                                ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                entry.title,
+                                style: AppTextStyles.titleSmall.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (entry.category != null &&
+                                  entry.category!.isNotEmpty)
+                                Text(
+                                  entry.category!,
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              Text(
+                                _formatDate(entry.date),
+                                style: TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${entry.isIncome ? '+' : '-'} $amount',
+                                style: TextStyle(
+                                  color: c,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                ' ₪',
+                                style: TextStyle(
+                                  color: c,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
         ),
       ),
     );
@@ -968,50 +1248,61 @@ class _MovementTile extends StatelessWidget {
 //  حالة فارغة (لا حركات على هذه المحفظة)
 // ════════════════════════════════════════════════════════════════
 class _EmptyMovements extends StatelessWidget {
-  const _EmptyMovements();
+  const _EmptyMovements({required this.accent});
+
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 18),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.22)),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Container(
-            width: 60,
-            height: 60,
+            width: 58,
+            height: 58,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  accent.withValues(alpha: 0.18),
+                  accent.withValues(alpha: 0.07),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(15),
             ),
-            child: const Icon(
+            child: Icon(
               LucideIcons.inbox,
               size: 26,
-              color: AppColors.primary,
+              color: accent,
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
+          const SizedBox(height: 14),
+          Text(
             'لا توجد حركات على هذه المحفظة',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+            style: AppTextStyles.titleSmall.copyWith(
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             'سجّل دخلاً أو مصروفاً واختر هذه المحفظة لتتبّع حركاتها',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey.shade500,
-              fontSize: 12,
-            ),
+            style: AppTextStyles.bodySmall.copyWith(height: 1.45),
           ),
         ],
       ),

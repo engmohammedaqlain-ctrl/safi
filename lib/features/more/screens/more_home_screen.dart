@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../../core/router/app_page_route.dart';
 import '../../../core/router/main_shell.dart';
 import '../../../core/theme/app_colors.dart';
@@ -115,7 +113,7 @@ class _UserHeaderCard extends ConsumerWidget {
               const Expanded(child: CircularProgressIndicator(strokeWidth: 2)),
             ],
           )),
-      error: (_, __) => Container(
+      error: (err, _) => Container(
           padding: const EdgeInsets.all(20),
           decoration: ReportsStyleSurfaces.whiteCardDecoration(radius: 18),
           child: const Text('خطأ في تحميل الاسم')),

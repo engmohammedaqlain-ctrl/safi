@@ -41,9 +41,9 @@ final storeCardDisplayProvider =
 
   final curRaw =
       (p.getString(PrefsKeys.storeCurrencyLabel) ?? 'شيكل (₪)').trim();
-  final addrRaw = (p.getString(PrefsKeys.storeAddress) ?? 'رام الله').trim();
+  final addrRaw = (p.getString(PrefsKeys.storeAddress) ?? 'غزة العزة').trim();
   final currency = curRaw.isEmpty ? 'شيكل (₪)' : curRaw;
-  final address = addrRaw.isEmpty ? 'رام الله' : addrRaw;
+  final address = addrRaw.isEmpty ? 'غزة العزة' : addrRaw;
   final subtitle = '$currency · $address';
 
   return (title: title, subtitle: subtitle);
