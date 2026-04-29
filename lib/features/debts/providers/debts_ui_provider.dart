@@ -40,6 +40,8 @@ class TransactionUi {
     this.payMethodId,
     this.imagePath,
     this.editedMs = 0,
+    this.isDeleted = false,
+    this.deletedMs = 0,
   });
 
   final String id;
@@ -56,6 +58,8 @@ class TransactionUi {
   final String? imagePath;
 
   final int editedMs;
+  final bool isDeleted;
+  final int deletedMs;
 }
 
 /// أرقام ملخصة لرأس شاشة الديون
@@ -88,6 +92,8 @@ class DebtorUi {
     this.doubleLedger = false,
     this.dueDate,
     this.note,
+    this.isDeleted = false,
+    this.deletedMs = 0,
   });
 
   final String id;
@@ -113,6 +119,9 @@ class DebtorUi {
 
   /// ملاحظة شخصية عن العميل/المورد (تُعرض تحت الاسم)
   final String? note;
+
+  final bool isDeleted;
+  final int deletedMs;
 }
 
 Color urgencyToColor(DebtUrgency u) {
@@ -279,6 +288,33 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
     _persist();
   }
 
+  void removeCustomer(String id) {
+    state = [
+      for (final d in state)
+        if (d.id == id)
+          DebtorUi(
+            id: d.id,
+            name: d.name,
+            phone: d.phone,
+            address: d.address,
+            amount: d.amount,
+            status: d.status,
+            urgency: d.urgency,
+            categoryIds: d.categoryIds,
+            isSupplier: d.isSupplier,
+            editedMs: _touchMs(),
+            doubleLedger: d.doubleLedger,
+            dueDate: d.dueDate,
+            note: d.note,
+            isDeleted: true,
+            deletedMs: _touchMs(),
+          )
+        else
+          d,
+    ];
+    _persist();
+  }
+
   void updateCustomerBalance(String customerId, double delta) {
     state = [
       for (final d in state)
@@ -321,12 +357,12 @@ final debtorsUiProvider = NotifierProvider<DebtorsUiNotifier, List<DebtorUi>>(
 
 /// عملاء فقط (isSupplier = false)
 final customersOnlyProvider = Provider<List<DebtorUi>>((ref) {
-  return ref.watch(debtorsUiProvider).where((d) => !d.isSupplier).toList();
+  return ref.watch(debtorsUiProvider).where((d) => !d.isSupplier && !d.isDeleted).toList();
 });
 
 /// موردون فقط (isSupplier = true)
 final suppliersOnlyProvider = Provider<List<DebtorUi>>((ref) {
-  return ref.watch(debtorsUiProvider).where((d) => d.isSupplier).toList();
+  return ref.watch(debtorsUiProvider).where((d) => d.isSupplier && !d.isDeleted).toList();
 });
 
 DebtMyNumbers _computeNumbers(List<DebtorUi> list) {
@@ -391,7 +427,25 @@ class TransactionsNotifier extends Notifier<List<TransactionUi>> {
   }
 
   void removeTransactionById(String id) {
-    state = [for (final t in state) if (t.id != id) t];
+    state = [
+      for (final t in state)
+        if (t.id == id)
+          TransactionUi(
+            id: t.id,
+            customerId: t.customerId,
+            amount: t.amount,
+            type: t.type,
+            note: t.note,
+            date: t.date,
+            payMethodId: t.payMethodId,
+            imagePath: t.imagePath,
+            editedMs: DateTime.now().millisecondsSinceEpoch,
+            isDeleted: true,
+            deletedMs: DateTime.now().millisecondsSinceEpoch,
+          )
+        else
+          t
+    ];
     _persist();
   }
 }
@@ -405,7 +459,7 @@ final transactionsProvider =
 final customerTransactionsProvider =
     Provider.family<List<TransactionUi>, String>((ref, customerId) {
       final all = ref.watch(transactionsProvider);
-      final filtered = all.where((t) => t.customerId == customerId).toList()
+      final filtered = all.where((t) => t.customerId == customerId && !t.isDeleted).toList()
         ..sort((a, b) => b.date.compareTo(a.date));
       return filtered;
     });

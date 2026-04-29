@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/bootstrap/prefs_keys.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/widgets/vault_subpage_scaffold.dart';
 import '../../../core/theme/app_colors.dart';
 import 'add_customer_detail_screen.dart';
@@ -28,6 +31,17 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final role = prefs.getString(PrefsKeys.userRole) ?? 'owner';
+      final perms = prefs.getStringList(PrefsKeys.userPermissions) ?? [];
+      if (role != 'owner' && !perms.contains('add_debt')) {
+        if (mounted) {
+          Navigator.of(context).pop();
+          showAppSnackBar(context, 'ليس لديك صلاحية إضافة عملاء');
+        }
+      }
+    });
     _fetchContacts();
   }
 

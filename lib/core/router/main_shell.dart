@@ -18,6 +18,8 @@ import '../../features/more/screens/more_home_screen.dart';
 import '../../features/reports/screens/unified_reports_screen.dart';
 import '../../features/sales/screens/sales_screen.dart';
 
+import '../../features/settings/providers/team_provider.dart';
+
 class HideBalanceNotifier extends Notifier<bool> {
   @override
   bool build() => false;
@@ -41,10 +43,9 @@ final storeCardDisplayProvider =
 
   final curRaw =
       (p.getString(PrefsKeys.storeCurrencyLabel) ?? 'شيكل (₪)').trim();
-  final addrRaw = (p.getString(PrefsKeys.storeAddress) ?? 'غزة العزة').trim();
+  final addrRaw = (p.getString(PrefsKeys.storeAddress) ?? '').trim();
   final currency = curRaw.isEmpty ? 'شيكل (₪)' : curRaw;
-  final address = addrRaw.isEmpty ? 'غزة العزة' : addrRaw;
-  final subtitle = '$currency · $address';
+  final subtitle = [currency, if (addrRaw.isNotEmpty) addrRaw].join(' · ');
 
   return (title: title, subtitle: subtitle);
 });
@@ -78,19 +79,24 @@ class _MainShellState extends ConsumerState<MainShell> {
     super.dispose();
   }
 
+  bool _isProgrammaticNav = false;
+
   /// يُستدعى عند الضغط على أيقونة الشريط السفلي → انتقال بانزلاق+تلاشٍ
   void _onNavTap(int index) {
+    _isProgrammaticNav = true;
     ref.read(navIndexProvider.notifier).goTo(index);
     _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 380),
       curve: Curves.easeInOutCubic,
-    );
+    ).then((_) => _isProgrammaticNav = false);
   }
 
   /// يُستدعى عند السحب اليدوي → تحديث الـ provider بالصفحة الجديدة
   void _onPageChanged(int index) {
-    ref.read(navIndexProvider.notifier).goTo(index);
+    if (!_isProgrammaticNav) {
+      ref.read(navIndexProvider.notifier).goTo(index);
+    }
   }
 
   @override
@@ -99,21 +105,6 @@ class _MainShellState extends ConsumerState<MainShell> {
     final debtsLedgerTab = ref.watch(debtsLedgerTabProvider);
     final isDebtsShell = index == 0;
     final isSuppliersInDebts = debtsLedgerTab == 1;
-
-    // إذا طلب الـ provider صفحةً مختلفة (مثلاً deep link أو إعادة تحميل)
-    // نتأكد أن PageView يتبعه دون أنيميشن مكرّر
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_pageController.hasClients) {
-        final current = _pageController.page?.round() ?? 0;
-        if (current != index) {
-          _pageController.animateToPage(
-            index,
-            duration: const Duration(milliseconds: 380),
-            curve: Curves.easeInOutCubic,
-          );
-        }
-      }
-    });
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A0A24),
@@ -212,20 +203,37 @@ class _MainShellState extends ConsumerState<MainShell> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            _VaultHeaderIconButton(
-                              icon: LucideIcons.fileSpreadsheet,
-                              tooltip: 'التقارير',
-                              onTap: () => Navigator.of(context).push<void>(
-                                AppPageRoute<void>(
-                                  builder: (_) => UnifiedReportsScreen(
-                                    initialFilter: isSuppliersInDebts
-                                        ? AppReportDebtFilter.suppliersOnly
-                                        : AppReportDebtFilter.customersOnly,
-                                    lockDebtScope: true,
+                            Consumer(
+                              builder: (context, ref, _) {
+                                final permsAsync = ref.watch(userPermissionsProvider);
+                                final roleAsync = ref.watch(userRoleProvider);
+                                final canViewStats = permsAsync.value?.contains('view_statistics') ?? false;
+                                final isOwner = roleAsync.when(
+                                  data: (r) => r == 'owner',
+                                  loading: () => true,
+                                  error: (_, __) => true,
+                                );
+                                
+                                if (!isOwner && !canViewStats) return const SizedBox.shrink();
+                                
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: _VaultHeaderIconButton(
+                                    icon: LucideIcons.fileSpreadsheet,
+                                    tooltip: 'التقارير',
+                                    onTap: () => Navigator.of(context).push<void>(
+                                      AppPageRoute<void>(
+                                        builder: (_) => UnifiedReportsScreen(
+                                          initialFilter: isSuppliersInDebts
+                                              ? AppReportDebtFilter.suppliersOnly
+                                              : AppReportDebtFilter.customersOnly,
+                                          lockDebtScope: true,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
                           ],
                         ),

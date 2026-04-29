@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../bootstrap/prefs_keys.dart';
 import 'phone_e164.dart';
 
 /// تسجيل الدخول باسم هاتف اصطناعي (Email/Password في Firebase Auth) بعد التحقق من الرمز في الواجهة.
@@ -66,6 +68,20 @@ abstract final class FirestoreRegisteredPhoneAuth {
 
   static List<String> get _passwordTryOrder =>
       <String>[otpForLogin, firebaseEmailPasswordLegacy];
+
+  /// عندما يكون [PrefsKeys.loggedIn] لكن [FirebaseAuth.currentUser] مفقود، نعيد الجلسة بصمت باستخدام [PrefsKeys.phoneDocId].
+  static Future<User?> trySilentReauthFromPrefs() async {
+    final p = await SharedPreferences.getInstance();
+    if (p.getBool(PrefsKeys.loggedIn) != true) return null;
+    final docId = p.getString(PrefsKeys.phoneDocId);
+    if (docId == null || docId.length < 8) return null;
+    try {
+      final c = await signInWithRegisteredPhoneAllowed(rawPhoneDigits: docId);
+      return c.user;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// بعد التحقق من رمز الواجهة يربط نفس حساب Firebase على كل الأجهزة.
   ///

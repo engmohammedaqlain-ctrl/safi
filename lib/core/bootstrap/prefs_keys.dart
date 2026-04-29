@@ -4,7 +4,7 @@ abstract final class PrefsKeys {
   static const onboardingDone = 'safi_onboarding_done';
   static const userName = 'safi_user_name';
 
-  /// العملة والموقع للبطاقة والتقارير (محليّان؛ الاسم من [userName]).
+  /// عنوان فرعية بطاقة المتجر (محلياً؛ التقارير تستخدم الاسم مع [userName]).
   static const storeCurrencyLabel = 'safi_store_currency_label';
   static const storeAddress = 'safi_store_address';
 
@@ -25,4 +25,8 @@ abstract final class PrefsKeys {
 
   /// آخر طابع زمني طبّقناه مع سحب/دفع سحابي للحافظة (مطابقة بسيطة).
   static const lastLedgerSyncedMs = 'safi_last_ledger_synced_ms';
+
+  /// صلاحيات المستخدم الحالي (المالك أو عضو فريق)
+  static const userRole = 'safi_user_role'; // 'owner', 'cashier', 'viewer'
+  static const userPermissions = 'safi_user_permissions'; // List<String>
 }

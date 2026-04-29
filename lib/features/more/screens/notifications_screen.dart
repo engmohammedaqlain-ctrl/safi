@@ -11,6 +11,12 @@ import '../../../core/widgets/reports_style_shell.dart';
 import '../../debts/providers/debts_ui_provider.dart';
 import '../../../core/router/app_page_route.dart';
 import '../../debts/screens/customer_detail_screen.dart';
+import '../../settings/providers/team_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/bootstrap/app_session.dart';
+import '../../../core/services/ledger_team_access.dart';
+import '../../../core/sync/post_login_loading.dart';
 
 /// صفحة الإشعارات المربوطة بالديون
 class NotificationsScreen extends ConsumerWidget {
@@ -19,19 +25,29 @@ class NotificationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final debtors = ref.watch(debtorsUiProvider);
-    
-    final now = DateTime.now();
-    final overdueDebts = debtors.where((d) {
-      if (d.dueDate == null) return false;
-      final amt = double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
-      return amt > 0 && d.dueDate!.isBefore(now);
-    }).toList();
+    final invitesAsync = ref.watch(pendingInvitesProvider);
+    final isOwner = ref.watch(userRoleProvider).value == 'owner';
 
-    final upcomingDebts = debtors.where((d) {
-      if (d.dueDate == null) return false;
-      final amt = double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
-      return amt > 0 && d.dueDate!.isAfter(now) && d.dueDate!.difference(now).inDays <= 3;
-    }).toList();
+    final now = DateTime.now();
+    final overdueDebts = isOwner
+        ? debtors.where((d) {
+            if (d.dueDate == null) return false;
+            final amt =
+                double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
+            return amt > 0 && d.dueDate!.isBefore(now);
+          }).toList()
+        : <DebtorUi>[];
+
+    final upcomingDebts = isOwner
+        ? debtors.where((d) {
+            if (d.dueDate == null) return false;
+            final amt =
+                double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
+            return amt > 0 &&
+                d.dueDate!.isAfter(now) &&
+                d.dueDate!.difference(now).inDays <= 3;
+          }).toList()
+        : <DebtorUi>[];
 
     return ReportsStylePage(
       title: 'الإشعارات',
@@ -44,7 +60,46 @@ class NotificationsScreen extends ConsumerWidget {
           AppSpacing.xl,
         ),
         children: [
-          if (overdueDebts.isEmpty && upcomingDebts.isEmpty)
+          invitesAsync.when(
+            data: (invites) {
+              if (invites.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'دعوات الانضمام',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final invite in invites)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: GestureDetector(
+                        onTap: () => _handleInviteTap(context, ref, invite),
+                        child: _NotifTile(
+                          icon: LucideIcons.store,
+                          color: AppColors.primary,
+                          title: 'دعوة انضمام لمتجر ${invite.storeName}',
+                          subtitle:
+                              'الصلاحية: ${invite.role == 'cashier' ? 'كاشير' : 'مشاهد'}',
+                          time: 'اضغط للقبول أو الرفض',
+                          unread: true,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                ],
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+
+          if (overdueDebts.isEmpty &&
+              upcomingDebts.isEmpty &&
+              (invitesAsync.value?.isEmpty ?? true))
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(32.0),
@@ -54,7 +109,7 @@ class NotificationsScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            
+
           if (overdueDebts.isNotEmpty) ...[
             Text(
               'ديون متأخرة',
@@ -70,7 +125,9 @@ class NotificationsScreen extends ConsumerWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      AppPageRoute(builder: (_) => CustomerDetailScreen(debtor: d)),
+                      AppPageRoute(
+                        builder: (_) => CustomerDetailScreen(debtor: d),
+                      ),
                     );
                   },
                   child: _NotifTile(
@@ -78,7 +135,9 @@ class NotificationsScreen extends ConsumerWidget {
                     color: AppColors.error,
                     title: 'دين متأخر على ${d.name}',
                     subtitle: 'القيمة: ${d.amount} شيكل',
-                    time: now.difference(d.dueDate!).inDays == 0 ? 'اليوم' : 'تأخر منذ ${now.difference(d.dueDate!).inDays} يوم',
+                    time: now.difference(d.dueDate!).inDays == 0
+                        ? 'اليوم'
+                        : 'تأخر منذ ${now.difference(d.dueDate!).inDays} يوم',
                     unread: true,
                   ),
                 ),
@@ -101,7 +160,9 @@ class NotificationsScreen extends ConsumerWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      AppPageRoute(builder: (_) => CustomerDetailScreen(debtor: d)),
+                      AppPageRoute(
+                        builder: (_) => CustomerDetailScreen(debtor: d),
+                      ),
                     );
                   },
                   child: _NotifTile(
@@ -109,7 +170,9 @@ class NotificationsScreen extends ConsumerWidget {
                     color: AppColors.warning,
                     title: 'موعد سداد قريب لـ ${d.name}',
                     subtitle: 'القيمة: ${d.amount} شيكل',
-                    time: d.dueDate!.difference(now).inDays == 0 ? 'اليوم' : 'متبقي ${d.dueDate!.difference(now).inDays} يوم',
+                    time: d.dueDate!.difference(now).inDays == 0
+                        ? 'اليوم'
+                        : 'متبقي ${d.dueDate!.difference(now).inDays} يوم',
                     unread: true,
                   ),
                 ),
@@ -118,6 +181,114 @@ class NotificationsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _handleInviteTap(
+    BuildContext context,
+    WidgetRef ref,
+    TeamInvite invite,
+  ) async {
+    final accept = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('دعوة انضمام لفريق'),
+          content: Text(
+            'تمت دعوتك للانضمام إلى متجر "${invite.storeName}" بصلاحية "${invite.role == 'cashier' ? 'كاشير' : 'مشاهد'}". هل تقبل الدعوة؟',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('رفض'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('قبول'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (accept == null) return;
+
+    // ◀ تحديث فوري للواجهة قبل أي await
+    if (accept) {
+      ref
+          .read(userRoleNotifierProvider.notifier)
+          .setRole(invite.role, invite.permissions);
+    }
+
+    ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(accept);
+
+    try {
+      if (accept) {
+        await FirebaseFirestore.instance
+            .collection('team_invites')
+            .doc(invite.id)
+            .update({'status': 'active'});
+
+        await LedgerTeamAccess.grantForActiveMember(
+          ownerUid: invite.ownerUid,
+          phoneDocId: invite.id,
+          role: invite.role,
+          permissions: invite.permissions,
+        );
+
+        await ref
+            .read(appSessionProvider.notifier)
+            .onLoginSuccess(
+              phoneDocId: invite.id,
+              ownerUidOverride: invite.ownerUid,
+              role: invite.role,
+              permissions: invite.permissions,
+            );
+
+        if (context.mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'مرحباً! انضممت إلى متجر "${invite.storeName}" بصلاحية '
+                '${invite.role == 'cashier' ? 'كاشير' : 'مشاهد'}',
+              ),
+              backgroundColor: AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        final authUid = FirebaseAuth.instance.currentUser?.uid;
+        if (authUid != null) {
+          await LedgerTeamAccess.revokeMember(
+            ownerUid: invite.ownerUid,
+            memberAuthUid: authUid,
+          );
+        }
+        await FirebaseFirestore.instance
+            .collection('team_invites')
+            .doc(invite.id)
+            .delete();
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(invite.ownerUid)
+            .collection('team')
+            .doc(invite.id)
+            .delete();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('حدث خطأ: $e')));
+      }
+    } finally {
+      ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(false);
+    }
   }
 }
 

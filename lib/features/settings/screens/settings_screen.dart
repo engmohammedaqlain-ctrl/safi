@@ -1,9 +1,12 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../core/auth/resolve_firebase_user.dart';
 import '../../../core/bootstrap/app_session.dart';
+import '../../../core/bootstrap/prefs_keys.dart';
 import '../../../core/sync/firebase_sync_status.dart';
 import '../../../core/sync/ledger_firestore_sync.dart';
 import '../../../core/theme/app_colors.dart';
@@ -17,12 +20,14 @@ import '../../sales/providers/unified_ledger_provider.dart';
 import 'store_settings_screen.dart';
 import 'team_settings_screen.dart';
 import 'smart_features_screen.dart';
+import '../providers/team_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final showTeamSettings = ref.watch(canManageTeamProvider).value == true;
     return ReportsStylePage(
       title: 'الإعدادات',
       subtitle: 'الحساب، المتجر، المزامنة والجلسة',
@@ -35,7 +40,7 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.push(
                 context,
                 AppPageRoute(builder: (_) => const StoreSettingsScreen()),
-              );
+              ).then((_) => ref.invalidate(storeCardDisplayProvider));
             },
             child: GlassCard(
               child: Row(
@@ -99,7 +104,7 @@ class SettingsScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          error: (err, _) => Column(
+                          error: (_, __) => Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
@@ -167,42 +172,128 @@ class SettingsScreen extends ConsumerWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                _SettingsTile(
-                  icon: LucideIcons.users,
-                  title: 'الفريق والصلاحيات',
-                  subtitle: 'المالك، كاشير، مشرف',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      AppPageRoute(builder: (_) => const TeamSettingsScreen()),
-                    );
-                  },
-                ),
-                const Divider(height: 1, indent: 52),
+                if (showTeamSettings) ...[
+                  _SettingsTile(
+                    icon: LucideIcons.users,
+                    title: 'الفريق والصلاحيات',
+                    subtitle: 'المالك، كاشير، مشرف',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        AppPageRoute(builder: (_) => const TeamSettingsScreen()),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, indent: 52),
+                ],
                 _SettingsTile(
                   icon: LucideIcons.cloud,
                   title: 'المزامنة',
                   subtitle: ref.watch(firebaseSyncStatusSubtitleProvider),
+                  statusDotColor: ref.watch(ledgerSyncDotColorProvider),
                   onTap: () async {
-                    final u = FirebaseAuth.instance.currentUser;
                     if (!context.mounted) return;
-                    if (u == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'يجب تسجيل الدخول لمزامنة بيانات متجرك مع السحابة.',
+
+                    void closeLoading() {
+                      if (!context.mounted) return;
+                      final nav = Navigator.of(context, rootNavigator: true);
+                      if (nav.canPop()) nav.pop();
+                    }
+
+                    showDialog<void>(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (ctx) => PopScope(
+                        canPop: false,
+                        child: Directionality(
+                          textDirection: TextDirection.rtl,
+                          child: Center(
+                            child: Card(
+                              elevation: 8,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 28,
+                                  vertical: 24,
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(
+                                      width: 36,
+                                      height: 36,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                    Text(
+                                      'جاري المزامنة مع السحابة…',
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      );
-                      return;
-                    }
-                    await ref.read(ledgerFirestoreSyncProvider).pushNow(u.uid);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('تم حفظ النسخة الحالية في السحابة.'),
-                        ),
-                      );
+                      ),
+                    );
+
+                    try {
+                      final user = await resolveFirebaseUserForAction(ref);
+                      if (!context.mounted) {
+                        closeLoading();
+                        return;
+                      }
+                      if (user == null) {
+                        closeLoading();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'تعذّر المزامنة: لا توجد جلسة Firebase نشطة. أعد تسجيل الدخول من الشاشة الرئيسية.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      final prefs = await SharedPreferences.getInstance();
+                      final ledgerUid =
+                          prefs.getString(PrefsKeys.ledgerOwnerUid) ?? user.uid;
+                      final ok = await ref
+                          .read(ledgerFirestoreSyncProvider)
+                          .pushNow(ledgerUid);
+                      if (context.mounted) {
+                        closeLoading();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              ok
+                                  ? 'تمت مزامنة النسخة الحالية مع السحابة بنجاح.'
+                                  : (ref.read(ledgerSyncUiProvider).lastPushError ??
+                                      'تعذّرت المزامنة.'),
+                            ),
+                            backgroundColor:
+                                ok ? AppColors.success : AppColors.error,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        closeLoading();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('تعذّرت المزامنة: $e'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
                     }
                   },
                 ),
@@ -295,6 +386,7 @@ class _SettingsTile extends StatelessWidget {
     required this.subtitle,
     this.onTap,
     this.iconColor,
+    this.statusDotColor,
   });
 
   final IconData icon;
@@ -302,21 +394,52 @@ class _SettingsTile extends StatelessWidget {
   final String subtitle;
   final VoidCallback? onTap;
   final Color? iconColor;
+  /// نقطة صغيرة (مثلاً حالة المزامنة): أخضر / أحمر / برتقالي
+  final Color? statusDotColor;
 
   @override
   Widget build(BuildContext context) {
     final c = iconColor ?? AppColors.primary;
+    final leading = statusDotColor != null
+        ? Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: c, size: 20),
+              ),
+              Positioned(
+                left: -2,
+                top: -2,
+                child: Container(
+                  width: 11,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: statusDotColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          )
+        : Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: c.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: c, size: 20),
+          );
     return ListTile(
       onTap: onTap,
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: c.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: c, size: 20),
-      ),
+      leading: leading,
       title: Text(title, style: AppTextStyles.titleSmall),
       subtitle: Text(
         subtitle,

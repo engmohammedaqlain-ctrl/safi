@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../core/router/app_page_route.dart';
 import '../../../core/router/main_shell.dart';
 import '../../../core/theme/app_colors.dart';
@@ -8,6 +10,7 @@ import '../../../core/widgets/reports_style_shell.dart';
 import '../../ai_assistant/screens/ai_assistant_screen.dart';
 import '../../reports/screens/unified_reports_screen.dart';
 import '../../reports/screens/statistics_screen.dart';
+import '../../settings/providers/team_provider.dart';
 import '../../settings/screens/settings_screen.dart';
 import 'notifications_screen.dart';
 
@@ -24,6 +27,15 @@ class MoreHomeScreen extends ConsumerWidget {
         AppPageRoute<void>(builder: (_) => page),
       );
     }
+
+    final permsAsync = ref.watch(userPermissionsProvider);
+    final roleAsync = ref.watch(userRoleProvider);
+    final canViewStats = permsAsync.value?.contains('view_statistics') ?? false;
+    final isOwner = roleAsync.when(
+      data: (r) => r == 'owner',
+      loading: () => true,
+      error: (_, __) => true,
+    );
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -45,20 +57,22 @@ class MoreHomeScreen extends ConsumerWidget {
                   subtitle: 'التذكيرات والتنبيهات',
                   onTap: () => push(const NotificationsScreen()),
                 ),
-                _MenuItem(
-                  icon: LucideIcons.pieChart,
-                  title: 'الإحصائيات',
-                  subtitle: 'تحليل ذكي ورسوم بيانية',
-                  onTap: () => push(const StatisticsScreen()),
-                ),
-                _MenuItem(
-                  icon: LucideIcons.fileSpreadsheet,
-                  title: 'التقارير',
-                  subtitle: 'تحليل الديون والمعاملات',
-                  onTap: () => push(
-                    const UnifiedReportsScreen(),
+                if (isOwner || canViewStats) ...[
+                  _MenuItem(
+                    icon: LucideIcons.pieChart,
+                    title: 'الإحصائيات',
+                    subtitle: 'تحليل ذكي ورسوم بيانية',
+                    onTap: () => push(const StatisticsScreen()),
                   ),
-                ),
+                  _MenuItem(
+                    icon: LucideIcons.fileSpreadsheet,
+                    title: 'التقارير',
+                    subtitle: 'تحليل الديون والمعاملات',
+                    onTap: () => push(
+                      const UnifiedReportsScreen(),
+                    ),
+                  ),
+                ],
                 _MenuItem(
                   icon: LucideIcons.sparkles,
                   title: 'المساعد الذكي',
@@ -113,7 +127,7 @@ class _UserHeaderCard extends ConsumerWidget {
               const Expanded(child: CircularProgressIndicator(strokeWidth: 2)),
             ],
           )),
-      error: (err, _) => Container(
+      error: (_, __) => Container(
           padding: const EdgeInsets.all(20),
           decoration: ReportsStyleSurfaces.whiteCardDecoration(radius: 18),
           child: const Text('خطأ في تحميل الاسم')),

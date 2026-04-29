@@ -9,6 +9,7 @@ import '../../../core/auth/firestore_registered_phone_auth.dart';
 import '../../../core/auth/phone_e164.dart';
 import '../../../core/bootstrap/app_session.dart';
 import '../../../core/network/connectivity_status.dart';
+import '../../../core/services/ledger_team_access.dart';
 import '../../../core/sync/post_login_loading.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -46,13 +47,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _afterFirebaseSignIn({
     required String rawDigits,
     String? displayNameFromFirestore,
+    String? ownerUidOverride,
+    String? role,
+    List<String>? permissions,
   }) async {
     final docId = FirestoreRegisteredPhoneAuth.documentIdFromE164(
       phoneDigitsToE164(rawDigits),
     );
+    final resolvedRole = role ?? 'owner';
+    final resolvedPerms = resolvedRole == 'owner'
+        ? <String>[]
+        : List<String>.from(permissions ?? const []);
     await ref.read(appSessionProvider.notifier).onLoginSuccess(
           phoneDocId: docId,
           displayNameFromFirestore: displayNameFromFirestore,
+          ownerUidOverride: ownerUidOverride,
+          role: resolvedRole,
+          permissions: resolvedPerms,
         );
   }
 
@@ -115,10 +126,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       showAppSnackBar(context, 'أدخل الأرقام الستة لرمز الدخول');
       return;
     }
-    if (_otpCode != FirestoreRegisteredPhoneAuth.otpForLogin) {
-      showAppSnackBar(context, 'رمز الدخول غير صحيح');
-      return;
-    }
     final online = await checkDeviceOnlineNow();
     if (!online) {
       if (mounted) {
@@ -146,7 +153,96 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           displayName = snap?.data()?['displayName'] as String?;
         } catch (_) {}
       }
+
+      // Check for team invites (pending = choice dialog; active = re‑grant access + same session)
+      final e164 = phoneDigitsToE164(raw);
+      final phoneDocId = FirestoreRegisteredPhoneAuth.documentIdFromE164(e164);
+      final inviteSnap =
+          await FirebaseFirestore.instance.collection('team_invites').doc(phoneDocId).get();
+
+      if (inviteSnap.exists) {
+        final inviteData = inviteSnap.data()!;
+        final status = inviteData['status'] as String?;
+        final ownerUid = inviteData['ownerUid'] as String?;
+        final roleRaw = inviteData['role'] as String? ?? 'viewer';
+        final invitePerms = List<String>.from(inviteData['permissions'] ?? []);
+
+        if (ownerUid != null &&
+            ownerUid.isNotEmpty &&
+            (status == 'pending' || status == 'active')) {
+          Future<void> finishAsTeamMember() async {
+            await LedgerTeamAccess.grantForActiveMember(
+              ownerUid: ownerUid,
+              phoneDocId: phoneDocId,
+              role: roleRaw,
+              permissions: invitePerms,
+            );
+            await _afterFirebaseSignIn(
+              rawDigits: raw,
+              displayNameFromFirestore: displayName,
+              ownerUidOverride: ownerUid,
+              role: roleRaw,
+              permissions: invitePerms,
+            );
+          }
+
+          if (status == 'active') {
+            if (!mounted) return;
+            await finishAsTeamMember();
+            return;
+          }
+
+          if (!mounted) return;
+          ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(false);
+
+          final storeName = inviteData['storeName'] ?? 'المتجر';
+          final roleLabel = roleRaw == 'cashier' ? 'كاشير' : 'مشاهد';
+
+          final accept = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => Directionality(
+              textDirection: TextDirection.rtl,
+              child: AlertDialog(
+                title: const Text('دعوة انضمام لفريق'),
+                content: Text(
+                  'تمت دعوتك للانضمام إلى متجر "$storeName" بصلاحية "$roleLabel". هل تود الاستكمال كعضو في هذا المتجر؟\n\n'
+                  'إذا اخترت «لا»، ستدخل إلى متجرك الشخصي.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('لا، متجري الشخصي'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                    child: const Text('نعم، قبول الدعوة'),
+                  ),
+                ],
+              ),
+            ),
+          );
+
+          if (accept == true) {
+            await inviteSnap.reference.update({'status': 'active'});
+            if (!mounted) return;
+            await finishAsTeamMember();
+            return;
+          }
+
+          final authUid = FirebaseAuth.instance.currentUser?.uid;
+          if (authUid != null) {
+            await LedgerTeamAccess.revokeMember(
+              ownerUid: ownerUid,
+              memberAuthUid: authUid,
+            );
+          }
+        }
+      }
+
       if (!mounted) return;
+      // We don't set loading here anymore, it's handled by LedgerSyncHost
       await _afterFirebaseSignIn(
         rawDigits: raw,
         displayNameFromFirestore: displayName,
@@ -198,7 +294,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       semanticLabel: 'جاري التحقق',
       child: VaultBrandedShell(
         headerSubtitle: _showOtp
-            ? 'أدخل رمز الدخول الافتراضي (${FirestoreRegisteredPhoneAuth.otpForLogin})'
+            ? 'أدخل رمز الدخول'
             : 'تسجيل دخول آمن',
         belowBrand: Center(child: _LoginStepIndicator(onOtpStep: _showOtp)),
         sheet: Column(
@@ -287,8 +383,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 _listedInFirestore
-                                    ? 'رقمك موجود في قائمة المتجر؛ أدخل 123456 (نفس كلمة مرور الحساب في Firebase).'
-                                    : 'رقمك غير مُدرَج في القائمة بعد؛ بعد الرمز 123456 يُجرى إنشاء مستخدم جديد في Firebase تلقائياً إن لم يكن له حساب، أو الدخول إن وُجد.',
+                                    ? 'رقمك موجود في قائمة المتجر؛ أدخل كلمة المرور الخاصة بك.'
+                                    : 'رقمك غير مُدرَج في القائمة بعد؛ سيتم إنشاء حساب جديد لك.',
                                 style: AppTextStyles.bodySmall.copyWith(
                                   color: AppColors.textMuted,
                                 ),

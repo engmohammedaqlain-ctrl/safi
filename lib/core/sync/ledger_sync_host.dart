@@ -1,9 +1,13 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import '../bootstrap/prefs_keys.dart';
+import '../bootstrap/app_session.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -23,6 +27,7 @@ class LedgerSyncHost extends ConsumerStatefulWidget {
 
 class _LedgerSyncHostState extends ConsumerState<LedgerSyncHost> {
   ProviderSubscription<AsyncValue<User?>>? _authSub;
+  StreamSubscription<DocumentSnapshot>? _kickSub;
 
   Future<void> _syncFromAuthAsync(AsyncValue<User?> auth) async {
     final sync = ref.read(ledgerFirestoreSyncProvider);
@@ -39,7 +44,26 @@ class _LedgerSyncHostState extends ConsumerState<LedgerSyncHost> {
           loading.setLoading(false);
         } else {
           try {
-            await sync.attachIfNeeded(user.uid);
+            final prefs = await SharedPreferences.getInstance();
+            final targetUid = prefs.getString(PrefsKeys.ledgerOwnerUid) ?? user.uid;
+            await sync.attachIfNeeded(targetUid);
+            
+            // Listen for kick if not owner
+            final role = prefs.getString(PrefsKeys.userRole) ?? 'owner';
+            final myPhoneDocId = prefs.getString(PrefsKeys.phoneDocId);
+            
+            _kickSub?.cancel();
+            if (myPhoneDocId != null && role != 'owner') {
+              _kickSub = FirebaseFirestore.instance
+                  .collection('user_sessions')
+                  .doc(myPhoneDocId)
+                  .snapshots()
+                  .listen((snap) {
+                if (snap.data()?['kicked'] == true) {
+                  ref.read(appSessionProvider.notifier).logout();
+                }
+              });
+            }
           } catch (e, st) {
             debugPrint('LedgerSyncHost attachIfNeeded: $e\n$st');
           } finally {
@@ -63,6 +87,9 @@ class _LedgerSyncHostState extends ConsumerState<LedgerSyncHost> {
         (previous, next) {
           unawaited(_syncFromAuthAsync(next));
         },
+        onError: (error, stack) {
+          debugPrint('LedgerSyncHost authSub error: $error\n$stack');
+        },
       );
     }
 
@@ -72,6 +99,7 @@ class _LedgerSyncHostState extends ConsumerState<LedgerSyncHost> {
   @override
   void dispose() {
     _authSub?.close();
+    _kickSub?.cancel();
     super.dispose();
   }
 

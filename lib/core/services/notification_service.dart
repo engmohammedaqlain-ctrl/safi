@@ -56,7 +56,31 @@ class NotificationService {
       if (navigatorKey.currentState != null) {
         navigatorKey.currentState!.pushNamed('/statistics');
       }
+    } else if (payload == 'team_invite') {
+      if (navigatorKey.currentState != null) {
+        navigatorKey.currentState!.pushNamed('/notifications');
+      }
     }
+  }
+
+  Future<void> showInviteNotification({
+    required String storeName,
+    required String role,
+  }) async {
+    const AndroidNotificationDetails android = AndroidNotificationDetails(
+      'team_invites_channel',
+      'دعوات الفريق',
+      channelDescription: 'إشعارات دعوات الانضمام للمتاجر',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    await flutterLocalNotificationsPlugin.show(
+      id: 88888,
+      title: 'دعوة انضمام جديدة',
+      body: 'تمت دعوتك للانضمام إلى "$storeName"',
+      notificationDetails: const NotificationDetails(android: android),
+      payload: 'team_invite',
+    );
   }
 
   Future<void> scheduleDebtReminder(String id, String debtorName, double amount, DateTime dueDate) async {

@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../bootstrap/prefs_keys.dart';
 import '../bootstrap/startup_ledger_data.dart';
+import '../auth/firestore_registered_phone_auth.dart';
 import 'ledger_json_merge.dart';
 import '../../features/cash_flow/providers/accounts_provider.dart';
 import '../../features/debts/providers/debt_categories_provider.dart';
@@ -19,6 +20,42 @@ import '../../features/sales/providers/cashbook_ui_provider.dart';
 /// سحب تدفق حالة المصادقة (مستخدم واحد أو null).
 final firebaseAuthStateProvider = StreamProvider<User?>(
   (ref) => FirebaseAuth.instance.authStateChanges(),
+);
+
+/// حالة واجهة المزامنة: تعديل محلي بانتظار الرفع، أو آخر خطأ من السحابة.
+class LedgerSyncUiState {
+  const LedgerSyncUiState({
+    this.needsCloudPush = false,
+    this.lastPushError,
+  });
+
+  final bool needsCloudPush;
+  final String? lastPushError;
+}
+
+class LedgerSyncUiNotifier extends Notifier<LedgerSyncUiState> {
+  @override
+  LedgerSyncUiState build() => const LedgerSyncUiState();
+
+  void markLocalChanged() {
+    state = LedgerSyncUiState(
+      needsCloudPush: true,
+      lastPushError: state.lastPushError,
+    );
+  }
+
+  void markPushSucceeded() => state = const LedgerSyncUiState();
+
+  void markPushFailed(String? message) {
+    state = LedgerSyncUiState(needsCloudPush: true, lastPushError: message);
+  }
+
+  void reset() => state = const LedgerSyncUiState();
+}
+
+final ledgerSyncUiProvider =
+    NotifierProvider<LedgerSyncUiNotifier, LedgerSyncUiState>(
+  LedgerSyncUiNotifier.new,
 );
 
 /// مزامنة الحافظة مع Firestore بنسخة **V2**:
@@ -51,11 +88,18 @@ class LedgerFirestoreSync {
   }
 
   void schedulePushDebounced() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    try {
+      _ref.read(ledgerSyncUiProvider.notifier).markLocalChanged();
+    } catch (_) {}
     _debouncePush?.cancel();
-    _debouncePush = Timer(const Duration(milliseconds: 900), () {
-      unawaited(pushNow(uid));
+    _debouncePush = Timer(const Duration(milliseconds: 900), () async {
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirestoreRegisteredPhoneAuth.trySilentReauthFromPrefs();
+      }
+      final prefs = await SharedPreferences.getInstance();
+      final targetUid = prefs.getString(PrefsKeys.ledgerOwnerUid) ?? FirebaseAuth.instance.currentUser?.uid;
+      if (targetUid == null) return;
+      unawaited(pushNow(targetUid));
     });
   }
 
@@ -120,7 +164,7 @@ class LedgerFirestoreSync {
   /// يستورد `users/{uid}/safi/ledger_state` مرّة إن لم تُكمَّل ترقية [ledgerSchemaV].
   Future<void> _migrateLegacyLedgerStateIfNeeded(String uid) async {
     final ud = _userDocRef(uid);
-    final snap = await ud.get();
+    final snap = await ud.get(const GetOptions(source: Source.serverAndCache));
     if (((snap.data() ?? {})['ledgerSchemaV'] ?? 0) as int >= 2) return;
 
     final legacy = await ud
@@ -317,7 +361,6 @@ class LedgerFirestoreSync {
     _ref.invalidate(cashbookEntriesProvider);
     _ref.invalidate(accountsProvider);
     _ref.invalidate(debtCategoriesProvider);
-    schedulePushDebounced();
   }
 
   Future<void> detach() async {
@@ -332,7 +375,8 @@ class LedgerFirestoreSync {
     _connectedUid = null;
   }
 
-  Future<void> pushNow(String uid) async {
+  /// يُعيد [true] عند اكتمال الرفع وتحديث الطابع المحلي، أو [false] عند الفشل.
+  Future<bool> pushNow(String uid) async {
     final ud = _userDocRef(uid);
     final prefs = await SharedPreferences.getInstance();
 
@@ -349,7 +393,12 @@ class LedgerFirestoreSync {
       for (final m in docs) {
         final id = m['id']?.toString();
         if (id == null || id.isEmpty) continue;
-        batch.set(col.doc(id), m, SetOptions(merge: true));
+        
+        if (m['isDeleted'] == true) {
+          batch.delete(col.doc(id));
+        } else {
+          batch.set(col.doc(id), m, SetOptions(merge: true));
+        }
         ops++;
         if (ops >= 400) {
           await batch.commit();
@@ -475,8 +524,25 @@ class LedgerFirestoreSync {
         'registeredPhoneHint': prefs.getString(PrefsKeys.phoneDocId),
       }, SetOptions(merge: true));
       await prefs.setInt(PrefsKeys.lastLedgerSyncedMs, nowMs);
+      try {
+        _ref.read(ledgerSyncUiProvider.notifier).markPushSucceeded();
+      } catch (_) {}
+      return true;
+    } on FirebaseException catch (e, st) {
+      debugPrint('LedgerFirestoreSync pushNow: $e\n$st');
+      final ar = e.code == 'permission-denied'
+          ? 'لا صلاحية للكتابة في السحابة. للكاشير: تأكّد أنّ قواعد Firebase نُشرت وتتضمّن المزامنة للفريق.'
+          : 'تعذّر المزامنة: ${e.message ?? e.code}';
+      try {
+        _ref.read(ledgerSyncUiProvider.notifier).markPushFailed(ar);
+      } catch (_) {}
+      return false;
     } catch (e, st) {
       debugPrint('LedgerFirestoreSync pushNow: $e\n$st');
+      try {
+        _ref.read(ledgerSyncUiProvider.notifier).markPushFailed('$e');
+      } catch (_) {}
+      return false;
     }
   }
 }

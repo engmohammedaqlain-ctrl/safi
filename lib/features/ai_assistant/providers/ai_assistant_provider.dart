@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -8,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../debts/providers/debts_ui_provider.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
 import '../../sales/models/cashbook_entry.dart';
+import '../../../core/bootstrap/prefs_keys.dart';
 import '../../../core/bootstrap/startup_ledger_data.dart';
 
 class ChatMessage {
@@ -56,7 +58,10 @@ class AiAssistantState {
 
 class AiAssistantNotifier extends Notifier<AiAssistantState> {
   static const _prefsKey = 'safi_ai_chat_history';
-  static const _apiKey = 'sk-6e98977c40bc44b58e9cc425f01d845f';
+
+  /// مفتاح DeepSeek API (مضمّن في التطبيق — لا يُقرأ من .env).
+  static const String _deepseekApiKey =
+      'sk-6e98977c40bc44b58e9cc425f01d845f';
 
   @override
   AiAssistantState build() {
@@ -87,11 +92,12 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
       );
 
       // Sync to Firebase if online/logged in (offline resilience is via SharedPreferences)
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
+      final ownerUid =
+          p.getString(PrefsKeys.ledgerOwnerUid) ?? FirebaseAuth.instance.currentUser?.uid;
+      if (ownerUid != null) {
         await FirebaseFirestore.instance
             .collection('users')
-            .doc(user.uid)
+            .doc(ownerUid)
             .collection('ai_history')
             .doc('main_chat')
             .set({
@@ -111,19 +117,18 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     try {
       final userName = StartupLedgerData.bootstrapUserName ?? 'صاحب المتجر';
       final systemPrompt = '''
-أنت مساعد ذكي لتطبيق مالي اسمه "الصافي".
-المستخدم ($userName) يريد إرسال رسالة واتساب إلى العميل (${debtor.name}) لتذكيره بسداد دين قيمته (${debtor.amount} شيكل).
+أنت خبير مالي معتمد؛ صِغْ نصاً واحداً جاهزاً للإرسال عبر واتساب بلغة عربية فصحى مرتبة، رسمية، وهادئة، مع لمسة أصيلة كما يجري في التواصل المالي المهني في فلسطين.
+سياق التطبيق: «الصافي». المستخدم ($userName). المقصود: العميل (${debtor.name})؛ قيمة المطلوب تذكيره بها: (${debtor.amount} شيكل).
 موعد السداد: ${debtor.dueDate != null ? '${debtor.dueDate!.year}/${debtor.dueDate!.month}/${debtor.dueDate!.day}' : 'غير محدد'}.
-المطلوب: اكتب رسالة واتساب قصيرة، مهذبة، وواضحة بناءً على طلب المستخدم التالي:
-"$customPrompt"
-لا تضف أي مقدمات أو خاتمات من عندك، فقط نص الرسالة الجاهز للإرسال.
+التعليمات الإضافية من المستخدم: "$customPrompt"
+المخرجات: فقرة أو فقرتان قصيرتان فقط؛ دون عنوان أو توقيع افتراضي منك؛ دون مبالغة أو عامية؛ بلهجة مهنية ومهذبة.
 ''';
 
       final res = await http.post(
         Uri.parse('https://api.deepseek.com/chat/completions'),
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
-          'Authorization': 'Bearer $_apiKey',
+          'Authorization': 'Bearer $_deepseekApiKey',
         },
         body: jsonEncode({
           'model': 'deepseek-chat',
@@ -149,6 +154,11 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
+    final prefs = await SharedPreferences.getInstance();
+    final role = prefs.getString(PrefsKeys.userRole) ?? 'owner';
+    final perms = prefs.getStringList(PrefsKeys.userPermissions) ?? [];
+    final isOwner = role == 'owner';
+
     final userMsg = ChatMessage(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       text: text.trim(),
@@ -162,8 +172,13 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     try {
       final contextStr = _buildContext();
 
-      final systemPrompt =
-          '$contextStr\n\nأجب بناءً على السياق السابق، كن مبدعاً جداً في نقاشك، تحدث بلكنة ذكية، وقدم نصائح إبداعية وغير تقليدية عند حاجة المستخدم كخبير مالي متطور وصديق.';
+      final systemPrompt = '''
+$contextStr
+
+أنت خبير مالي معتمد؛ تتحدث بالعربية الفصحى المرتبة بأسلوب رسمي ومهني، مع فهم واقعي للتجارة والتزامات الديون كما يمارَس في فلسطين.
+قدّم جواباً واضحاً ومنظّماً (فقرات أو نقاط عند الحاجة)، بلا عامية ثقيلة ولا تهريج، وبلا اختراع لأرقام أو أسماء غير واردة في السياق أعلاه.
+إن كان المستخدم كاشيراً أو مشاهدًا فقط، التزم بنطاق الصلاحيات الظاهر من بيانات الدفتر ولا تطلب تنفيذ ما يخرج عن الدور.
+''';
 
       final recentHistory = updatedHistory
           .skip(updatedHistory.length > 20 ? updatedHistory.length - 20 : 0)
@@ -305,7 +320,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
         Uri.parse('https://api.deepseek.com/chat/completions'),
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
-          'Authorization': 'Bearer $_apiKey',
+          'Authorization': 'Bearer $_deepseekApiKey',
         },
         body: jsonEncode({
           'model': 'deepseek-chat',
@@ -328,6 +343,10 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
             final args = jsonDecode(toolCall['function']['arguments'] as String);
             
             if (functionName == 'add_customer') {
+              if (!isOwner && !perms.contains('add_debt')) {
+                reply = 'ليس لديك صلاحية إضافة عملاء.';
+                continue;
+              }
               final name = args['name'] as String;
               final phone = args['phone'] as String? ?? '';
               final amount = (args['amount'] as num).toDouble();
@@ -336,6 +355,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
               ref.read(debtorsUiProvider.notifier).addCustomer(
                 DebtorUi(
                   id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  editedMs: DateTime.now().millisecondsSinceEpoch,
                   name: name,
                   phone: phone,
                   amount: amount.toStringAsFixed(1),
@@ -346,6 +366,10 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
               );
               reply = 'تم إضافة ${isSupplier ? 'المورد' : 'العميل'} "$name" بنجاح برصيد $amount شيكل.';
             } else if (functionName == 'add_cashbook_entry') {
+              if (!isOwner && !perms.contains('record_payment')) {
+                reply = 'ليس لديك صلاحية إضافة حركات مالية.';
+                continue;
+              }
               final title = args['title'] as String;
               final amount = (args['amount'] as num).toDouble();
               final isIncome = args['isIncome'] as bool;
@@ -361,6 +385,10 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
               );
               reply = 'تم إضافة الحركة "$title" بقيمة $amount شيكل كـ ${isIncome ? 'دخل' : 'مصروف'} في الصندوق بنجاح.';
             } else if (functionName == 'delete_customer') {
+              if (!isOwner && !perms.contains('delete_records')) {
+                reply = 'ليس لديك صلاحية الحذف.';
+                continue;
+              }
               final name = args['name'] as String;
               final debtors = ref.read(debtorsUiProvider);
               final matches = debtors.where((d) => d.name.toLowerCase() == name.toLowerCase()).toList();
@@ -370,6 +398,10 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
                 reply = 'لم أتمكن من العثور على عميل باسم "$name".';
               }
             } else if (functionName == 'record_transaction') {
+              if (!isOwner && !perms.contains('record_payment')) {
+                reply = 'ليس لديك صلاحية تسجيل معاملات.';
+                continue;
+              }
               final customerName = args['customerName'] as String;
               final amount = (args['amount'] as num).toDouble();
               final typeStr = args['type'] as String;
@@ -437,7 +469,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
       state = state.copyWith(history: finalHistory, isTyping: false);
       _saveAndSyncHistory(finalHistory);
     } catch (e, st) {
-      print('AI API Error: $e\n$st');
+      debugPrint('AI API Error: $e\n$st');
       final errorMsg = ChatMessage(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
         text: 'راجع مفتاح API أو الاتصال. خطأ: $e',
@@ -457,8 +489,6 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     double totalDebts = 0;
     double totalReceivables = 0;
 
-    final detailsBuffer = StringBuffer();
-
     for (final d in debtors) {
       final amt = double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
       if (amt > 0) {
@@ -466,21 +496,14 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
       } else if (amt < 0) {
         totalDebts += amt.abs();
       }
-      detailsBuffer.writeln('- ${d.name}: ${d.amount}');
     }
 
     return '''
-### سياق بيانات تطبيق (الصافي) الخاص بالمستخدم:
-- اسم المستخدم: $userName
-- عدد العملاء/الموردين المسجلين: $debtorCount
-- المبالغ الإجمالية التي للمستخدم: $totalReceivables شيكل.
-- المبالغ الإجمالية التي على المستخدم الدفع: $totalDebts شيكل.
-
-**أرشيف حسابات جميع العملاء / الموردين:**
-${detailsBuffer.toString()}
-
-أنت بصفتك "المساعد الذكي لتطبيق الصافي"، مهمتك مساعدة المستخدم في فهم تقاريره المالية، وتحديد أكبر مدين، وكتابة رسائل ديون، والرد على الاستفسارات. 
-تحدث باختصار واحترافية وبلهجة عربية مبسطة.
+### سياق دفتر «الصافي» (للمحادثة فقط؛ لا تُضِف أرقاماً خارجها):
+- اسم صاحب الجلسة المعروض في التطبيق: $userName
+- عدد سجلات العملاء/الموردين: $debtorCount
+- إجمالي المستحق للمستخدم (موجب الرصيد لدى الغير): $totalReceivables شيكل
+- إجمالي مطلوبات المستخدم (سالب الرصيد): $totalDebts شيكل
 ''';
   }
 }

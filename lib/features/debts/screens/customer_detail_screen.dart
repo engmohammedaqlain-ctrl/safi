@@ -18,6 +18,7 @@ import '../providers/debts_ui_provider.dart';
 import '../utils/debt_transaction_share.dart';
 import '../../reports/screens/client_report_screen.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
+import '../../settings/providers/team_provider.dart';
 import 'add_debt_screen.dart';
 import 'record_payment_screen.dart';
 
@@ -72,6 +73,15 @@ class CustomerDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentDebtor = ref.watch(debtorByIdProvider(debtor.id)) ?? debtor;
     final transactions = ref.watch(customerTransactionsProvider(debtor.id));
+    final permsAsync = ref.watch(userPermissionsProvider);
+    final roleAsync = ref.watch(userRoleProvider);
+    final canAddDebt = permsAsync.value?.contains('add_debt') ?? false;
+    final canRecordPayment = permsAsync.value?.contains('record_payment') ?? false;
+    final isOwner = roleAsync.when(
+      data: (r) => r == 'owner',
+      loading: () => true,
+      error: (_, __) => true,
+    );
 
     final amountText = currentDebtor.amount.isEmpty
         ? '0.0'
@@ -355,7 +365,7 @@ class CustomerDetailScreen extends ConsumerWidget {
             ),
 
             // ── أزرار دين جديد / تسجيل سداد ──
-            Container(
+            if (isOwner || canAddDebt || canRecordPayment) Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.background,
@@ -373,7 +383,7 @@ class CustomerDetailScreen extends ConsumerWidget {
               child: Row(
                 textDirection: TextDirection.rtl,
                 children: [
-                  Expanded(
+                  if (isOwner || canAddDebt) Expanded(
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.push<bool>(
@@ -402,8 +412,8 @@ class CustomerDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                  if ((isOwner || canAddDebt) && (isOwner || canRecordPayment)) const SizedBox(width: 12),
+                  if (isOwner || canRecordPayment) Expanded(
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.push<bool>(
@@ -635,6 +645,15 @@ class _TransactionTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final permsAsync = ref.watch(userPermissionsProvider);
+    final roleAsync = ref.watch(userRoleProvider);
+    final canDelete = permsAsync.value?.contains('delete_records') ?? false;
+    final isOwner = roleAsync.when(
+      data: (r) => r == 'owner',
+      loading: () => true,
+      error: (_, __) => true,
+    );
+    
     final isGave = tx.type == TransactionType.gave;
     final color = isGave ? Colors.red : Colors.green;
     final icon = isGave ? LucideIcons.arrowDownLeft : LucideIcons.arrowUpRight;
@@ -869,6 +888,15 @@ class _TransactionDetailSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final permsAsync = ref.watch(userPermissionsProvider);
+    final roleAsync = ref.watch(userRoleProvider);
+    final canDelete = permsAsync.value?.contains('delete_records') ?? false;
+    final isOwner = roleAsync.when(
+      data: (r) => r == 'owner',
+      loading: () => true,
+      error: (_, __) => true,
+    );
+
     final tx = transaction;
     final accounts = ref.watch(accountsProvider);
     final isGave = tx.type == TransactionType.gave;
@@ -1184,69 +1212,71 @@ class _TransactionDetailSheet extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final ok = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                title: const Text('حذف المعاملة؟'),
-                                content: const Text(
-                                  'سُحذف السجل ويُعدَّل الرصيد تلقائياً.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(ctx, false),
-                                    child: const Text('إلغاء'),
+                      if (isOwner || canDelete) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final ok = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  FilledButton(
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFFE8E6),
-                                      foregroundColor: const Color(0xFFC62828),
+                                  title: const Text('حذف المعاملة؟'),
+                                  content: const Text(
+                                    'سُحذف السجل ويُعدَّل الرصيد تلقائياً.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: const Text('إلغاء'),
                                     ),
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('حذف'),
-                                  ),
-                                ],
+                                    FilledButton(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: const Color(0xFFFFE8E6),
+                                        foregroundColor: const Color(0xFFC62828),
+                                      ),
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      child: const Text('حذف'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (ok != true || !context.mounted) return;
+                              final delta = tx.type == TransactionType.gave
+                                  ? -tx.amount
+                                  : tx.amount;
+                              ref
+                                  .read(debtorsUiProvider.notifier)
+                                  .updateCustomerBalance(tx.customerId, delta);
+                              ref
+                                  .read(transactionsProvider.notifier)
+                                  .removeTransactionById(tx.id);
+                              if (!context.mounted) return;
+                              Navigator.of(context).pop();
+                              showAppSnackBar(context, 'تم حذف المعاملة');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade50,
+                              foregroundColor: const Color(0xFFE53935),
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                            );
-                            if (ok != true || !context.mounted) return;
-                            final delta = tx.type == TransactionType.gave
-                                ? -tx.amount
-                                : tx.amount;
-                            ref
-                                .read(debtorsUiProvider.notifier)
-                                .updateCustomerBalance(tx.customerId, delta);
-                            ref
-                                .read(transactionsProvider.notifier)
-                                .removeTransactionById(tx.id);
-                            if (!context.mounted) return;
-                            Navigator.of(context).pop();
-                            showAppSnackBar(context, 'تم حذف المعاملة');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.shade50,
-                            foregroundColor: const Color(0xFFE53935),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
                             ),
-                          ),
-                          child: const Text(
-                            'حذف',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                            child: const Text(
+                              'حذف',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],
