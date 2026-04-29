@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/bootstrap/startup_ledger_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../cash_flow/data/financial_account_model.dart';
+import '../utils/customer_name_limits.dart';
 
 enum DebtUrgency { low, medium, high }
 
@@ -111,7 +112,7 @@ class DebtorUi {
   /// أحدث وقت تعديل لتفضيل نسخة عند المزامنة
   final int editedMs;
 
-  /// دفتر/حساب مزدوج اختياري للعميل
+  /// احتياطياً للتوافق مع JSON القديم — دائماً false (الميزة أُلغيت).
   final bool doubleLedger;
 
   /// موعد استحقاق الدين
@@ -206,6 +207,66 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
           d,
     ];
     _persist();
+  }
+
+  /// تحديث الاسم والجوال والعنوان معاً (محلي فقط — المزامنة عبر [StartupLedgerData.saveDebtors]).
+  /// يعيد `null` عند النجاح، أو رسالة خطأ للمستخدم.
+  String? updateCustomerCoreDetails({
+    required String customerId,
+    required String name,
+    required String phoneRaw,
+    required String addressRaw,
+  }) {
+    final phoneDigits = phoneRaw.replaceAll(RegExp(r'\D'), '');
+    if (phoneDigits.isEmpty) {
+      return 'الرجاء إدخال رقم الجوال';
+    }
+    if (phoneDigits.length < 7) {
+      return 'رقم الجوال قصير جداً (على الأقل 7 أرقام)';
+    }
+    final formattedPhone = '+$phoneDigits';
+
+    for (final other in state) {
+      if (other.id == customerId || other.isDeleted) continue;
+      final stored = other.phone.replaceAll(RegExp(r'\D'), '');
+      if (other.phone == formattedPhone ||
+          stored == phoneDigits ||
+          other.phone.replaceAll('+', '') == phoneDigits) {
+        return 'رقم الجوال مسجل لجهة أخرى';
+      }
+    }
+
+    final nameTrimmed = sanitizeCustomerName(name);
+    if (nameTrimmed.isEmpty) {
+      return 'الرجاء إدخال الاسم';
+    }
+
+    final addrTrim = addressRaw.trim();
+    final storedAddr = addrTrim.isEmpty ? null : addrTrim;
+
+    state = [
+      for (final d in state)
+        if (d.id == customerId)
+          DebtorUi(
+            id: d.id,
+            name: nameTrimmed,
+            phone: formattedPhone,
+            address: storedAddr,
+            amount: d.amount,
+            status: d.status,
+            urgency: d.urgency,
+            categoryIds: d.categoryIds,
+            isSupplier: d.isSupplier,
+            editedMs: _touchMs(),
+            doubleLedger: d.doubleLedger,
+            dueDate: d.dueDate,
+            note: d.note,
+          )
+        else
+          d,
+    ];
+    _persist();
+    return null;
   }
 
   /// تحديث رصيد العميل بمقدار delta

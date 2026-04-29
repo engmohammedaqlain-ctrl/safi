@@ -13,7 +13,8 @@ abstract final class PrefsKeys {
 
   /// آخر مستند مسجِّل لتسجيل الدخول (أرقام فقط لـ [registered_phones]).
   static const phoneDocId = 'safi_phone_doc_id';
-  /// عند `true`: إظهار معاملات الدين/السداد في تبويب «الصافي» وبطاقته الموحّدة.
+  /// عند `true` (الافتراضي لأول تشغيل): تُعرض وتُحسب ديون/سداد مع تبويب «الصافي».
+  /// عند `false`: الصندوق وحده في «الصافي»، والكل في الأرشيف.
   static const mergeDebtsIntoSafiTab = 'safi_merge_debts_into_safi_tab';
 
   static const debtors = 'safi_ledger_debtors_v1';

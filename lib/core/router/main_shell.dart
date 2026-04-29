@@ -311,10 +311,12 @@ class _MainShellState extends ConsumerState<MainShell> {
                                 controller: _pageController,
                                 pageCount: _pageCount,
                                 onPageChanged: _onPageChanged,
-                                pages: const [
-                                  RepaintBoundary(child: DebtsScreen()),
+                                pages: [
+                                  const RepaintBoundary(
+                                      child: DebtsScreen()),
                                   RepaintBoundary(child: SalesScreen()),
-                                  RepaintBoundary(child: MoreHomeScreen()),
+                                  const RepaintBoundary(
+                                      child: MoreHomeScreen()),
                                 ],
                               ),
                             ),

@@ -7,7 +7,7 @@ import '../../debts/providers/debts_ui_provider.dart';
 import 'cashbook_ui_provider.dart';
 import 'unified_ledger_math.dart';
 
-export 'unified_ledger_math.dart' show UnifiedLedgerMath, UnifiedLedgerRowUi;
+export 'unified_ledger_math.dart' show UnifiedLedgerMath, UnifiedLedgerRowUi, UnifiedLedgerListFilter;
 
 /// كل حركات الصافي (صندوق + ديون) — الأحدث أولاً.
 /// للأرشيف والشاشات التي تعرض كل الحركات معاً.
@@ -71,6 +71,7 @@ class MergeDebtsIntoSafiNotifier extends Notifier<bool> {
 
   Future<void> setMerged(bool merged) async {
     state = merged;
+    StartupLedgerData.cacheMergeDebtsIntoSafiTab(merged);
     final p = await SharedPreferences.getInstance();
     await p.setBool(PrefsKeys.mergeDebtsIntoSafiTab, merged);
   }

@@ -16,21 +16,99 @@ import '../../debts/providers/debts_ui_provider.dart';
 import '../../debts/screens/customer_detail_screen.dart';
 import '../../reports/screens/unified_reports_screen.dart';
 import '../providers/cashbook_ui_provider.dart';
+import '../providers/unified_ledger_math.dart';
 import '../providers/unified_ledger_provider.dart';
 import 'package:safi/core/router/app_page_route.dart';
 
 /// الصافي — نفس ألوان / ثيم صفحة الديون + تخطيط RTL
-class SalesScreen extends ConsumerWidget {
+class SalesScreen extends ConsumerStatefulWidget {
   const SalesScreen({super.key, this.bottomInset = 0});
 
   final double bottomInset;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SalesScreen> createState() => _SalesScreenState();
+}
+
+class _SalesScreenState extends ConsumerState<SalesScreen> {
+  UnifiedLedgerListFilter _listFilter = UnifiedLedgerListFilter.all;
+
+  void _showFilterSheet(bool mergeDebtsIntoSafi) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'عرض المعاملات',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  _filterTile(UnifiedLedgerListFilter.all),
+                  if (mergeDebtsIntoSafi)
+                    _filterTile(UnifiedLedgerListFilter.debtsOnly),
+                  _filterTile(UnifiedLedgerListFilter.cashIncomeOnly),
+                  _filterTile(UnifiedLedgerListFilter.cashExpenseOnly),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _filterTile(UnifiedLedgerListFilter f) {
+    final sel = _listFilter == f;
+    return ListTile(
+      title: Text(
+        f.labelAr,
+        style: TextStyle(
+          fontWeight: sel ? FontWeight.w600 : FontWeight.w500,
+          color: sel ? AppColors.primary : AppColors.textPrimary,
+        ),
+      ),
+      trailing: Icon(
+        sel ? Icons.check_circle : Icons.circle_outlined,
+        color: sel ? AppColors.primary : Colors.grey.shade400,
+      ),
+      onTap: () {
+        setState(() => _listFilter = f);
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final mergeDebtsIntoSafi = ref.watch(mergeDebtsIntoSafiProvider);
-    final unifiedRows = mergeDebtsIntoSafi
+    final baseRows = mergeDebtsIntoSafi
         ? ref.watch(unifiedLedgerRowsProvider)
         : ref.watch(safiCashOnlyLedgerRowsProvider);
+    final effFilter =
+        (!mergeDebtsIntoSafi && _listFilter == UnifiedLedgerListFilter.debtsOnly)
+            ? UnifiedLedgerListFilter.all
+            : _listFilter;
+    final unifiedRows =
+        UnifiedLedgerMath.applyListFilter(baseRows, effFilter);
     final netSigned = mergeDebtsIntoSafi
         ? ref.watch(unifiedNetSignedProvider)
         : ref.watch(safiCashOnlyNetSignedProvider);
@@ -72,13 +150,12 @@ class SalesScreen extends ConsumerWidget {
         : formatShekelAmount(io.outflow);
     final balanceColor = netSigned >= 0 ? Colors.green : Colors.deepOrange;
 
-    // يضمن ترتيب العناصر من اليمين لليسار حتى داخل الـ ListView
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: ListView(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + bottomInset),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + widget.bottomInset),
           children: [
             _BalanceCard(
               balanceAmount: balAmt,
@@ -96,26 +173,78 @@ class SalesScreen extends ConsumerWidget {
               onReports: () => push(const UnifiedReportsScreen()),
             ),
             const SizedBox(height: 20),
-
             Row(
-              mainAxisAlignment: MainAxisAlignment.start,
               textDirection: TextDirection.rtl,
               children: [
-                Text(
-                  'المعاملات (${unifiedRows.length})',
-                  style: const TextStyle(
-                    fontFamily: AppFonts.family,
-                    color: AppColors.primary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    mergeDebtsIntoSafi
+                        ? 'كل حركات الصندوق والديون'
+                        : 'حركات الصندوق',
+                    style: TextStyle(
+                      fontFamily: AppFonts.family,
+                      color: AppColors.primary.withValues(alpha: 0.85),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Tooltip(
+                  message: 'التصفية: ${effFilter.labelAr}',
+                  child: Material(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(999),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(999),
+                      onTap: () => _showFilterSheet(mergeDebtsIntoSafi),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              LucideIcons.slidersHorizontal,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              effFilter.labelAr,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11.5,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 10),
+                  child: Text(
+                    '(${unifiedRows.length})',
+                    style: const TextStyle(
+                      fontFamily: AppFonts.family,
+                      color: AppColors.primary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-
             if (unifiedRows.isEmpty)
-              const _EmptyTransactions()
+              _EmptySafiTransactions(
+                hasBaseRows: baseRows.isNotEmpty,
+                filter: effFilter,
+              )
             else
               ...unifiedRows.map(
                 (row) => _UnifiedLedgerTile(
@@ -125,6 +254,47 @@ class SalesScreen extends ConsumerWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptySafiTransactions extends StatelessWidget {
+  const _EmptySafiTransactions({
+    required this.hasBaseRows,
+    required this.filter,
+  });
+
+  final bool hasBaseRows;
+  final UnifiedLedgerListFilter filter;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasBaseRows) {
+      return const _EmptyTransactions();
+    }
+    final msg = switch (filter) {
+      UnifiedLedgerListFilter.debtsOnly =>
+        'لا توجد حركات ديون ضمن هذا العرض.',
+      UnifiedLedgerListFilter.cashIncomeOnly =>
+        'لا توجد حركات وارد ضمن هذا العرض.',
+      UnifiedLedgerListFilter.cashExpenseOnly =>
+        'لا توجد حركات صادر ضمن هذا العرض.',
+      _ => '',
+    };
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Center(
+        child: Text(
+          msg.isEmpty ? 'لا توجد معاملات ضمن هذا العرض.' : msg,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: AppFonts.family,
+            color: Colors.grey.shade600,
+            fontSize: 14,
+            height: 1.45,
+          ),
         ),
       ),
     );

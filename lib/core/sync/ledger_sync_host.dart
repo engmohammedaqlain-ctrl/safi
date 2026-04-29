@@ -107,6 +107,12 @@ class _LedgerSyncHostState extends ConsumerState<LedgerSyncHost> {
   Widget build(BuildContext context) {
     ref.watch(ledgerFirestoreSyncProvider);
 
+    ref.listen<bool>(isOnlineProvider, (previous, next) {
+      if (next == true && previous != true) {
+        ref.read(ledgerFirestoreSyncProvider).schedulePushDebounced();
+      }
+    });
+
     final online = ref.watch(isOnlineProvider);
 
     return Column(

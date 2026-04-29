@@ -152,8 +152,8 @@ class SettingsScreen extends ConsumerWidget {
                 style: AppTextStyles.titleSmall,
               ),
               subtitle: Text(
-                'عند الإيقاف: الصندوق وحده في بطاقة «الصافي»؛ الديون في الأرشيف. '
-                'عند التفعيل: تُحسب معاملات الدين والسداد مع قائمة وبطاقة الصافي كما قبل.',
+                'عند الإيقاف: الصندوق وحده في «الصافي»، والديون في الأرشيف فقط. '
+                'عند التفعيل (الوضع الافتراضي): نفس قائمة الأرشيف — صندوق + ديون مع بطاقة الصافي الموحّدة.',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textMuted,
                 ),

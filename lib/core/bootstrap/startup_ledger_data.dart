@@ -141,7 +141,7 @@ class StartupLedgerData {
       p.getString(PrefsKeys.debtCategories),
     );
     _sessionMergeDebtsIntoSafiTab =
-        p.getBool(PrefsKeys.mergeDebtsIntoSafiTab) ?? false;
+        p.getBool(PrefsKeys.mergeDebtsIntoSafiTab) ?? true;
     _sessionUserRole = p.getString(PrefsKeys.userRole) ?? 'owner';
     _sessionUserPermissions = p.getStringList(PrefsKeys.userPermissions) ?? [];
     _sessionLedgerOwnerUid = p.getString(PrefsKeys.ledgerOwnerUid);
@@ -157,6 +157,11 @@ class StartupLedgerData {
   /// يُقرأ مع [ensureLoaded] — يغذّي [mergeDebtsIntoSafiProvider].
   static bool get bootstrapMergeDebtsIntoSafiTab =>
       _sessionMergeDebtsIntoSafiTab;
+
+  /// يبقي قيمة الجلسة متسقة مع [mergeDebtsIntoSafiProvider] بعد تغيير المفتاح محلياً.
+  static void cacheMergeDebtsIntoSafiTab(bool value) {
+    _sessionMergeDebtsIntoSafiTab = value;
+  }
 
   /// الدور المحفوظ محلياً منذ آخر تسجيل دخول.
   static String get bootstrapUserRole => _sessionUserRole;
@@ -359,7 +364,7 @@ class StartupLedgerData {
     'categoryIds': d.categoryIds,
     'isSupplier': d.isSupplier,
     'editedMs': d.editedMs,
-    'doubleLedger': d.doubleLedger,
+    'doubleLedger': false,
     'dueDate': d.dueDate?.toIso8601String(),
     'note': d.note,
     'isDeleted': d.isDeleted,
@@ -383,7 +388,8 @@ class StartupLedgerData {
           : [for (final c in m['categoryIds'] as List<dynamic>) c as String],
       isSupplier: m['isSupplier'] as bool? ?? false,
       editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
-      doubleLedger: m['doubleLedger'] as bool? ?? false,
+      // خيار «دفتر مزدوج» أُلغي — لا نعيد تفعيله من JSON القديم.
+      doubleLedger: false,
       dueDate: m['dueDate'] != null
           ? DateTime.tryParse(m['dueDate'] as String)
           : null,

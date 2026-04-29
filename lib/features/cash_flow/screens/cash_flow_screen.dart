@@ -14,11 +14,10 @@ import '../../debts/providers/debts_ui_provider.dart';
 import '../../debts/screens/customer_detail_screen.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
 import '../../sales/providers/unified_ledger_provider.dart';
+import '../../sales/providers/unified_ledger_math.dart';
 import 'cashbook_entry_detail_screen.dart';
 import 'cash_entry_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
-
-enum _LedgerFilter { all, debts, income, expense }
 
 /// أرشيف — كل المعاملات (صندوق + ديون) بترتيب زمني وزر تصفية.
 /// التصفية: ديون منفصلة؛ وارد/صادر للصندوق فقط (لا يختلط سداد/دين جديد مع النقد).
@@ -30,35 +29,13 @@ class CashFlowScreen extends ConsumerStatefulWidget {
 }
 
 class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
-  _LedgerFilter _filter = _LedgerFilter.all;
+  UnifiedLedgerListFilter _filter = UnifiedLedgerListFilter.all;
 
   List<UnifiedLedgerRowUi> _filtered(List<UnifiedLedgerRowUi> all) {
-    switch (_filter) {
-      case _LedgerFilter.all:
-        return List<UnifiedLedgerRowUi>.from(all);
-      case _LedgerFilter.debts:
-        return [for (final r in all) if (!r.isCashbook) r];
-      case _LedgerFilter.income:
-        return [
-          for (final r in all)
-            if (r.isCashbook && r.cashbookEntry != null && r.cashbookEntry!.isIncome)
-              r,
-        ];
-      case _LedgerFilter.expense:
-        return [
-          for (final r in all)
-            if (r.isCashbook && r.cashbookEntry != null && !r.cashbookEntry!.isIncome)
-              r,
-        ];
-    }
+    return UnifiedLedgerMath.applyListFilter(all, _filter);
   }
 
-  String _filterLabel() => switch (_filter) {
-        _LedgerFilter.all => 'كل الحركات',
-        _LedgerFilter.debts => 'ديون فقط',
-        _LedgerFilter.income => 'وارد فقط',
-        _LedgerFilter.expense => 'صادر فقط',
-      };
+  String _filterLabel() => _filter.labelAr;
 
   void _showFilterSheet() {
     showModalBottomSheet<void>(
@@ -89,10 +66,10 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                       ),
                     ),
                   ),
-                  _sheetTile('كل الحركات', _LedgerFilter.all),
-                  _sheetTile('ديون فقط', _LedgerFilter.debts),
-                  _sheetTile('وارد فقط', _LedgerFilter.income),
-                  _sheetTile('صادر فقط', _LedgerFilter.expense),
+                  _sheetTile(UnifiedLedgerListFilter.all),
+                  _sheetTile(UnifiedLedgerListFilter.debtsOnly),
+                  _sheetTile(UnifiedLedgerListFilter.cashIncomeOnly),
+                  _sheetTile(UnifiedLedgerListFilter.cashExpenseOnly),
                 ],
               ),
             ),
@@ -102,11 +79,11 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
     );
   }
 
-  Widget _sheetTile(String title, _LedgerFilter f) {
+  Widget _sheetTile(UnifiedLedgerListFilter f) {
     final sel = _filter == f;
     return ListTile(
       title: Text(
-        title,
+        f.labelAr,
         style: TextStyle(
           fontWeight: sel ? FontWeight.w600 : FontWeight.w500,
           color: sel ? AppColors.primary : AppColors.textPrimary,
@@ -168,18 +145,6 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        floatingActionButton: FloatingActionButton.extended(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          onPressed: () => push(const CashEntryScreen(initialIncome: true)),
-          icon: const Icon(LucideIcons.plus, size: 20),
-          label: const Text(
-            'تسجيل حركة',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
-        floatingActionButtonLocation:
-            FloatingActionButtonLocation.centerFloat,
         backgroundColor: const Color(0xFFF2F6FA),
         extendBodyBehindAppBar: false,
         appBar: AppBar(
@@ -290,7 +255,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
             Expanded(
               child: rows.isEmpty
                   ? SingleChildScrollView(
-                      padding: const EdgeInsets.only(bottom: 88),
+                      padding: const EdgeInsets.only(bottom: 24),
                       child:
                           unifiedAll.isEmpty
                               ? _EmptyLedger(onAddIncome: () {
@@ -308,7 +273,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                         AppSpacing.lg,
                         0,
                         AppSpacing.lg,
-                        112,
+                        AppSpacing.lg,
                       ),
                       itemCount: rows.length,
                       itemBuilder: (context, i) {
@@ -335,7 +300,7 @@ class _EmptyFilteredState extends StatelessWidget {
   });
 
   final bool hasAnyEntries;
-  final _LedgerFilter filter;
+  final UnifiedLedgerListFilter filter;
 
   @override
   Widget build(BuildContext context) {
@@ -343,8 +308,9 @@ class _EmptyFilteredState extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final msg = switch (filter) {
-      _LedgerFilter.income => 'لا توجد حركات وارد ضمن هذا العرض.',
-      _LedgerFilter.expense =>
+      UnifiedLedgerListFilter.cashIncomeOnly =>
+        'لا توجد حركات وارد ضمن هذا العرض.',
+      UnifiedLedgerListFilter.cashExpenseOnly =>
         'لا توجد حركات صادر ضمن هذا العرض.',
       _ => '',
     };
@@ -532,7 +498,7 @@ class _EmptyLedger extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'سجّل حركتك من الصافي أو دفتر الديون، أو بالزر أدناه.',
+            'سجّل حركتك من الصافي أو دفتر الديون.',
             textAlign: TextAlign.center,
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textMuted,

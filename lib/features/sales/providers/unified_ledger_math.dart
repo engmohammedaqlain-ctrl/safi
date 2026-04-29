@@ -27,8 +27,53 @@ class UnifiedLedgerRowUi {
   final String? debtTransactionId;
 }
 
+/// تصفية صفوف الدفتر الموحّد (صندوق + ديون) — نفس منطق شاشة الأرشيف.
+enum UnifiedLedgerListFilter {
+  all,
+  debtsOnly,
+  cashIncomeOnly,
+  cashExpenseOnly,
+}
+
+extension UnifiedLedgerListFilterX on UnifiedLedgerListFilter {
+  String get labelAr => switch (this) {
+        UnifiedLedgerListFilter.all => 'كل الحركات',
+        UnifiedLedgerListFilter.debtsOnly => 'ديون فقط',
+        UnifiedLedgerListFilter.cashIncomeOnly => 'وارد فقط',
+        UnifiedLedgerListFilter.cashExpenseOnly => 'صادر فقط',
+      };
+}
+
 class UnifiedLedgerMath {
   UnifiedLedgerMath._();
+
+  static List<UnifiedLedgerRowUi> applyListFilter(
+    List<UnifiedLedgerRowUi> all,
+    UnifiedLedgerListFilter f,
+  ) {
+    switch (f) {
+      case UnifiedLedgerListFilter.all:
+        return List<UnifiedLedgerRowUi>.from(all);
+      case UnifiedLedgerListFilter.debtsOnly:
+        return [for (final r in all) if (!r.isCashbook) r];
+      case UnifiedLedgerListFilter.cashIncomeOnly:
+        return [
+          for (final r in all)
+            if (r.isCashbook &&
+                r.cashbookEntry != null &&
+                r.cashbookEntry!.isIncome)
+              r,
+        ];
+      case UnifiedLedgerListFilter.cashExpenseOnly:
+        return [
+          for (final r in all)
+            if (r.isCashbook &&
+                r.cashbookEntry != null &&
+                !r.cashbookEntry!.isIncome)
+              r,
+        ];
+    }
+  }
 
   static String debtName(List<DebtorUi> debtors, String id) {
     for (final d in debtors) {
