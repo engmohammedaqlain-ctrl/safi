@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../bootstrap/prefs_keys.dart';
+import '../bootstrap/startup_ledger_data.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -33,6 +34,27 @@ final userNameProvider = FutureProvider<String>((ref) async {
   final p = await SharedPreferences.getInstance();
   return p.getString(PrefsKeys.userName) ?? 'المستخدم الأول';
 });
+
+/// الاسم المعروض في الهيدر والمزيد — يُحدَّث فوراً عند [AppSessionNotifier.saveName] (لا يعتمد على إعادة جلب Future).
+String _displayStoreTitleFromBootstrap() {
+  final t = StartupLedgerData.bootstrapUserName?.trim() ?? '';
+  return t.isEmpty ? 'المستخدم الأول' : t;
+}
+
+class DisplayStoreNameNotifier extends Notifier<String> {
+  @override
+  String build() => _displayStoreTitleFromBootstrap();
+
+  void setFromSavedName(String raw) {
+    final t = raw.trim();
+    state = t.isEmpty ? 'المستخدم الأول' : t;
+  }
+}
+
+final displayStoreNameProvider =
+    NotifierProvider<DisplayStoreNameNotifier, String>(
+      DisplayStoreNameNotifier.new,
+    );
 
 /// عنوان وبطّاقة المتجر من التخزين — يُفعَّل تجديد الواجهة بعد «إعدادات المتجر».
 final storeCardDisplayProvider =
@@ -103,6 +125,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   Widget build(BuildContext context) {
     final index = ref.watch(navIndexProvider);
     final debtsLedgerTab = ref.watch(debtsLedgerTabProvider);
+    final storeDisplayTitle = ref.watch(displayStoreNameProvider);
     final isDebtsShell = index == 0;
     final isSuppliersInDebts = debtsLedgerTab == 1;
 
@@ -150,23 +173,17 @@ class _MainShellState extends ConsumerState<MainShell> {
                                 ),
                                 const SizedBox(width: AppSpacing.md),
                                 Expanded(
-                                  child: Consumer(
-                                    builder: (context, ref, _) {
-                                      final asyncName =
-                                          ref.watch(userNameProvider);
-                                      return Text(
-                                        asyncName.value ?? '',
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.right,
-                                        style: AppTextStyles.headlineSmall
-                                            .copyWith(
-                                          color: Colors.white,
-                                          letterSpacing: 0.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      );
-                                    },
+                                  child: Text(
+                                    storeDisplayTitle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
+                                    style:
+                                        AppTextStyles.headlineSmall.copyWith(
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ],

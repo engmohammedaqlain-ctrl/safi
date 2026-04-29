@@ -338,14 +338,19 @@ class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
       return;
     }
 
-    String formattedPhone = phone;
-    if (formattedPhone.startsWith('0')) {
-      formattedPhone = '970${formattedPhone.substring(1)}';
-    } else if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+$formattedPhone';
+    // نفس الأرقام التي خُزّنت عند إضافة العميل — بدون إضافة مقدمة دولة من التطبيق.
+    // مخزون الجهات يكون غالباً "+" ثم أرقام؛ واتساب يطلب الرقم الدولي أرقاماً فقط بلا +.
+    final digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
+    if (digitsOnly.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('رقم الهاتف غير صالح')),
+      );
+      return;
     }
 
-    final url = Uri.parse('whatsapp://send?phone=$formattedPhone&text=${Uri.encodeComponent(text)}');
+    final url = Uri.parse(
+      'whatsapp://send?phone=$digitsOnly&text=${Uri.encodeComponent(text)}',
+    );
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url);

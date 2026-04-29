@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/router/app_page_route.dart';
 import '../../../core/router/main_shell.dart';
@@ -102,87 +101,57 @@ class _UserHeaderCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final nameAsync = ref.watch(userNameProvider);
-    return nameAsync.when(
-      loading: () => Container(
-          padding: const EdgeInsets.all(20),
-          decoration: ReportsStyleSurfaces.whiteCardDecoration(radius: 18),
-          child: Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  LucideIcons.user,
-                  color: Colors.white,
-                  size: 26,
-                ),
-              ),
-              const SizedBox(width: 14),
-              const Expanded(child: CircularProgressIndicator(strokeWidth: 2)),
-            ],
-          )),
-      error: (_, __) => Container(
-          padding: const EdgeInsets.all(20),
-          decoration: ReportsStyleSurfaces.whiteCardDecoration(radius: 18),
-          child: const Text('خطأ في تحميل الاسم')),
-      data: (name) => Container(
-          padding: const EdgeInsets.all(20),
-          decoration:
-              ReportsStyleSurfaces.whiteCardDecoration(radius: 18),
-          child: Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  LucideIcons.user,
-                  color: Colors.white,
-                  size: 26,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'مرحباً بك في الصافي',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    final name = ref.watch(displayStoreNameProvider);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: ReportsStyleSurfaces.whiteCardDecoration(radius: 18),
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              LucideIcons.user,
+              color: Colors.white,
+              size: 26,
+            ),
           ),
-        ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'مرحباً بك في الصافي',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

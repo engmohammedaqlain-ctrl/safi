@@ -657,7 +657,7 @@ class _TransactionTile extends ConsumerWidget {
     
     final isGave = tx.type == TransactionType.gave;
     final color = isGave ? Colors.red : Colors.green;
-    final icon = isGave ? LucideIcons.arrowDownLeft : LucideIcons.arrowUpRight;
+    const icon = LucideIcons.bookMarked;
     final label = isGave ? 'دين' : 'سداد';
     final sign = isGave ? '−' : '+';
     final amountWest = tx.amount.toStringAsFixed(1);
@@ -912,7 +912,7 @@ class _TransactionDetailSheet extends ConsumerWidget {
     final when = _formatSheetHeaderDate(tx.date);
     final bottom = MediaQuery.paddingOf(context).bottom;
     final maxSheetH = MediaQuery.sizeOf(context).height * 0.82;
-    final icon = isGave ? LucideIcons.arrowDownLeft : LucideIcons.arrowUpRight;
+    const icon = LucideIcons.bookMarked;
 
     final cardDecoration = BoxDecoration(
       color: Colors.white,

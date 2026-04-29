@@ -104,6 +104,10 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
       await p.setString(PrefsKeys.userName, trimmedRemote);
     }
     await StartupLedgerData.refreshCachedUserName();
+    final display = (p.getString(PrefsKeys.userName) ?? '').trim();
+    ref
+        .read(main_shell_router.displayStoreNameProvider.notifier)
+        .setFromSavedName(display);
     _invalidateTeamProviders();
     await _advanceAfterName(p);
   }
@@ -134,6 +138,9 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     final p = await SharedPreferences.getInstance();
     await p.setString(PrefsKeys.userName, name);
     await StartupLedgerData.refreshCachedUserName();
+    ref
+        .read(main_shell_router.displayStoreNameProvider.notifier)
+        .setFromSavedName(name);
     final docId = p.getString(PrefsKeys.phoneDocId);
     if (docId != null && docId.isNotEmpty) {
       try {
@@ -184,6 +191,7 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     _invalidateLedgerUi();
     ref.invalidate(main_shell_router.userNameProvider);
     ref.invalidate(main_shell_router.storeCardDisplayProvider);
+    ref.invalidate(main_shell_router.displayStoreNameProvider);
     _invalidateTeamProviders();
     ref.invalidate(ledgerSyncUiProvider);
 
