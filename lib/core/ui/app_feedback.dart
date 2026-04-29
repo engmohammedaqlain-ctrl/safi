@@ -26,7 +26,7 @@ void showAppSnackBar(
         textAlign: TextAlign.center,
         textDirection: TextDirection.rtl,
         style: TextStyle(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           fontSize: 14,
           height: 1.35,
           color: isError

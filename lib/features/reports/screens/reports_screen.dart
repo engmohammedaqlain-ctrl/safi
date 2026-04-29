@@ -60,8 +60,8 @@ class ReportsScreen extends ConsumerWidget {
                             ? AppColors.primary
                             : AppColors.textPrimary,
                         fontWeight: label == selectedTimeframe
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                       ),
                     ),
                   ),
@@ -168,7 +168,7 @@ class _SectionLabel extends StatelessWidget {
         label,
         style: AppTextStyles.labelSmall.copyWith(
           color: AppColors.textSecondary,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.35,
         ),
       ),

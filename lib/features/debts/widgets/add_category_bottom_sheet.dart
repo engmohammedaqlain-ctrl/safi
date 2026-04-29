@@ -115,7 +115,7 @@ class _AddCategoryBodyState extends ConsumerState<_AddCategoryBody> {
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

@@ -196,7 +196,7 @@ class DrawerHeaderBrand extends StatelessWidget {
                   'صافي',
                   style: AppTextStyles.headlineSmall.copyWith(
                     color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 2),

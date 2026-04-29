@@ -64,10 +64,10 @@ class _AllCustomersScreenState extends ConsumerState<AllCustomersScreen> {
           TextField(
             controller: _search,
             onChanged: (v) => setState(() => _q = v),
-            style: AppTextStyles.bodyLarge,
+            style: AppTextStyles.bodyMedium.copyWith(fontSize: 15),
             decoration: const InputDecoration(
               hintText: 'ابحث بالاسم أو رقم الجوال...',
-              prefixIcon: Icon(LucideIcons.search, color: AppColors.textMuted),
+              prefixIcon: Icon(LucideIcons.search, color: AppColors.textMuted, size: 20),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -93,7 +93,7 @@ class _AllCustomersScreenState extends ConsumerState<AllCustomersScreen> {
             )
           else
             for (var i = 0; i < list.length; i++) ...[
-              if (i > 0) const SizedBox(height: 10),
+              if (i > 0) const SizedBox(height: 6),
               _CustomerRow(
                 debtor: list[i],
                 onTap: () {
@@ -127,23 +127,34 @@ class _CustomerRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: const BorderRadius.all(Radius.circular(24)),
         child: GlassCard(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
           child: Row(
             children: [
               CircleAvatar(
+                radius: 18,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                child: Icon(LucideIcons.user, color: AppColors.primary),
+                child: Icon(LucideIcons.user, size: 19, color: AppColors.primary),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(debtor.name, style: AppTextStyles.titleSmall),
-                    const SizedBox(height: 2),
+                    Text(
+                      debtor.name,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 1),
                     Text(
                       debtor.phone,
                       style: AppTextStyles.labelSmall.copyWith(
                         color: AppColors.textSecondary,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -151,11 +162,15 @@ class _CustomerRow extends StatelessWidget {
               ),
               Text(
                 '₪ ${debtor.amount}',
-                style: AppTextStyles.numberMedium.copyWith(color: c),
+                style: AppTextStyles.numberMedium.copyWith(
+                  color: c,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const Icon(
                 LucideIcons.chevronLeft,
-                size: 18,
+                size: 17,
                 color: AppColors.textMuted,
               ),
             ],

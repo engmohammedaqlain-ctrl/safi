@@ -41,7 +41,7 @@ class StoreSettingsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('حفظ التغييرات', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: const Text('حفظ التغييرات', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -57,7 +57,7 @@ class StoreSettingsScreen extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 14,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 8),

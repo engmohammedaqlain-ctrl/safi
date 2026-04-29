@@ -34,7 +34,7 @@ class FinancialTimelineScreen extends ConsumerWidget {
           foregroundColor: AppColors.primary,
           title: const Text(
             'الخط الزمني المالي',
-            style: TextStyle(fontWeight: FontWeight.w800),
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
           centerTitle: true,
           elevation: 0,
@@ -65,7 +65,7 @@ class FinancialTimelineScreen extends ConsumerWidget {
                         color: netSigned >= 0
                             ? const Color(0xFF0D7A53)
                             : const Color(0xFFB42318),
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         fontSize: 26,
                       ),
                     ),
@@ -79,7 +79,7 @@ class FinancialTimelineScreen extends ConsumerWidget {
               style: const TextStyle(
                 color: AppColors.primary,
                 fontSize: 15,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 10),
@@ -105,13 +105,13 @@ class FinancialTimelineScreen extends ConsumerWidget {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 11,
+                        horizontal: 13,
+                        vertical: 12,
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(e.icon, size: 20, color: AppColors.primary),
+                          Icon(e.icon, size: 21, color: AppColors.primary),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
@@ -120,15 +120,15 @@ class FinancialTimelineScreen extends ConsumerWidget {
                                 Text(
                                   e.title,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   e.subtitle,
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: 14,
                                     color: Colors.grey.shade700,
                                   ),
                                 ),
@@ -136,7 +136,7 @@ class FinancialTimelineScreen extends ConsumerWidget {
                                 Text(
                                   _formatDateTimeAr(e.sortTime),
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 12,
                                     color: Colors.grey.shade500,
                                   ),
                                 ),
@@ -149,7 +149,7 @@ class FinancialTimelineScreen extends ConsumerWidget {
                               Text(
                                 '${e.delta >= 0 ? '+' : '−'}₪ ${fmt(e.delta, hidden)}',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                   color: e.delta >= 0
                                       ? const Color(0xFF0D7A53)
                                       : const Color(0xFFB42318),
@@ -159,7 +159,7 @@ class FinancialTimelineScreen extends ConsumerWidget {
                               Text(
                                 '⇲ ${fmt(e.runningNetSigned, hidden)}',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   color: Colors.grey.shade600,
                                 ),
                               ),

@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// تبويب الشريط السفلي: 0=ديون، 1=كاشير، 2=المزيد
+/// تبويب الشريط السفلي: 0=ديون، 1=الصافي، 2=المزيد
 class NavIndex extends Notifier<int> {
   @override
-  int build() => 0;
+  int build() => 1;
 
   void goTo(int index) {
     if (index < 0 || index > 2) return;

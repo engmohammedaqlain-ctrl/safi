@@ -1,22 +1,36 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+
+import '../../../core/theme/app_theme.dart';
+
+import '../../../core/theme/app_text_styles.dart';
+
 import '../../../core/utils/app_snackbar.dart';
-import '../../../core/widgets/glass_card.dart';
+
 import '../../cash_flow/data/financial_account_model.dart';
+
 import '../../cash_flow/providers/accounts_provider.dart';
+
 import '../providers/debts_ui_provider.dart';
+
 import '../widgets/calculator_keypad.dart';
+
 import 'transaction_success_screen.dart';
 
 class RecordPaymentScreen extends ConsumerStatefulWidget {
   const RecordPaymentScreen({super.key, this.forCustomer});
+
   final DebtorUi? forCustomer;
 
   @override
@@ -26,28 +40,46 @@ class RecordPaymentScreen extends ConsumerStatefulWidget {
 
 class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
   String _displayNum = '';
+
   double _acc = 0;
+
   String? _pendingOp;
+
   bool _fresh = true;
+
   String _expr = '';
+
   bool _isSubmitting = false;
 
   final _noteCtrl = TextEditingController();
+
   DateTime _date = DateTime.now();
+
   String? _payMethod;
+
   String? _imagePath;
 
   bool get _hasInput => _displayNum.isNotEmpty && _displayNum != '0';
+
   String get _displayText => _displayNum.isEmpty ? '0' : _displayNum;
+
   double get _displayValue => double.tryParse(_displayText) ?? 0;
+
+  /// نص وألوان على خلفية خضراء فاتحة (بدون الأخضر الغامق في الزر)
+
+  static const Color _paymentBtnFg = Color(0xFF43A047);
 
   void _onKey(String k) {
     setState(() {
       if (k == 'C') {
         _displayNum = '';
+
         _acc = 0;
+
         _pendingOp = null;
+
         _fresh = true;
+
         _expr = '';
       } else if (k == '⌫') {
         _displayNum = _displayNum.length > 1
@@ -56,34 +88,48 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
       } else if ('0123456789.'.contains(k)) {
         if (_fresh) {
           _displayNum = k == '.' ? '0.' : k;
+
           _fresh = false;
         } else {
           if (k == '.' && _displayNum.contains('.')) return;
+
           _displayNum += k;
         }
       } else if (['+', '-', 'x', '/'].contains(k)) {
         final cur = double.tryParse(_displayNum) ?? 0;
+
         if (_pendingOp != null) {
           _acc = _calc(_acc, cur, _pendingOp!);
+
           _expr += '$_displayNum$k';
         } else {
           _acc = cur;
+
           _expr = '$_displayNum$k';
         }
+
         _pendingOp = k;
+
         _fresh = true;
+
         _displayNum = '';
       } else if (k == '=') {
         final cur = double.tryParse(_displayNum) ?? 0;
+
         if (_pendingOp != null) {
           _acc = _calc(_acc, cur, _pendingOp!);
+
           _expr += _displayNum;
+
           _displayNum = _fmtNum(_acc);
+
           _pendingOp = null;
+
           _fresh = true;
         }
       } else if (k == '%') {
         final v = double.tryParse(_displayNum) ?? 0;
+
         _displayNum = _fmtNum(v / 100);
       }
     });
@@ -93,12 +139,16 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     switch (op) {
       case '+':
         return a + b;
+
       case '-':
         return a - b;
+
       case 'x':
         return a * b;
+
       case '/':
         return b != 0 ? a / b : 0;
+
       default:
         return b;
     }
@@ -109,45 +159,65 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
 
   Future<void> _submit() async {
     if (_isSubmitting) return;
+
     setState(() => _isSubmitting = true);
+
     if (_pendingOp != null) _onKey('=');
+
     final amount = _displayValue;
+
     if (amount <= 0 || widget.forCustomer == null) {
       setState(() => _isSubmitting = false);
+
       return;
     }
 
     if (_payMethod == null) {
       setState(() => _isSubmitting = false);
+
       showAppSnackBar(context, 'الرجاء اختيار محفظة التسديد');
+
       return;
     }
 
     final cid = widget.forCustomer!.id;
+
     final tx = TransactionUi(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
+
       customerId: cid,
+
       amount: amount,
+
       type: TransactionType.received,
+
       note: _noteCtrl.text.trim(),
+
       date: _date,
+
       payMethodId: _payMethod,
+
       imagePath: _imagePath,
     );
-    // Persist to UI Providers which sync to Local Storage & Firebase automatically
+
     ref.read(transactionsProvider.notifier).addTransaction(tx);
+
     ref.read(debtorsUiProvider.notifier).updateCustomerBalance(cid, -amount);
 
-    // إضافة تأثير تحميل بسيط حتى لو كان الحفظ الداخلي سريعاً لاعطاء استجابة بصرية للمستخدم
     await Future.delayed(const Duration(milliseconds: 600));
 
-    if (!context.mounted) return;
+    if (!mounted) return;
+
     Navigator.pushReplacement(
       context,
+
       TransactionSuccessScreen.route(
         customerName: widget.forCustomer!.name,
+
         amount: amount,
+
         type: TransactionType.received,
+
         date: tx.date,
       ),
     );
@@ -156,74 +226,110 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
   Future<void> _pickImage() async {
     final x = await ImagePicker().pickImage(
       source: ImageSource.gallery,
+
       maxWidth: 2000,
+
       imageQuality: 88,
     );
+
     if (x != null) setState(() => _imagePath = x.path);
   }
 
   @override
   Widget build(BuildContext context) {
     final c = widget.forCustomer;
+
     final accounts = ref.watch(accountsProvider);
+
     final dateStr =
         '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
+    final customerBalance =
+        double.tryParse((c?.amount ?? '').replaceAll('₪', '').trim()) ?? 0;
+    // موجب = عليه لك (دين) → أحمر؛ لا رصيد دين ظاهر → أخضر وارد
+    final amountDigitColor = customerBalance > 0
+        ? AppColors.flowOut
+        : AppColors.flowIn;
 
     return Scaffold(
       backgroundColor: AppColors.background,
+
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
+
         elevation: 0,
+
         surfaceTintColor: Colors.transparent,
+
         scrolledUnderElevation: 0,
+
         centerTitle: true,
+
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowRight, color: AppColors.primary),
+
           onPressed: () => Navigator.pop(context),
         ),
+
         title: Text(
-          c?.name ?? 'تحصيل دين',
-          style: const TextStyle(
+          c?.name ?? '',
+
+          style: TextStyle(
+            fontFamily: AppFonts.family,
+
             color: AppColors.primary,
-            fontWeight: FontWeight.w900,
-            fontSize: 20,
+
+            fontWeight: FontWeight.w600,
+
+            fontSize: 17,
           ),
         ),
       ),
+
       body: Column(
         children: [
           Expanded(
             child: CustomScrollView(
               slivers: [
-                SliverToBoxAdapter(
+                SliverFillRemaining(
+                  hasScrollBody: false,
+
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                      mainAxisAlignment: MainAxisAlignment.end,
+
+                      mainAxisSize: MainAxisSize.max,
+
                       children: [
-                        // Input Area
-                        GlassCard(
+                        const SizedBox(height: 4),
+
+                        Container(
                           padding: const EdgeInsets.symmetric(
-                            vertical: 24,
-                            horizontal: 20,
+                            vertical: 12,
+                            horizontal: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.outlineSoft),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(
-                                'المبلغ المحصل',
+                                'المبلغ',
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
+                                  fontFamily: AppFonts.family,
                                   color: AppColors.textMuted,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: FittedBox(
@@ -232,248 +338,253 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                                   child: Text(
                                     _displayText,
                                     textDirection: TextDirection.ltr,
-                                    style: const TextStyle(
-                                      fontSize: 54,
-                                      fontWeight: FontWeight.w900,
-                                      color: AppColors
-                                          .flowIn, // Green because it's collection
-                                      letterSpacing: -1,
+                                    style: TextStyle(
+                                      fontFamily: AppFonts.family,
+                                      fontSize: 40,
+                                      fontWeight: FontWeight.w600,
+                                      color: amountDigitColor,
+                                      letterSpacing: -0.5,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
                                     ),
                                   ),
                                 ),
                               ),
-                              if (_expr.isNotEmpty)
+                              if (_expr.isNotEmpty) ...[
+                                const SizedBox(height: 4),
                                 Align(
                                   alignment: AlignmentDirectional.centerStart,
                                   child: Text(
                                     '$_expr${_fresh ? '' : _displayNum}',
                                     textDirection: TextDirection.ltr,
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.6,
-                                      ),
+                                      fontFamily: AppFonts.family,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w400,
+                                      color: AppColors.textMuted,
                                     ),
                                   ),
                                 ),
+                              ],
                             ],
                           ),
                         ),
 
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.fastOutSlowIn,
-                          child: _hasInput
-                              ? Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    const SizedBox(height: 24),
-                                    Text(
-                                      'إلى محفظة:',
-                                      textAlign: TextAlign.right,
-                                      style: TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    if (accounts.isEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 6,
-                                        ),
-                                        child: Text(
-                                          'لا توجد محافظ. أضف من «المحافظ والبنوك»',
-                                          textAlign: TextAlign.right,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: AppColors.warning,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      )
-                                    else
-                                      SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        reverse: true,
-                                        clipBehavior: Clip.none,
-                                        child: Row(
-                                          textDirection: TextDirection.rtl,
-                                          children: [
-                                            for (final a in accounts)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  left: 8,
-                                                ),
-                                                child: _payChipForAccount(a),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
+                        if (_hasInput) ...[
+                          const SizedBox(height: 10),
 
-                                    const SizedBox(height: 24),
-                                    // Date, Note, Image
-                                    Row(
-                                      textDirection: TextDirection.rtl,
-                                      children: [
-                                        Expanded(
-                                          child: _actionTile(
-                                            dateStr,
-                                            LucideIcons.calendarDays,
-                                            () {
-                                              showDatePicker(
-                                                context: context,
-                                                initialDate: _date,
-                                                firstDate: DateTime(2020),
-                                                lastDate: DateTime(2100),
-                                                builder: (ctx, child) => Theme(
-                                                  data: Theme.of(ctx).copyWith(
-                                                    colorScheme:
-                                                        const ColorScheme.light(
-                                                          primary:
-                                                              AppColors.primary,
-                                                        ),
-                                                  ),
-                                                  child: child!,
-                                                ),
-                                              ).then((d) {
-                                                if (d != null)
-                                                  setState(() => _date = d);
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: _actionTile(
-                                            _imagePath == null
-                                                ? 'أرفق إيصال'
-                                                : 'تم اختيار صورة',
-                                            LucideIcons.paperclip,
-                                            _pickImage,
-                                            isActive: _imagePath != null,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: AppColors.outlineSoft,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.primary.withValues(
-                                              alpha: 0.03,
-                                            ),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        textDirection: TextDirection.rtl,
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              top: 14,
-                                            ),
-                                            child: Icon(
-                                              LucideIcons.penTool,
-                                              size: 18,
-                                              color: AppColors.textMuted,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: TextField(
-                                              controller: _noteCtrl,
-                                              textAlign: TextAlign.right,
-                                              textDirection: TextDirection.rtl,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.textPrimary,
-                                              ),
-                                              minLines: 1,
-                                              maxLines: 3,
-                                              keyboardType:
-                                                  TextInputType.multiline,
-                                              decoration: InputDecoration(
-                                                hintText:
-                                                    'اكتب ملاحظة (اختياري)...',
-                                                hintStyle: TextStyle(
-                                                  fontSize: 13,
-                                                  color: AppColors.textMuted,
-                                                ),
-                                                border: InputBorder.none,
-                                                isDense: true,
-                                                contentPadding:
-                                                    const EdgeInsets.symmetric(
-                                                      vertical: 14,
-                                                    ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                          _chip(dateStr, LucideIcons.calendar, () async {
+                            final d = await AppTheme.showAppCalendarPickerSheet(
+                              context: context,
+                              initialDate: _date,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2100),
+                            );
+                            if (d != null) setState(() => _date = d);
+                          }, labelLtr: true),
+
+                          const SizedBox(height: 6),
+
+                          Container(
+                            width: double.infinity,
+
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+
+                              vertical: 4,
+                            ),
+
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant,
+
+                              borderRadius: BorderRadius.circular(12),
+
+                              border: Border.all(color: AppColors.outlineSoft),
+                            ),
+
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+
+                              textDirection: TextDirection.rtl,
+
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+
+                                  child: Icon(
+                                    LucideIcons.list,
+
+                                    size: 16,
+
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+
+                                const SizedBox(width: 8),
+
+                                Expanded(
+                                  child: TextField(
+                                    controller: _noteCtrl,
+
+                                    textAlign: TextAlign.right,
+
+                                    textDirection: TextDirection.rtl,
+
+                                    style: TextStyle(
+                                      fontFamily: AppFonts.family,
+
+                                      fontSize: 13,
+
+                                      fontWeight: FontWeight.w400,
+
+                                      color: AppColors.textSecondary,
                                     ),
 
-                                    if (_imagePath != null && !kIsWeb) ...[
-                                      const SizedBox(height: 16),
-                                      Stack(
-                                        children: [
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                            child: Image.file(
-                                              File(_imagePath!),
-                                              height: 140,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                            ),
-                                          ),
-                                          Positioned(
-                                            top: 8,
-                                            right: 8,
-                                            child: InkWell(
-                                              onTap: () => setState(
-                                                () => _imagePath = null,
-                                              ),
-                                              child: CircleAvatar(
-                                                radius: 14,
-                                                backgroundColor: Colors.black
-                                                    .withValues(alpha: 0.6),
-                                                child: const Icon(
-                                                  LucideIcons.x,
-                                                  size: 16,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                    minLines: 1,
+
+                                    maxLines: 4,
+
+                                    keyboardType: TextInputType.multiline,
+
+                                    decoration: InputDecoration(
+                                      hintText: 'ملاحظة (اختياري)',
+
+                                      hintStyle: TextStyle(
+                                        fontFamily: AppFonts.family,
+
+                                        fontSize: 12,
+
+                                        fontWeight: FontWeight.w400,
+
+                                        color: AppColors.textMuted,
                                       ),
-                                    ],
-                                    const SizedBox(height: 32),
-                                  ],
-                                )
-                              : const SizedBox(),
-                        ),
+
+                                      border: InputBorder.none,
+
+                                      isDense: true,
+
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                          ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 6),
+
+                          _chip(
+                            _imagePath == null ? 'إضافة صورة' : 'تغيير الصورة',
+
+                            LucideIcons.camera,
+
+                            _pickImage,
+
+                            labelLtr: false,
+                          ),
+
+                          if (_imagePath != null) ...[
+                            const SizedBox(height: 6),
+
+                            if (!kIsWeb)
+                              Align(
+                                alignment: Alignment.centerRight,
+
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+
+                                  child: SizedBox(
+                                    width: 108,
+
+                                    height: 64,
+
+                                    child: Image.file(
+                                      File(_imagePath!),
+
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              Text(
+                                'تم اختيار صورة',
+
+                                style: TextStyle(
+                                  fontFamily: AppFonts.family,
+
+                                  fontSize: 12,
+
+                                  fontWeight: FontWeight.w400,
+
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                          ],
+
+                          const SizedBox(height: 8),
+
+                          Align(
+                            alignment: Alignment.centerRight,
+
+                            child: Text(
+                              'المحفظة',
+
+                              style: TextStyle(
+                                fontFamily: AppFonts.family,
+
+                                fontSize: 12,
+
+                                fontWeight: FontWeight.w400,
+
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 6),
+
+                          if (accounts.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+
+                              child: Text(
+                                'لا توجد محافظ. أضف من «المحافظ والبنوك»',
+
+                                textAlign: TextAlign.right,
+
+                                style: TextStyle(
+                                  fontFamily: AppFonts.family,
+
+                                  fontSize: 12,
+
+                                  color: AppColors.warning,
+
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            )
+                          else
+                            Wrap(
+                              spacing: 6,
+
+                              runSpacing: 4,
+
+                              alignment: WrapAlignment.start,
+
+                              textDirection: TextDirection.rtl,
+
+                              children: [
+                                for (final a in accounts) _payChipForAccount(a),
+                              ],
+                            ),
+                        ],
+
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -481,43 +592,65 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
               ],
             ),
           ),
+
           Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              10,
-              20,
-              MediaQuery.of(context).padding.bottom + 10,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+
             child: SizedBox(
               width: double.infinity,
-              height: 56,
+
+              height: 48,
+
               child: ElevatedButton(
-                onPressed: _hasInput ? _submit : null,
+                onPressed: (_hasInput && !_isSubmitting) ? _submit : null,
+
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      AppColors.flowIn, // Green for receiving payment
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColors.textMuted.withValues(
-                    alpha: 0.3,
-                  ),
-                  elevation: 6,
-                  shadowColor: AppColors.flowIn.withValues(alpha: 0.4),
+                  backgroundColor: AppColors.successLight,
+
+                  foregroundColor: _paymentBtnFg,
+
+                  disabledBackgroundColor: Colors.grey.shade100,
+
+                  disabledForegroundColor: AppColors.textMuted,
+
+                  elevation: 0,
+
+                  surfaceTintColor: Colors.transparent,
+
+                  shadowColor: Colors.transparent,
+
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+
                 child: _isSubmitting
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'تسجيل التحصيل',
+                    ? SizedBox(
+                        width: 22,
+
+                        height: 22,
+
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+
+                          color: _paymentBtnFg,
+                        ),
+                      )
+                    : Text(
+                        'تسجيل',
+
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
+                          fontFamily: AppFonts.family,
+
+                          fontSize: 15,
+
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
               ),
             ),
           ),
+
           if (MediaQuery.of(context).viewInsets.bottom == 0 && !_isSubmitting)
             CalculatorKeypad(onKeyTap: _onKey),
         ],
@@ -525,58 +658,57 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     );
   }
 
-  Widget _actionTile(
+  Widget _chip(
     String label,
+
     IconData icon,
+
     VoidCallback onTap, {
-    bool isActive = false,
+
+    bool labelLtr = true,
   }) {
     return Material(
       color: Colors.transparent,
+
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+
+        borderRadius: BorderRadius.circular(10),
+
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+
           decoration: BoxDecoration(
-            color: isActive
-                ? AppColors.primary.withValues(alpha: 0.1)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isActive ? AppColors.primary : AppColors.outlineSoft,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 5,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: AppColors.surfaceVariant,
+
+            borderRadius: BorderRadius.circular(10),
+
+            border: Border.all(color: AppColors.outlineSoft),
           ),
+
           child: Row(
             mainAxisSize: MainAxisSize.min,
+
             textDirection: TextDirection.rtl,
+
             children: [
-              Icon(
-                icon,
-                size: 18,
-                color: isActive ? AppColors.primary : AppColors.textMuted,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textDirection: TextDirection.rtl,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isActive
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                    fontWeight: FontWeight.w700,
-                  ),
+              Icon(icon, size: 14, color: AppColors.textMuted),
+
+              const SizedBox(width: 5),
+
+              Text(
+                label,
+
+                textDirection: labelLtr ? TextDirection.ltr : TextDirection.rtl,
+
+                style: TextStyle(
+                  fontFamily: AppFonts.family,
+
+                  fontSize: 11,
+
+                  color: AppColors.textSecondary,
+
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
@@ -588,40 +720,46 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
 
   Widget _payChipForAccount(FinancialAccount a) {
     final id = a.id;
+
     final sel = _payMethod == id;
+
     return Material(
       color: Colors.transparent,
+
       child: InkWell(
         onTap: () => setState(() => _payMethod = _payMethod == id ? null : id),
-        borderRadius: BorderRadius.circular(20),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          constraints: const BoxConstraints(maxWidth: 220),
+
+        borderRadius: BorderRadius.circular(12),
+
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+
+          constraints: const BoxConstraints(maxWidth: 200),
+
           decoration: BoxDecoration(
-            color: sel ? AppColors.primary : Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            color: sel ? AppColors.primary : AppColors.surfaceVariant,
+
+            borderRadius: BorderRadius.circular(12),
+
             border: Border.all(
               color: sel ? AppColors.primary : AppColors.outlineSoft,
-              width: sel ? 1.5 : 1,
             ),
-            boxShadow: sel
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
           ),
+
           child: Text(
             a.name,
+
             maxLines: 1,
+
             overflow: TextOverflow.ellipsis,
+
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
+              fontFamily: AppFonts.family,
+
+              fontSize: 12,
+
+              fontWeight: FontWeight.w400,
+
               color: sel ? Colors.white : AppColors.textSecondary,
             ),
           ),

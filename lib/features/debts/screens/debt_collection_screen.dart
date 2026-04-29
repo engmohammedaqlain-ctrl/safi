@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/vault_subpage_scaffold.dart';
 import '../providers/debts_ui_provider.dart';
@@ -11,7 +12,10 @@ import '../../ai_assistant/providers/ai_assistant_provider.dart';
 import '../../../core/services/notification_service.dart';
 
 class DebtCollectionScreen extends ConsumerStatefulWidget {
-  const DebtCollectionScreen({super.key});
+  const DebtCollectionScreen({super.key, this.suppliersOnly = false});
+
+  /// عند `true` تُعرض فقط الموردون الذين عليهم دين لك؛ وإلا العملاء فقط.
+  final bool suppliersOnly;
 
   @override
   ConsumerState<DebtCollectionScreen> createState() => _DebtCollectionScreenState();
@@ -57,7 +61,7 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
 
   Future<void> _selectDueDate(DebtorUi debtor) async {
     final current = debtor.dueDate ?? DateTime.now();
-    final pickedDate = await showDatePicker(
+    final pickedDate = await AppTheme.showAppDatePicker(
       context: context,
       initialDate: current,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
@@ -113,11 +117,18 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
   @override
   Widget build(BuildContext context) {
     final allDebtors = ref.watch(debtorsUiProvider);
+    final scopeSuppliers = widget.suppliersOnly;
     // Filter debtors who owe us money (net amount > 0)
     final debtorsWithDebt = allDebtors.where((d) {
+      if (d.isSupplier != scopeSuppliers) return false;
       final amt = double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
       return amt > 0;
     }).toList();
+
+    final searchHint = scopeSuppliers ? 'ابحث عن مورد...' : 'ابحث عن عميل...';
+    final emptyMessage = scopeSuppliers
+        ? 'لا يوجد موردون عليهم ديون حالياً'
+        : 'لا يوجد عملاء عليهم ديون حالياً';
 
     final filtered = debtorsWithDebt.where((d) {
       if (_query.isEmpty) return true;
@@ -148,7 +159,7 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
               controller: _searchController,
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
-                hintText: 'ابحث عن عميل...',
+                hintText: searchHint,
                 prefixIcon: const Icon(LucideIcons.search, color: AppColors.textMuted),
                 filled: true,
                 fillColor: AppColors.surfaceVariant,
@@ -162,16 +173,16 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
           ),
           Expanded(
             child: filtered.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
-                      'لا يوجد عملاء عليهم ديون حالياً',
-                      style: TextStyle(color: AppColors.textMuted),
+                      emptyMessage,
+                      style: const TextStyle(color: AppColors.textMuted),
                     ),
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (context, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final d = filtered[index];
                       final isOverdue = d.dueDate != null && d.dueDate!.isBefore(DateTime.now());
@@ -200,7 +211,7 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
                                   child: Text(
                                     d.name,
                                     style: AppTextStyles.titleSmall.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -208,7 +219,7 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
                                   '₪ ${d.amount}',
                                   style: AppTextStyles.titleMedium.copyWith(
                                     color: AppColors.flowOut,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -229,7 +240,7 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
                                       '(${_formatTimeRemaining(d.dueDate!)})',
                                       style: AppTextStyles.labelMedium.copyWith(
                                         color: isOverdue ? AppColors.flowOut : AppColors.textSecondary,
-                                        fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal,
+                                        fontWeight: isOverdue ? FontWeight.w600 : FontWeight.w400,
                                       ),
                                     ),
                                   ),
@@ -322,7 +333,7 @@ class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
     final phone = widget.debtor.phone.trim();
     if (phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رقم هاتف العميل غير مسجل')),
+        const SnackBar(content: Text('رقم الهاتف غير مسجل')),
       );
       return;
     }
@@ -369,7 +380,7 @@ class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
               const SizedBox(width: 8),
               Text(
                 'توليد رسالة بالذكاء الاصطناعي',
-                style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),

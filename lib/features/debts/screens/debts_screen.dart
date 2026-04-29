@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../providers/debts_ui_provider.dart';
 import '../utils/debtor_filter.dart';
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import 'add_customer_screen.dart';
 import 'customer_detail_screen.dart';
-import 'debt_collection_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
-import '../../reports/screens/unified_reports_screen.dart';
+
+/// أدنى عرض لعمود المبالغ في القائمة (يتوسّع مع العرض حتى حد أقصى).
+const double _kDebtMoneyColumnMin = 120;
+const double _kDebtMoneyColumnMax = 220;
 
 class DebtsScreen extends ConsumerStatefulWidget {
   const DebtsScreen({super.key});
@@ -52,7 +55,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                   'تصفية حسب الرصيد',
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -68,7 +71,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                   },
                 ),
                 ListTile(
-                  title: const Text('عليهم ديون (أعطيت)'),
+                  title: const Text('ديونهم لك'),
                   trailing: _filterType == DebtFilter.oweMe
                       ? const Icon(LucideIcons.check, color: AppColors.primary)
                       : null,
@@ -78,7 +81,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                   },
                 ),
                 ListTile(
-                  title: const Text('لهم ديون (أخذت)'),
+                  title: const Text('ديونك لهم'),
                   trailing: _filterType == DebtFilter.iOwe
                       ? const Icon(LucideIcons.check, color: AppColors.primary)
                       : null,
@@ -127,7 +130,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
         children: [
           Container(
             padding: const EdgeInsets.all(4),
@@ -142,7 +145,10 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                     title: 'العملاء',
                     icon: LucideIcons.user,
                     isSelected: _selectedTab == 0,
-                    onTap: () => setState(() => _selectedTab = 0),
+                    onTap: () {
+                      ref.read(debtsLedgerTabProvider.notifier).setTab(0);
+                      setState(() => _selectedTab = 0);
+                    },
                   ),
                 ),
                 Expanded(
@@ -150,7 +156,10 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                     title: 'الموردين',
                     icon: LucideIcons.truck,
                     isSelected: _selectedTab == 1,
-                    onTap: () => setState(() => _selectedTab = 1),
+                    onTap: () {
+                      ref.read(debtsLedgerTabProvider.notifier).setTab(1);
+                      setState(() => _selectedTab = 1);
+                    },
                   ),
                 ),
               ],
@@ -163,80 +172,33 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
               border: Border.all(color: Colors.grey.shade200),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Row(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // أول طفل = يمين البطاقة في RTL: «أخذت / أعطيت» + سطر العدّاد
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SummaryMetricRow(
-                      label: 'أخذت',
-                      value: hidden ? '****' : my.totalReceivedLabel,
-                      valueColor: Colors.green,
-                    ),
-                    const SizedBox(height: 6),
-                    _SummaryMetricRow(
-                      label: 'أعطيت',
-                      value: hidden ? '****' : my.totalGaveLabel,
-                      valueColor: Colors.deepOrange,
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'متأخر: ${hidden ? '**' : my.overdueCount}',
-                          style: TextStyle(
-                            color: Colors.orange.shade700,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          summaryCountLabel,
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                _DebtSummaryAmountsTable(
+                  hidden: hidden,
+                  totalReceivedLabel: my.totalReceivedLabel,
+                  totalGaveLabel: my.totalGaveLabel,
                 ),
-                // ثاني طفل = يسار البطاقة في RTL: أيقونات الإجراءات
+                const SizedBox(height: 10),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (!isSuppliersTab) ...[
-                      _ActionButton(
-                        icon: LucideIcons.bell,
-                        label: 'تحصيل الديون',
-                        onTap: () => Navigator.push<void>(
-                          context,
-                          AppPageRoute<void>(
-                            builder: (_) => const DebtCollectionScreen(),
-                          ),
+                    Expanded(
+                      child: Text(
+                        'متأخر: ${hidden ? '**' : my.overdueCount}',
+                        style: TextStyle(
+                          color: Colors.orange.shade700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                    ],
-                    _ActionButton(
-                      icon: LucideIcons.barChart2,
-                      label: 'التقارير',
-                      onTap: () => Navigator.push<void>(
-                        context,
-                        AppPageRoute<void>(
-                          builder: (_) => UnifiedReportsScreen(
-                            initialFilter: isSuppliersTab
-                                ? AppReportDebtFilter.suppliersOnly
-                                : AppReportDebtFilter.customersOnly,
-                            lockDebtScope: true,
-                          ),
-                        ),
+                    ),
+                    Text(
+                      summaryCountLabel,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -252,8 +214,8 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                 '$entityLabel (${list.length})',
                 style: const TextStyle(
                   color: AppColors.primary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -264,7 +226,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
               // RTL: أول طفل = يمين الشاشة → حقل البحث
               Expanded(
                 child: Container(
-                  height: 48,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
@@ -273,17 +235,18 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                     controller: _search,
                     onChanged: (v) => setState(() => _q = v),
                     textAlign: TextAlign.right,
+                    style: const TextStyle(fontSize: 15),
                     decoration: InputDecoration(
                       hintText: 'البحث',
-                      hintStyle: TextStyle(color: Colors.grey.shade500),
+                      hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                       prefixIcon: Icon(
                         LucideIcons.search,
                         color: Colors.grey.shade500,
-                        size: 20,
+                        size: 19,
                       ),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                        vertical: 14,
+                        vertical: 11,
                         horizontal: 4,
                       ),
                     ),
@@ -316,7 +279,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                 amountText != '0.0' &&
                 amountText != '0';
             final color = isRed ? Colors.deepOrange : Colors.green;
-            final label = isRed ? 'أعطيت' : 'أخذت';
+            final label = isRed ? 'له دين' : 'لي دين';
             final displayAmount = amountText.startsWith('-')
                 ? amountText.substring(1)
                 : amountText;
@@ -337,7 +300,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 16,
+                  vertical: 12,
                   horizontal: 8,
                 ),
                 decoration: BoxDecoration(
@@ -345,75 +308,98 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                     bottom: BorderSide(color: Colors.grey.shade200),
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // RTL: يمين الصف → الأفاتار + الاسم
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                child: LayoutBuilder(
+                  builder: (context, rowConstraints) {
+                    final moneyMax = (rowConstraints.maxWidth * 0.38)
+                        .clamp(_kDebtMoneyColumnMin, _kDebtMoneyColumnMax);
+                    return Row(
                       children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            avatarStr,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        // RTL: يمين الصف → الأفاتار + الاسم
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  avatarStr,
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      debtor.name,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      debtor.status,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              debtor.name,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          fit: FlexFit.loose,
+                          flex: 0,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: moneyMax),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  hidden ? '****' : '₪ $displayAmount',
+                                  textDirection: TextDirection.ltr,
+                                  textAlign: TextAlign.end,
+                                  style: TextStyle(
+                                    color: color,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  label,
+                                  textAlign: TextAlign.end,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              debtor.status,
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
-                    ),
-                    // RTL: يسار الصف → المبلغ ووسم أعطيت/أخذت
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          hidden ? '****' : '₪ $displayAmount',
-                          textDirection: TextDirection.ltr,
-                          style: TextStyle(
-                            color: color,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          label,
-                          style: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             );
@@ -421,28 +407,36 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push<void>(
-            context,
-            AppPageRoute<void>(
-              builder: (_) => AddCustomerScreen(isSupplier: isSuppliersTab),
-            ),
-          );
-        },
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        icon: Icon(
-          isSuppliersTab ? LucideIcons.truck : LucideIcons.userPlus,
-          color: Colors.white,
-        ),
-        label: Text(
-          fabLabel,
-          style: const TextStyle(
+      floatingActionButton: Padding(
+        padding: const EdgeInsetsDirectional.only(end: 8, bottom: 8),
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.push<void>(
+              context,
+              AppPageRoute<void>(
+                builder: (_) => AddCustomerScreen(isSupplier: isSuppliersTab),
+              ),
+            );
+          },
+          backgroundColor: AppColors.primary,
+          elevation: 0,
+          extendedPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          extendedIconLabelSpacing: 6,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          icon: Icon(
+            isSuppliersTab ? LucideIcons.truck : LucideIcons.userPlus,
             color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+            size: 19,
+          ),
+          label: Text(
+            fabLabel,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              fontFamily: AppFonts.family,
+              height: 1.2,
+            ),
           ),
         ),
       ),
@@ -468,7 +462,7 @@ class _TabButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 9),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.05)
@@ -482,55 +476,19 @@ class _TabButton extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
+                fontSize: 14,
                 color: isSelected ? AppColors.primary : Colors.grey.shade600,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
             const SizedBox(width: 8),
             Icon(
               icon,
-              size: 18,
+              size: 19,
               color: isSelected ? AppColors.primary : Colors.grey.shade500,
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: AppColors.primary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-          ),
-        ],
       ),
     );
   }
@@ -549,58 +507,110 @@ class _FilterIconButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           color: isActive ? AppColors.primary.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8),
           border: isActive ? Border.all(color: AppColors.primary.withValues(alpha: 0.3)) : null,
         ),
-        child: Icon(icon, color: AppColors.primary, size: 20),
+        child: Icon(icon, color: AppColors.primary, size: 19),
       ),
     );
   }
 }
 
-/// صف عرض «أخذت / أعطيت» داخل بطاقة الملخص.
-/// - الوسم على اليمين، المبلغ على اليسار (مثل تطبيق كناش).
-/// - المبلغ نفسه يستخدم LTR لأن الرقم والرمز مكتوبان بالأرقام اللاتينية.
-class _SummaryMetricRow extends StatelessWidget {
-  const _SummaryMetricRow({
-    required this.label,
-    required this.value,
-    required this.valueColor,
+TextStyle _debtSummaryLabelStyle() => TextStyle(
+      color: Colors.grey.shade600,
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+    );
+
+TextStyle _debtSummaryValueStyle(Color color) => TextStyle(
+      color: color,
+      fontSize: 18,
+      fontWeight: FontWeight.w600,
+      height: 1.1,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+/// جدول بصري بلا حدود: عناوين بعمود ثابت + مبالغ بمحاذاة LTR نحو العناوين.
+class _DebtSummaryAmountsTable extends StatelessWidget {
+  const _DebtSummaryAmountsTable({
+    required this.hidden,
+    required this.totalReceivedLabel,
+    required this.totalGaveLabel,
   });
 
-  final String label;
-  final String value;
-  final Color valueColor;
+  final bool hidden;
+  final String totalReceivedLabel;
+  final String totalGaveLabel;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          value,
-          textDirection: TextDirection.ltr,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            height: 1.1,
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final safeW = w.isFinite && w > 0 ? w : 280.0;
+        final labelCol =
+            (safeW * 0.34).clamp(78.0, 118.0);
+        final valueCol = (safeW - labelCol).clamp(104.0, 400.0);
+        return Table(
+          columnWidths: {
+            0: FixedColumnWidth(labelCol),
+            1: FixedColumnWidth(valueCol),
+          },
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          children: [
+            TableRow(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 5),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text('سداد', style: _debtSummaryLabelStyle()),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 5),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(
+                      hidden ? '****' : totalReceivedLabel,
+                      textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.end,
+                      style: _debtSummaryValueStyle(Colors.green),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            TableRow(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 1),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text('دين جديد', style: _debtSummaryLabelStyle()),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 1),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(
+                      hidden ? '****' : totalGaveLabel,
+                      textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.end,
+                      style: _debtSummaryValueStyle(Colors.deepOrange),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }

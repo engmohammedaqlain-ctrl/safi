@@ -98,7 +98,7 @@ class UnifiedLedgerMath {
       rows.add(
         UnifiedLedgerRowUi(
           sortTime: t.date,
-          headline: isGave ? 'دين — أعطيت' : 'سداد — أخذت',
+          headline: isGave ? 'دين جديد' : 'سداد',
           detailLine: name,
           deltaSigned: signed,
           icon: LucideIcons.bookMarked,

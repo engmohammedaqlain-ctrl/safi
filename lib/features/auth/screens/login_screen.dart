@@ -576,7 +576,7 @@ class OtpCodeFieldState extends State<OtpCodeField> {
                         : TextInputAction.next,
                     style: AppTextStyles.numberLarge.copyWith(
                       fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       height: 1.0,
                       color: AppColors.primary,
                     ),

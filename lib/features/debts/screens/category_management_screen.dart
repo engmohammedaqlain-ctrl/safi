@@ -30,7 +30,7 @@ class CategoryManagementScreen extends ConsumerWidget {
             'إدارة التصنيفات',
             style: TextStyle(
               color: AppColors.primary,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               fontSize: 18,
             ),
           ),
@@ -99,7 +99,7 @@ class CategoryManagementScreen extends ConsumerWidget {
                   ),
                   child: const Text(
                     'تأكيد',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -142,7 +142,7 @@ class _AddCategoryCard extends StatelessWidget {
                 'إضافة تصنيف جديد',
                 style: TextStyle(
                   color: AppColors.primary,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   fontSize: 16,
                   height: 1.2,
                 ),
@@ -185,7 +185,7 @@ class _EmptyCategoriesState extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   fontSize: 16,
                 ),
               ),
@@ -264,7 +264,7 @@ class _CategoryTile extends ConsumerWidget {
           children: [
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 11),
                 child: Align(
                   alignment: AlignmentDirectional.topStart,
                   child: Column(
@@ -285,8 +285,8 @@ class _CategoryTile extends ConsumerWidget {
                           textAlign: TextAlign.start,
                           style: TextStyle(
                             color: category.color,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
                             height: 1.2,
                           ),
                         ),
@@ -298,7 +298,7 @@ class _CategoryTile extends ConsumerWidget {
                           textAlign: TextAlign.start,
                           style: TextStyle(
                             color: Colors.grey.shade600,
-                            fontSize: 12,
+                            fontSize: 13,
                             height: 1.2,
                           ),
                         ),
@@ -328,7 +328,7 @@ class _CategoryTile extends ConsumerWidget {
                           minimumSize: const Size(40, 40),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        icon: const Icon(LucideIcons.pencil, size: 20),
+                        icon: const Icon(LucideIcons.pencil, size: 21),
                       ),
                     ),
                   ),
@@ -347,7 +347,7 @@ class _CategoryTile extends ConsumerWidget {
                           minimumSize: const Size(40, 40),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        icon: const Icon(LucideIcons.trash2, size: 20),
+                        icon: const Icon(LucideIcons.trash2, size: 21),
                       ),
                     ),
                   ),

@@ -129,12 +129,12 @@ class _MainLoadedGate extends ConsumerWidget {
                         'جاري تحميل البيانات…',
                         style: theme.textTheme.bodyLarge?.copyWith(
                               color: Colors.white,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             ) ??
                             const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             ),
                       ),
                     ],

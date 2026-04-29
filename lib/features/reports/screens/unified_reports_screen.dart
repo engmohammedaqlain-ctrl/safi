@@ -16,6 +16,8 @@ import '../../../core/theme/app_colors.dart';
 
 import '../../../core/theme/app_spacing.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 import '../../../core/ui/app_feedback.dart';
 
 import '../../debts/providers/debts_ui_provider.dart';
@@ -99,7 +101,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
   }
 
   Future<void> _pickFrom() async {
-    final d = await showDatePicker(
+    final d = await AppTheme.showAppDatePicker(
       context: context,
 
       initialDate: _from,
@@ -113,7 +115,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
   }
 
   Future<void> _pickTo() async {
-    final d = await showDatePicker(
+    final d = await AppTheme.showAppDatePicker(
       context: context,
 
       initialDate: _to,
@@ -410,7 +412,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
                               'معاينة قبل الطباعة',
 
                               style: TextStyle(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
 
                                 fontSize: 15,
                               ),
@@ -487,7 +489,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
                           'جاري تجهيز التقرير…',
 
                           style: TextStyle(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
 
                             color: AppColors.textPrimary,
                           ),
@@ -584,7 +586,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
                   label,
 
                   style: TextStyle(
-                    fontWeight: sel ? FontWeight.w800 : FontWeight.w600,
+                    fontWeight: sel ? FontWeight.w600 : FontWeight.w500,
 
                     color: AppColors.textPrimary,
                   ),
@@ -615,7 +617,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
         borderRadius: BorderRadius.circular(14),
 
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
 
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,7 +627,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
                 label,
 
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
 
                   fontWeight: FontWeight.w600,
 
@@ -639,7 +641,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
                 children: [
                   Icon(
                     LucideIcons.calendar,
-                    size: 16,
+                    size: 17,
                     color: AppColors.primary,
                   ),
 
@@ -649,9 +651,9 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
                     value,
 
                     style: const TextStyle(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
 
-                      fontSize: 14,
+                      fontSize: 15,
 
                       color: AppColors.textPrimary,
                     ),
@@ -712,7 +714,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
                   label,
 
                   style: const TextStyle(
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
 
                     fontSize: 16,
 
@@ -819,7 +821,7 @@ class _ReportsHeaderBand extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
 
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
 
                 fontSize: 23,
 
@@ -882,9 +884,9 @@ class _ReportsHeaderBand extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.94),
 
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
 
-                        fontSize: 12,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -918,7 +920,7 @@ class _SectionTitle extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
           ),
 
-          child: Icon(icon, color: AppColors.primary, size: 18),
+          child: Icon(icon, color: AppColors.primary, size: 19),
         ),
 
         const SizedBox(width: 10),
@@ -927,9 +929,9 @@ class _SectionTitle extends StatelessWidget {
           label,
 
           style: const TextStyle(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
 
-            fontSize: 15,
+            fontSize: 16,
 
             color: AppColors.primary,
           ),

@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../../cash_flow/data/financial_account_model.dart';
 import '../../cash_flow/providers/accounts_provider.dart';
@@ -176,10 +178,11 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
         ),
         title: Text(
           c?.name ?? '',
-          style: const TextStyle(
+          style: TextStyle(
+            fontFamily: AppFonts.family,
             color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            fontSize: 17,
           ),
         ),
       ),
@@ -199,16 +202,24 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                       children: [
                         const SizedBox(height: 4),
 
-                        // المبلغ الكبير
+                        // المبلغ
                           Align(
                             alignment: Alignment.centerRight,
-                            child: Text(
-                              _displayText,
-                              textDirection: TextDirection.ltr,
-                              style: const TextStyle(
-                                fontSize: 42,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.flowIn,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                _displayText,
+                                textDirection: TextDirection.ltr,
+                                style: TextStyle(
+                                  fontFamily: AppFonts.family,
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.flowOut,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -221,71 +232,31 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                                 '$_expr${_fresh ? '' : _displayNum}',
                                 textDirection: TextDirection.ltr,
                                 style: TextStyle(
-                                    fontSize: 14, color: Colors.grey.shade500),
+                                    fontFamily: AppFonts.family,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    color: AppColors.textMuted),
                               ),
                             ),
 
                           // ── العناصر تظهر فقط عند بدء الإدخال ──
                           if (_hasInput) ...[
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 10),
                             _chip(
                               dateStr,
                               LucideIcons.calendar,
-                              () {
-                              showModalBottomSheet(
+                              () async {
+                              final d = await AppTheme.showAppCalendarPickerSheet(
                                 context: context,
-                                backgroundColor: Colors.white,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                                ),
-                                builder: (ctx) => SafeArea(
-                                  child: Container(
-                                    height: 400,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        // مؤشر السحب (Drag Handle)
-                                        Container(
-                                          margin: const EdgeInsets.only(top: 12, bottom: 4),
-                                          width: 40,
-                                          height: 4,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey.shade300,
-                                            borderRadius: BorderRadius.circular(2),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Theme(
-                                            data: Theme.of(context).copyWith(
-                                              colorScheme: const ColorScheme.light(
-                                                primary: AppColors.primary, // لون التحديد
-                                                onSurface: Colors.black87, // لون الأيام
-                                              ),
-                                            ),
-                                            child: CalendarDatePicker(
-                                              initialDate: _date,
-                                              firstDate: DateTime(2020),
-                                              lastDate: DateTime(2100),
-                                              onDateChanged: (d) {
-                                                setState(() => _date = d);
-                                                Navigator.pop(ctx);
-                                              },
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                                initialDate: _date,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2100),
                               );
+                              if (d != null) setState(() => _date = d);
                             },
                               labelLtr: true,
                             ),
                             const SizedBox(height: 6),
-                            // ملاحظة مباشرة
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -313,19 +284,26 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                                       textAlign: TextAlign.right,
                                       textDirection: TextDirection.rtl,
                                       style: TextStyle(
+                                        fontFamily: AppFonts.family,
                                         fontSize: 13,
+                                        fontWeight: FontWeight.w400,
                                         color: AppColors.textSecondary,
                                       ),
                                       minLines: 1,
                                       maxLines: 4,
                                       keyboardType: TextInputType.multiline,
-                                      decoration: const InputDecoration(
-                                        hintText: 'ملاحظة...',
-                                        hintStyle: TextStyle(fontSize: 12),
+                                      decoration: InputDecoration(
+                                        hintText: 'ملاحظة (اختياري)',
+                                        hintStyle: TextStyle(
+                                          fontFamily: AppFonts.family,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                          color: AppColors.textMuted,
+                                        ),
                                         border: InputBorder.none,
                                         isDense: true,
                                         contentPadding:
-                                            EdgeInsets.symmetric(vertical: 8),
+                                            const EdgeInsets.symmetric(vertical: 8),
                                       ),
                                     ),
                                   ),
@@ -344,25 +322,45 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                             if (_imagePath != null) ...[
                               const SizedBox(height: 6),
                               if (!kIsWeb)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Image.file(
-                                    File(_imagePath!),
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: SizedBox(
+                                      width: 108,
+                                      height: 64,
+                                      child: Image.file(
+                                        File(_imagePath!),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
                                   ),
                                 )
                               else
                                 Text(
                                   'تم اختيار صورة',
                                   style: TextStyle(
+                                    fontFamily: AppFonts.family,
                                     fontSize: 12,
-                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w400,
+                                    color: AppColors.textMuted,
                                   ),
                                 ),
                             ],
                             const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                'المحفظة',
+                                style: TextStyle(
+                                  fontFamily: AppFonts.family,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
                             if (accounts.isEmpty)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 6),
@@ -370,9 +368,10 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                                   'لا توجد محافظ. أضف من «المحافظ والبنوك»',
                                   textAlign: TextAlign.right,
                                   style: TextStyle(
+                                    fontFamily: AppFonts.family,
                                     fontSize: 12,
-                                    color: Colors.orange.shade800,
-                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.warning,
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               )
@@ -402,20 +401,29 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 48,
               child: ElevatedButton(
                 onPressed: _hasInput ? _submit : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.successLight,
-                  foregroundColor: AppColors.flowIn,
+                  backgroundColor: AppColors.errorLight,
+                  foregroundColor: const Color(0xFFE53935),
                   disabledBackgroundColor: Colors.grey.shade100,
+                  disabledForegroundColor: AppColors.textMuted,
                   elevation: 0,
+                  surfaceTintColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('تسجيل',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'تسجيل',
+                  style: TextStyle(
+                    fontFamily: AppFonts.family,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
               ),
             ),
           ),
@@ -437,28 +445,29 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.outlineSoft),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             textDirection: TextDirection.rtl,
             children: [
-              Icon(icon, size: 16, color: AppColors.textMuted),
-              const SizedBox(width: 6),
+              Icon(icon, size: 14, color: AppColors.textMuted),
+              const SizedBox(width: 5),
               Text(
                 label,
                 textDirection:
                     labelLtr ? TextDirection.ltr : TextDirection.rtl,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontFamily: AppFonts.family,
+                  fontSize: 11,
                   color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
@@ -475,13 +484,13 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => setState(() => _payMethod = _payMethod == id ? null : id),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          constraints: const BoxConstraints(maxWidth: 220),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          constraints: const BoxConstraints(maxWidth: 200),
           decoration: BoxDecoration(
             color: sel ? AppColors.primary : AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: sel ? AppColors.primary : AppColors.outlineSoft,
             ),
@@ -491,8 +500,9 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
+              fontFamily: AppFonts.family,
               fontSize: 12,
-              fontWeight: sel ? FontWeight.w600 : FontWeight.w500,
+              fontWeight: FontWeight.w400,
               color: sel ? Colors.white : AppColors.textSecondary,
             ),
           ),

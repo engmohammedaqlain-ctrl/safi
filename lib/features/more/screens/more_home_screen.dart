@@ -60,7 +60,7 @@ class MoreHomeScreen extends ConsumerWidget {
                   onTap: () => push(const StatisticsScreen()),
                 ),
                 _MenuItem(
-                  icon: LucideIcons.barChart2,
+                  icon: LucideIcons.fileSpreadsheet,
                   title: 'التقارير',
                   subtitle: 'تحليل الديون والمعاملات',
                   onTap: () => push(
@@ -140,8 +140,8 @@ class _UserHeaderCard extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                         height: 1.2,
                       ),
                     ),
@@ -150,7 +150,7 @@ class _UserHeaderCard extends ConsumerWidget {
                       'مرحباً بك في صافي',
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -223,18 +223,18 @@ class _MenuItem extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 21),
+                child: Icon(icon, color: AppColors.primary, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -246,8 +246,8 @@ class _MenuItem extends StatelessWidget {
                       title,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                         height: 1.2,
                       ),
                     ),
@@ -258,7 +258,7 @@ class _MenuItem extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.grey.shade500,
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -268,7 +268,7 @@ class _MenuItem extends StatelessWidget {
               const SizedBox(width: 6),
               const Icon(
                 LucideIcons.chevronLeft,
-                size: 18,
+                size: 19,
                 color: AppColors.textMuted,
               ),
             ],

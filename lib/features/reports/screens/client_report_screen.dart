@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 
 import '../../../core/bootstrap/startup_ledger_data.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../debts/providers/debts_ui_provider.dart';
 import '../services/app_report_pdf.dart';
@@ -37,7 +38,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
       ref.read(debtorByIdProvider(widget.client.id)) ?? widget.client;
 
   Future<void> _pickFrom() async {
-    final d = await showDatePicker(
+    final d = await AppTheme.showAppDatePicker(
       context: context,
       initialDate: _from,
       firstDate: DateTime(2000),
@@ -47,7 +48,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
   }
 
   Future<void> _pickTo() async {
-    final d = await showDatePicker(
+    final d = await AppTheme.showAppDatePicker(
       context: context,
       initialDate: _to,
       firstDate: DateTime(2000),
@@ -197,7 +198,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
                                       : (balance > 0
                                             ? const Color(0xFFFF8A80)
                                             : const Color(0xFF69F0AE)),
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
                               ),
@@ -218,7 +219,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
                           client.name,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w600,
                             fontSize: 22,
                             height: 1.2,
                           ),
@@ -348,7 +349,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
                             label: const Text(
                               'معاينة قبل الطباعة',
                               style: TextStyle(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                                 fontSize: 15,
                               ),
                             ),
@@ -408,7 +409,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
                         const Text(
                           'جاري تجهيز التقرير…',
                           style: TextStyle(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
                         ),
@@ -456,7 +457,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
       Text(
         label,
         style: const TextStyle(
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           fontSize: 15,
           color: AppColors.primary,
         ),
@@ -495,7 +496,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
                 Text(
                   value,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: AppColors.textPrimary,
                   ),
@@ -527,7 +528,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
               style: TextStyle(
                 fontSize: 13,
                 color: color ?? AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -566,7 +567,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
               Text(
                 label,
                 style: const TextStyle(
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   fontSize: 16,
                   color: Colors.white,
                   letterSpacing: 0.3,

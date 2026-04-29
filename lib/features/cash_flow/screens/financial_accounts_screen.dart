@@ -44,7 +44,7 @@ class FinancialAccountsScreen extends ConsumerWidget {
             style: TextStyle(
               color: AppColors.primary,
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -62,7 +62,7 @@ class FinancialAccountsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // يمين: عناصر القياس (مثل أخذت/أعطيت في الديون)
+                  // يمين: عناصر القياس (مثل سداد/دين جديد في الديون)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -126,8 +126,8 @@ class FinancialAccountsScreen extends ConsumerWidget {
                   'المحافظ (${accounts.length})',
                   style: const TextStyle(
                     color: AppColors.primary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -181,7 +181,7 @@ class FinancialAccountsScreen extends ConsumerWidget {
             'إضافة محفظة',
             style: TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               fontSize: 16,
             ),
           ),
@@ -215,7 +215,7 @@ class _AccountTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 17, horizontal: 8),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(color: Colors.grey.shade200),
@@ -229,8 +229,8 @@ class _AccountTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -239,7 +239,7 @@ class _AccountTile extends StatelessWidget {
                   child: Icon(
                     account.type.icon,
                     color: AppColors.primary,
-                    size: 22,
+                    size: 23,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -252,8 +252,8 @@ class _AccountTile extends StatelessWidget {
                       Text(
                         account.name,
                         style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -263,7 +263,7 @@ class _AccountTile extends StatelessWidget {
                           subtitle,
                           style: TextStyle(
                             color: Colors.grey.shade500,
-                            fontSize: 13,
+                            fontSize: 14,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -279,8 +279,8 @@ class _AccountTile extends StatelessWidget {
               textDirection: TextDirection.ltr,
               style: const TextStyle(
                 color: Colors.green,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -334,7 +334,7 @@ class _SummaryMetricRow extends StatelessWidget {
           style: TextStyle(
             color: valueColor,
             fontSize: 20,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             height: 1.1,
           ),
         ),
@@ -438,7 +438,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             isEdit ? 'تعديل المحفظة' : 'إضافة محفظة',
             style: const TextStyle(
               color: AppColors.primary,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               fontSize: 18,
             ),
           ),
@@ -530,7 +530,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                       isEdit ? 'حفظ التعديلات' : 'إضافة المحفظة',
                       style: const TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),
@@ -591,7 +591,7 @@ class _SectionLabel extends StatelessWidget {
       style: const TextStyle(
         color: AppColors.primary,
         fontSize: 14,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -631,7 +631,7 @@ class _SoftField extends StatelessWidget {
         suffixStyle: const TextStyle(
           color: AppColors.primary,
           fontSize: 14,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
         ),
         filled: true,
         fillColor: AppColors.primary.withValues(alpha: 0.04),
@@ -702,7 +702,7 @@ class _TypeChip extends StatelessWidget {
                 style: TextStyle(
                   color: fg,
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

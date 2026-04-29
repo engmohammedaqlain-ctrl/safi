@@ -89,7 +89,7 @@ class _SelectBodyState extends ConsumerState<_SelectBody> {
                     style: TextStyle(
                       color: AppColors.primary,
                       fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       height: 1.2,
                     ),
                   ),
@@ -143,8 +143,8 @@ class _SelectBodyState extends ConsumerState<_SelectBody> {
                         'إدارة التصنيفات',
                         style: TextStyle(
                           color: AppColors.primary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
                           height: 1.2,
                         ),
                       ),
@@ -213,7 +213,7 @@ class _SelectBodyState extends ConsumerState<_SelectBody> {
                 ),
                 child: const Text(
                   'تأكيد',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -286,8 +286,8 @@ class _CategorySelectRow extends StatelessWidget {
                   textAlign: TextAlign.right,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    fontSize: 15,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 16,
                     height: 1.25,
                     color: category.color,
                   ),

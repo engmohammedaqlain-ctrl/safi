@@ -63,7 +63,7 @@ class AccountSelector extends ConsumerWidget {
                   acc.name,
                   style: AppTextStyles.labelMedium.copyWith(
                     color: isSelected ? AppColors.primary : AppColors.textMuted,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ],

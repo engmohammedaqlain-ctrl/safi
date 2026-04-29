@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import 'safi_brand_mark.dart';
 
 /// خلفية داكنة مع وهج خفيف تشبه واجهات البنوك الرقمية (مطابقة لشاشة الأونبوردنغ).
 class VaultBackgroundDecor extends StatelessWidget {
@@ -95,7 +96,7 @@ class VaultBrandedShell extends StatelessWidget {
     super.key,
     this.belowBrand,
     required this.sheet,
-    this.headerSubtitle = 'خبرة بنكية مبسّطة لإدارة ديونك ومحافظك',
+    this.headerSubtitle = 'ديونك وصندوقك معاً',
   });
 
   /// يُعرض تحت صف العلامة (مثلاً نقاط الشرائح).
@@ -141,11 +142,7 @@ class VaultBrandedShell extends StatelessWidget {
                                 color: Colors.white.withValues(alpha: 0.18),
                               ),
                             ),
-                            child: const Icon(
-                              LucideIcons.landmark,
-                              color: Colors.white,
-                              size: 24,
-                            ),
+                            child: const SafiBrandMark(size: 26),
                           ),
                           const SizedBox(width: AppSpacing.md),
                           Expanded(

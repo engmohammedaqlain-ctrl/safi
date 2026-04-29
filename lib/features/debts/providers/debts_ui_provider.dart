@@ -28,7 +28,7 @@ String transactionPayMethodLabel(
   };
 }
 
-/// معاملة مالية (دين أو دفعة)
+/// معاملة مالية (دين أو سداد)
 class TransactionUi {
   const TransactionUi({
     required this.id,
@@ -45,7 +45,7 @@ class TransactionUi {
   final String id;
   final String customerId;
   final double amount; // دائمًا موجب
-  final TransactionType type; // gave = أعطيت, received = أخذت
+  final TransactionType type; // gave = دين جديد, received = سداد
   final String note;
   final DateTime date;
 
@@ -87,6 +87,7 @@ class DebtorUi {
     this.editedMs = 0,
     this.doubleLedger = false,
     this.dueDate,
+    this.note,
   });
 
   final String id;
@@ -109,6 +110,9 @@ class DebtorUi {
 
   /// موعد استحقاق الدين
   final DateTime? dueDate;
+
+  /// ملاحظة شخصية عن العميل/المورد (تُعرض تحت الاسم)
+  final String? note;
 }
 
 Color urgencyToColor(DebtUrgency u) {
@@ -163,6 +167,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
             editedMs: _touchMs(),
             doubleLedger: customer.doubleLedger,
             dueDate: customer.dueDate,
+            note: customer.note,
           )
         : customer;
     state = [...state, c];
@@ -186,6 +191,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
             editedMs: _touchMs(),
             doubleLedger: d.doubleLedger,
             dueDate: d.dueDate,
+            note: d.note,
           )
         else
           d,
@@ -194,7 +200,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
   }
 
   /// تحديث رصيد العميل بمقدار delta
-  /// delta موجب = أعطيت (الدين يزيد)، delta سالب = أخذت (الدين يقل)
+  /// delta موجب = دين جديد (الدين يزيد)، delta سالب = سداد (الدين يقل)
   /// إزالة مُعرّف تصنيف من كل العملاء (عند حذف التصنيف)
   void stripCategoryFromAll(String categoryId) {
     state = [
@@ -215,6 +221,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
           editedMs: _touchMs(),
           doubleLedger: d.doubleLedger,
           dueDate: d.dueDate,
+          note: d.note,
         ),
     ];
     _persist();
@@ -237,6 +244,34 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
             editedMs: _touchMs(),
             doubleLedger: d.doubleLedger,
             dueDate: dueDate,
+            note: d.note,
+          )
+        else
+          d,
+    ];
+    _persist();
+  }
+
+  void updateCustomerNote(String customerId, String noteText) {
+    final trimmed = noteText.trim();
+    final stored = trimmed.isEmpty ? null : trimmed;
+    state = [
+      for (final d in state)
+        if (d.id == customerId)
+          DebtorUi(
+            id: d.id,
+            name: d.name,
+            phone: d.phone,
+            address: d.address,
+            amount: d.amount,
+            status: d.status,
+            urgency: d.urgency,
+            categoryIds: d.categoryIds,
+            isSupplier: d.isSupplier,
+            editedMs: _touchMs(),
+            doubleLedger: d.doubleLedger,
+            dueDate: d.dueDate,
+            note: stored,
           )
         else
           d,
@@ -264,6 +299,7 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
             editedMs: _touchMs(),
             doubleLedger: d.doubleLedger,
             dueDate: d.dueDate,
+            note: d.note,
           )
         else
           d,
@@ -385,3 +421,16 @@ final debtorByIdProvider = Provider.family<DebtorUi?, String>((ref, id) {
 final debtMyNumbersProvider = Provider<DebtMyNumbers>((ref) {
   return _computeNumbers(ref.watch(debtorsUiProvider));
 });
+
+/// تبويب شاشة دفتر الديون: 0 = العملاء، 1 = الموردين (لإجراءات الشريط العلوي المشتركة).
+class DebtsLedgerTabNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setTab(int index) {
+    if (index != state) state = index;
+  }
+}
+
+final debtsLedgerTabProvider =
+    NotifierProvider<DebtsLedgerTabNotifier, int>(DebtsLedgerTabNotifier.new);

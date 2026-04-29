@@ -18,7 +18,7 @@ class TeamSettingsScreen extends StatelessWidget {
             'أعضاء الفريق',
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
           ),
@@ -87,7 +87,7 @@ class TeamSettingsScreen extends StatelessWidget {
                   name,
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),

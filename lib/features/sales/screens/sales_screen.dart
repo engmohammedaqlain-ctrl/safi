@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../cash_flow/screens/cash_entry_screen.dart';
 import '../../cash_flow/screens/cashbook_entry_detail_screen.dart';
 import '../../cash_flow/screens/cash_flow_screen.dart';
@@ -96,9 +97,11 @@ class SalesScreen extends ConsumerWidget {
                 Text(
                   'المعاملات (${unifiedRows.length})',
                   style: const TextStyle(
+                    fontFamily: AppFonts.family,
                     color: AppColors.primary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    height: 1.25,
                   ),
                 ),
               ],
@@ -110,7 +113,7 @@ class SalesScreen extends ConsumerWidget {
             else
               ...unifiedRows.map(
                 (row) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.only(bottom: 10),
                   child: _UnifiedLedgerTile(
                     row: row,
                     hideAmount: hidden,
@@ -126,7 +129,7 @@ class SalesScreen extends ConsumerWidget {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  بطاقة الرصيد — ألوان مثل سطور «أخذت / أعطيت» في دفتر الديون
+//  بطاقة الرصيد — ألوان مثل سطور «سداد / دين جديد» في دفتر الديون
 // ════════════════════════════════════════════════════════════════
 class _BalanceCard extends StatelessWidget {
   const _BalanceCard({
@@ -148,7 +151,7 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // نفس ألوان سطور «أخذت / أعطيت» في debts_screen
+    // نفس ألوان سطور «سداد / دين جديد» في debts_screen
     const incomeColor = Colors.green;
     const expenseValColor = Colors.deepOrange;
     final expenseCtaBg = AppColors.errorLight;
@@ -175,7 +178,7 @@ class _BalanceCard extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.primary,
                   fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 6),
@@ -184,7 +187,7 @@ class _BalanceCard extends StatelessWidget {
                 valueColor: balanceValueColor,
                 numberStyle: const TextStyle(
                   fontSize: 32,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   height: 1.1,
                 ),
                 alignEnd: false,
@@ -254,12 +257,12 @@ class _QuickNavIconsLabeledRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(15),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(18),
@@ -267,7 +270,7 @@ class _QuickNavIconsLabeledRow extends StatelessWidget {
                         color: AppColors.primary.withValues(alpha: 0.12),
                       ),
                     ),
-                    child: Icon(icon, color: AppColors.primary, size: 26),
+                    child: Icon(icon, color: AppColors.primary, size: 27),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -277,8 +280,8 @@ class _QuickNavIconsLabeledRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                       height: 1.2,
                     ),
                   ),
@@ -295,7 +298,7 @@ class _QuickNavIconsLabeledRow extends StatelessWidget {
       children: [
         cell('المحافظ', LucideIcons.wallet, onWallets),
         cell('الأرشيف', LucideIcons.inbox, onArchive),
-        cell('التقارير', LucideIcons.barChart2, onReports),
+        cell('التقارير', LucideIcons.fileSpreadsheet, onReports),
       ],
     );
   }
@@ -326,7 +329,7 @@ class _CardIncomeExpenseRow extends StatelessWidget {
             label,
             style: TextStyle(
               color: Colors.grey.shade600,
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -335,8 +338,8 @@ class _CardIncomeExpenseRow extends StatelessWidget {
             amount: amount,
             valueColor: c,
             numberStyle: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
             alignEnd: false,
           ),
@@ -428,7 +431,7 @@ class _SoftCta extends StatelessWidget {
             style: TextStyle(
               color: fg,
               fontSize: 16,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -483,10 +486,10 @@ class _UnifiedLedgerTile extends StatelessWidget {
             : Icon(
                 e.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
                 color: c,
-                size: 20,
+                size: 24,
               );
       }
-      return Icon(row.icon, color: c, size: 20);
+      return Icon(row.icon, color: c, size: 24);
     }
 
     return Material(
@@ -494,7 +497,7 @@ class _UnifiedLedgerTile extends StatelessWidget {
       child: InkWell(
         onTap: onOpen,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
           decoration: BoxDecoration(
             border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
           ),
@@ -502,16 +505,16 @@ class _UnifiedLedgerTile extends StatelessWidget {
             textDirection: TextDirection.rtl,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   color: c.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Center(child: leadingIcon()),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -520,8 +523,10 @@ class _UnifiedLedgerTile extends StatelessWidget {
                     Text(
                       row.headline,
                       style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontFamily: AppFonts.family,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        height: 1.25,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -530,9 +535,11 @@ class _UnifiedLedgerTile extends StatelessWidget {
                       Text(
                         row.detailLine,
                         style: TextStyle(
+                          fontFamily: AppFonts.family,
                           color: AppColors.textMuted,
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          height: 1.3,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -540,8 +547,11 @@ class _UnifiedLedgerTile extends StatelessWidget {
                     Text(
                       _formatCashDate(row.sortTime),
                       style: TextStyle(
+                        fontFamily: AppFonts.family,
                         color: Colors.grey.shade500,
-                        fontSize: 12,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
                       ),
                     ),
                   ],
@@ -551,8 +561,10 @@ class _UnifiedLedgerTile extends StatelessWidget {
                 amount: amountStr,
                 valueColor: c,
                 numberStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+                  fontFamily: AppFonts.family,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
                 ),
                 alignEnd: false,
               ),
@@ -601,7 +613,7 @@ class _EmptyTransactions extends StatelessWidget {
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 15,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),

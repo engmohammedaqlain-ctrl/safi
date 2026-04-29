@@ -165,7 +165,7 @@ class WalletDetailScreen extends ConsumerWidget {
             style: const TextStyle(
               color: AppColors.primary,
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -265,7 +265,7 @@ class WalletDetailScreen extends ConsumerWidget {
                   style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -421,7 +421,7 @@ class _BalanceCard extends StatelessWidget {
             style: TextStyle(
               color: AppColors.primary,
               fontSize: 13,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 6),
@@ -436,7 +436,7 @@ class _BalanceCard extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.green,
                     fontSize: 32,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     height: 1.1,
                   ),
                 ),
@@ -445,7 +445,7 @@ class _BalanceCard extends StatelessWidget {
                   style: TextStyle(
                     color: Colors.green,
                     fontSize: 26,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -533,7 +533,7 @@ class _IncomeExpenseStrip extends StatelessWidget {
                         style: TextStyle(
                           color: color,
                           fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       Text(
@@ -541,7 +541,7 @@ class _IncomeExpenseStrip extends StatelessWidget {
                         style: TextStyle(
                           color: color,
                           fontSize: 13,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -601,7 +601,7 @@ class _IncomeExpenseStrip extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 15,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -654,7 +654,7 @@ class _SoftCta extends StatelessWidget {
             style: TextStyle(
               color: fg,
               fontSize: 16,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -704,7 +704,7 @@ class _OutlineAction extends StatelessWidget {
                 style: TextStyle(
                   color: c,
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -747,7 +747,7 @@ class _DebtWalletTile extends StatelessWidget {
         hidden ? obscureAmountText() : formatShekelAmount(tx.amount);
     final name = UnifiedLedgerMath.debtName(debtors, tx.customerId);
     final headline =
-        isGave ? 'أعطيت — عبر المحفظة' : 'سداد — إلى المحفظة';
+        isGave ? 'دين جديد — عبر المحفظة' : 'سداد — إلى المحفظة';
 
     return Material(
       color: Colors.white,
@@ -756,7 +756,7 @@ class _DebtWalletTile extends StatelessWidget {
         onTap: onOpen,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 13),
           decoration: BoxDecoration(
             border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
           ),
@@ -764,8 +764,8 @@ class _DebtWalletTile extends StatelessWidget {
             textDirection: TextDirection.rtl,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
                   color: c.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
@@ -773,7 +773,7 @@ class _DebtWalletTile extends StatelessWidget {
                 child: Icon(
                   LucideIcons.bookMarked,
                   color: c,
-                  size: 20,
+                  size: 21,
                 ),
               ),
               const SizedBox(width: 10),
@@ -784,8 +784,8 @@ class _DebtWalletTile extends StatelessWidget {
                     Text(
                       headline,
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -794,7 +794,7 @@ class _DebtWalletTile extends StatelessWidget {
                       name,
                       style: TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -804,7 +804,7 @@ class _DebtWalletTile extends StatelessWidget {
                       _formatDate(tx.date),
                       style: TextStyle(
                         color: Colors.grey.shade500,
-                        fontSize: 12,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -819,16 +819,16 @@ class _DebtWalletTile extends StatelessWidget {
                       '${isGave ? '-' : '+'} $amount',
                       style: TextStyle(
                         color: c,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       ' ₪',
                       style: TextStyle(
                         color: c,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -867,7 +867,7 @@ class _MovementTile extends StatelessWidget {
         onTap: onOpen,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 13),
         decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
         ),
@@ -875,8 +875,8 @@ class _MovementTile extends StatelessWidget {
           textDirection: TextDirection.rtl,
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: c.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
@@ -894,7 +894,7 @@ class _MovementTile extends StatelessWidget {
                           ? LucideIcons.trendingUp
                           : LucideIcons.trendingDown,
                       color: c,
-                      size: 20,
+                      size: 21,
                     ),
             ),
             const SizedBox(width: 10),
@@ -905,8 +905,8 @@ class _MovementTile extends StatelessWidget {
                   Text(
                     entry.title,
                     style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -916,7 +916,7 @@ class _MovementTile extends StatelessWidget {
                       entry.category!,
                       style: TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -926,7 +926,7 @@ class _MovementTile extends StatelessWidget {
                     _formatDate(entry.date),
                     style: TextStyle(
                       color: Colors.grey.shade500,
-                      fontSize: 12,
+                      fontSize: 13,
                     ),
                   ),
                 ],
@@ -941,16 +941,16 @@ class _MovementTile extends StatelessWidget {
                     '${entry.isIncome ? '+' : '-'} $amount',
                     style: TextStyle(
                       color: c,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     ' ₪',
                     style: TextStyle(
                       color: c,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -1001,7 +1001,7 @@ class _EmptyMovements extends StatelessWidget {
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 14,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),

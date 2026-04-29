@@ -8,6 +8,7 @@ import 'add_customer_detail_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safi/core/router/app_page_route.dart';
 import '../providers/debts_ui_provider.dart';
+import '../utils/customer_name_limits.dart';
 
 class AddCustomerScreen extends ConsumerStatefulWidget {
   const AddCustomerScreen({super.key, this.isSupplier = false});
@@ -76,6 +77,11 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final debtors = ref.watch(debtorsUiProvider);
+    final existingPhoneDigits = <String>{
+      for (final d in debtors) d.phone.replaceAll(RegExp(r'\D'), ''),
+    };
+
     return VaultSubpageScaffold(
       title: widget.isSupplier ? 'إضافة مورد' : 'إضافة عميل',
       body: Column(
@@ -107,7 +113,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                   widget.isSupplier ? 'إضافة مورد جديد' : 'إضافة عميل جديد',
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
                 ),
@@ -123,7 +129,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                   style: TextStyle(
                     color: AppColors.primary,
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -195,21 +201,14 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                       final phone = contact.phones.isNotEmpty
                           ? contact.phones.first.number
                           : '';
-                      final name = contact.displayName ?? phone;
+                      final sanitizedName =
+                          sanitizeCustomerName(contact.displayName);
+                      final name =
+                          sanitizedName.isEmpty ? phone : sanitizedName;
 
-                      final cleanPhone = phone
-                          .replaceAll(RegExp(r'\s+'), '')
-                          .replaceAll('-', '');
-                      final existingDebtors = ref.watch(debtorsUiProvider);
-                      final isAlreadyAdded = existingDebtors.any((d) {
-                        final dPhone = d.phone
-                            .replaceAll(RegExp(r'\s+'), '')
-                            .replaceAll('-', '');
-                        return dPhone == cleanPhone ||
-                            dPhone == '+$cleanPhone' ||
-                            dPhone.replaceAll('+', '') ==
-                                cleanPhone.replaceAll('+', '');
-                      });
+                      final contactDigits = phone.replaceAll(RegExp(r'\D'), '');
+                      final isAlreadyAdded = contactDigits.isNotEmpty &&
+                          existingPhoneDigits.contains(contactDigits);
 
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(
@@ -219,7 +218,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                         title: Text(
                           name,
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                             fontSize: 16,
                             color: isAlreadyAdded ? Colors.grey : Colors.black,
                           ),
@@ -261,7 +260,8 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                                   context,
                                   AppPageRoute(
                                     builder: (_) => AddCustomerDetailScreen(
-                                      initialName: name,
+                                      initialName:
+                                          name.isEmpty ? null : name,
                                       initialPhone: phone,
                                       isSupplier: widget.isSupplier,
                                     ),

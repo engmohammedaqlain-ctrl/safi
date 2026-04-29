@@ -126,6 +126,7 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     await p.remove(PrefsKeys.phoneDocId);
     await p.remove(PrefsKeys.ledgerOwnerUid);
     await p.remove(PrefsKeys.userName);
+    await p.remove(PrefsKeys.onboardingDone);
 
     await StartupLedgerData.reloadFromDiskIntoMemory();
 
@@ -147,6 +148,6 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     ref.invalidate(cashbookEntriesProvider);
     ref.invalidate(accountsProvider);
     ref.invalidate(debtCategoriesProvider);
-    ref.read(navIndexProvider.notifier).goTo(0);
+    ref.read(navIndexProvider.notifier).goTo(1);
   }
 }

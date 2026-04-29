@@ -7,11 +7,16 @@ import '../bootstrap/prefs_keys.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import '../widgets/safi_brand_mark.dart';
 import '../widgets/vault_branded_shell.dart';
 import 'nav_provider.dart';
-import '../../features/more/screens/more_home_screen.dart';
-import '../../features/sales/screens/sales_screen.dart';
+import 'package:safi/core/router/app_page_route.dart';
+import '../../features/debts/providers/debts_ui_provider.dart';
+import '../../features/debts/screens/debt_collection_screen.dart';
 import '../../features/debts/screens/debts_screen.dart';
+import '../../features/more/screens/more_home_screen.dart';
+import '../../features/reports/screens/unified_reports_screen.dart';
+import '../../features/sales/screens/sales_screen.dart';
 
 class HideBalanceNotifier extends Notifier<bool> {
   @override
@@ -74,6 +79,9 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   Widget build(BuildContext context) {
     final index = ref.watch(navIndexProvider);
+    final debtsLedgerTab = ref.watch(debtsLedgerTabProvider);
+    final isDebtsShell = index == 0;
+    final isSuppliersInDebts = debtsLedgerTab == 1;
 
     // إذا طلب الـ provider صفحةً مختلفة (مثلاً deep link أو إعادة تحميل)
     // نتأكد أن PageView يتبعه دون أنيميشن مكرّر
@@ -126,11 +134,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                                   color: Colors.white.withValues(alpha: 0.18),
                                 ),
                               ),
-                              child: const Icon(
-                                LucideIcons.bookOpen,
-                                color: Colors.white,
-                                size: 24,
-                              ),
+                              child: const SafiBrandMark(size: 26),
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
@@ -143,22 +147,27 @@ class _MainShellState extends ConsumerState<MainShell> {
                                           ref.watch(userNameProvider);
                                       return Text(
                                         asyncName.value ?? '',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                         style: AppTextStyles.headlineSmall
                                             .copyWith(
                                           color: Colors.white,
                                           letterSpacing: 0.5,
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       );
                                     },
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'خبرة بنكية مبسّطة لإدارة ديونك ومحافظك',
+                                    'ديونك وصندوقك معاً',
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.ellipsis,
                                     style: AppTextStyles.bodySmall.copyWith(
                                       color: Colors.white
                                           .withValues(alpha: 0.78),
-                                      height: 1.45,
+                                      height: 1.25,
                                     ),
                                   ),
                                 ],
@@ -168,6 +177,40 @@ class _MainShellState extends ConsumerState<MainShell> {
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
+                      if (isDebtsShell) ...[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _VaultHeaderIconButton(
+                              icon: LucideIcons.coins,
+                              tooltip: 'تحصيل الديون',
+                              onTap: () => Navigator.of(context).push<void>(
+                                AppPageRoute<void>(
+                                  builder: (_) => DebtCollectionScreen(
+                                    suppliersOnly: isSuppliersInDebts,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            _VaultHeaderIconButton(
+                              icon: LucideIcons.fileSpreadsheet,
+                              tooltip: 'التقارير',
+                              onTap: () => Navigator.of(context).push<void>(
+                                AppPageRoute<void>(
+                                  builder: (_) => UnifiedReportsScreen(
+                                    initialFilter: isSuppliersInDebts
+                                        ? AppReportDebtFilter.suppliersOnly
+                                        : AppReportDebtFilter.customersOnly,
+                                    lockDebtScope: true,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                       Consumer(
                         builder: (context, ref, _) {
                           final hidden = ref.watch(hideBalanceProvider);
@@ -279,6 +322,49 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 }
 
+class _VaultHeaderIconButton extends StatelessWidget {
+  const _VaultHeaderIconButton({
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final child = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.18),
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
+      ),
+    );
+    if (tooltip != null && tooltip!.isNotEmpty) {
+      return Tooltip(message: tooltip!, child: child);
+    }
+    return child;
+  }
+}
+
 // ══════════════════════════════════════════════════════════════
 //  شريط سفلي ثلاثي — صف واحد بحيث يمتد كل تبويب بعرض المتاح (بدون فراغ أفقي كبير)
 // ══════════════════════════════════════════════════════════════
@@ -323,7 +409,7 @@ class _SafiCompactBottomNav extends StatelessWidget {
                           horizontal: 12, vertical: 4),
                       child: Icon(
                         icon,
-                        size: sel ? 20 : 19,
+                        size: sel ? 26 : 24,
                         color:
                             sel ? AppColors.primary : AppColors.textMuted,
                       ),
@@ -335,10 +421,11 @@ class _SafiCompactBottomNav extends StatelessWidget {
                     child: Text(
                       label,
                       maxLines: 1,
+                      softWrap: false,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: sel ? FontWeight.w800 : FontWeight.w600,
+                        fontSize: 11,
+                        fontWeight: sel ? FontWeight.w600 : FontWeight.w500,
                         color: sel ? AppColors.primary : AppColors.textMuted,
                         height: 1.06,
                       ),
@@ -357,7 +444,7 @@ class _SafiCompactBottomNav extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
         child: SizedBox(
-          height: 58,
+          height: 62,
           child: Row(
             textDirection: TextDirection.rtl,
             crossAxisAlignment: CrossAxisAlignment.stretch,

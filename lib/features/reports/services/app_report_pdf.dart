@@ -540,7 +540,7 @@ class AppReportPdfBuilder {
           max: 30,
         );
         row.cells[2].value = _safe(t.note, max: 45);
-        row.cells[3].value = isGave ? 'أعطيت' : 'أخذت';
+        row.cells[3].value = isGave ? 'دين جديد' : 'سداد';
         row.cells[3].style.textBrush = PdfSolidBrush(isGave ? _cRed : _cGreen);
         row.cells[4].value = '${isGave ? '-' : '+'}${_amt(t.amount)}';
         row.cells[4].style.textBrush = PdfSolidBrush(isGave ? _cRed : _cGreen);
@@ -582,7 +582,7 @@ class AppReportPdfBuilder {
         final row = g.rows.add();
         row.cells[0].value = _date(t.date);
         row.cells[1].value = _safe(t.note, max: 60);
-        row.cells[2].value = isGave ? 'أعطيت' : 'أخذت';
+        row.cells[2].value = isGave ? 'دين جديد' : 'سداد';
         row.cells[2].style.textBrush = PdfSolidBrush(isGave ? _cRed : _cGreen);
         row.cells[3].value = '${isGave ? '-' : '+'}${_amt(t.amount)}';
         row.cells[3].style.textBrush = PdfSolidBrush(isGave ? _cRed : _cGreen);

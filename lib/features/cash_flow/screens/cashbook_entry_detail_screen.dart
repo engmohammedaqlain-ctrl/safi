@@ -8,6 +8,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../../sales/models/cashbook_entry.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
@@ -64,11 +66,12 @@ class CashbookEntryDetailScreen extends ConsumerWidget {
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
+          title: Text(
             'تفاصيل المعاملة',
             style: TextStyle(
               color: AppColors.primary,
-              fontWeight: FontWeight.w800,
+              fontFamily: AppFonts.family,
+              fontWeight: FontWeight.w600,
               fontSize: 17,
             ),
           ),
@@ -218,7 +221,10 @@ class CashbookEntryDetailScreen extends ConsumerWidget {
           ),
           title: const Text(
             'حذف المعاملة؟',
-            style: TextStyle(fontWeight: FontWeight.w800),
+            style: TextStyle(
+              fontFamily: AppFonts.family,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           content: const Text(
             'سيتم حذف الحركة نهائياً من الصافي.',
@@ -243,7 +249,7 @@ class CashbookEntryDetailScreen extends ConsumerWidget {
               ),
               child: const Text(
                 'حذف',
-                style: TextStyle(fontWeight: FontWeight.w700),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -316,10 +322,11 @@ class _AmountHero extends StatelessWidget {
           Text(
             typeLabel,
             style: TextStyle(
+              fontFamily: AppFonts.family,
               color: accent.withValues(alpha: 0.9),
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.3,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.2,
             ),
           ),
           const SizedBox(height: 8),
@@ -335,19 +342,22 @@ class _AmountHero extends StatelessWidget {
                   Text(
                     amount,
                     style: TextStyle(
+                      fontFamily: AppFonts.family,
                       color: accent,
-                      fontSize: 38,
-                      fontWeight: FontWeight.w900,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w600,
                       height: 1.0,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                   const SizedBox(width: 6),
                   Text(
                     '₪',
                     style: TextStyle(
+                      fontFamily: AppFonts.family,
                       color: accent,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -382,10 +392,11 @@ class _SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(right: 4, bottom: 2),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
+          fontFamily: AppFonts.family,
           color: AppColors.textSecondary,
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
           letterSpacing: 0.2,
         ),
       ),
@@ -472,7 +483,7 @@ class _RowData extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     height: 1.25,
                   ),
                 ),
@@ -609,19 +620,11 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
   }
 
   void _pickDate() {
-    showDatePicker(
+    AppTheme.showAppDatePicker(
       context: context,
       initialDate: _date,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppColors.primary,
-          ),
-        ),
-        child: child!,
-      ),
     ).then((d) {
       if (d != null) setState(() => _date = d);
     });
@@ -660,7 +663,8 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
                   'تعديل المعاملة',
                   style: TextStyle(
                     color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
+                    fontFamily: AppFonts.family,
+                    fontWeight: FontWeight.w600,
                     fontSize: 17,
                   ),
                 ),
@@ -714,8 +718,9 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
                     'المحفظة',
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                      fontFamily: AppFonts.family,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -778,7 +783,7 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
                       child: const Text(
                         'إلغاء',
                         style: TextStyle(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           fontSize: 15,
                         ),
                       ),
@@ -799,7 +804,8 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
                       child: const Text(
                         'حفظ',
                         style: TextStyle(
-                          fontWeight: FontWeight.w800,
+                          fontFamily: AppFonts.family,
+                          fontWeight: FontWeight.w600,
                           fontSize: 15,
                         ),
                       ),
@@ -931,7 +937,8 @@ class _WalletPill extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  fontFamily: AppFonts.family,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   color:
                       selected ? Colors.white : AppColors.textSecondary,
                 ),

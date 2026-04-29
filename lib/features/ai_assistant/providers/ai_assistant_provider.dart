@@ -252,7 +252,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
           "type": "function",
           "function": {
             "name": "record_transaction",
-            "description": "تسجيل دفعة أو دين جديد لعميل أو مورد موجود مسبقاً.",
+            "description": "تسجيل سداد أو دين جديد لعميل أو مورد موجود مسبقاً.",
             "parameters": {
               "type": "object",
               "properties": {
@@ -262,12 +262,12 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
                 },
                 "amount": {
                   "type": "number",
-                  "description": "قيمة الدفعة أو الدين"
+                  "description": "قيمة السداد أو الدين"
                 },
                 "type": {
                   "type": "string",
                   "enum": ["gave", "received"],
-                  "description": "نوع المعاملة: gave (أعطيت العميل/المورد)، received (أخذت من العميل/المورد)"
+                  "description": "نوع المعاملة: gave (دين جديد على حساب العميل/المورد)، received (سداد من العميل/المورد)"
                 },
                 "note": {
                   "type": "string",
@@ -396,7 +396,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
                 
                 ref.read(debtorsUiProvider.notifier).updateCustomerBalance(customer.id, delta);
                 
-                reply = 'تم تسجيل المعاملة بنجاح: ${isGave ? 'أعطيت' : 'أخذت'} $amount شيكل ${isGave ? 'لـ' : 'من'} "${customer.name}".';
+                reply = 'تم تسجيل المعاملة بنجاح: ${isGave ? 'دين جديد' : 'سداد'} $amount شيكل ${isGave ? 'لـ' : 'من'} "${customer.name}".';
               } else {
                 reply = 'لم أتمكن من العثور على عميل باسم "$customerName".';
               }

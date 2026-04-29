@@ -42,7 +42,7 @@ class _SmartFeaturesScreenState extends State<SmartFeaturesScreen> {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -96,7 +96,7 @@ class _SmartFeaturesScreenState extends State<SmartFeaturesScreen> {
         title,
         style: const TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
       ),

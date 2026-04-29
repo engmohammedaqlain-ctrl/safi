@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../../debts/widgets/calculator_keypad.dart';
 import '../../sales/models/cashbook_entry.dart';
@@ -14,7 +16,7 @@ import '../../sales/providers/cashbook_ui_provider.dart';
 import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
 
-/// شاشة إدخال دخل/مصروف — تستخدم نفس واجهة لوحة الحاسبة كصفحة «أخذ/أعطى»
+/// شاشة إدخال دخل/مصروف — تستخدم نفس واجهة لوحة الحاسبة كصفحة دين جديد/سداد
 class CashEntryScreen extends ConsumerStatefulWidget {
   const CashEntryScreen({
     super.key,
@@ -212,50 +214,14 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
   }
 
   void _pickDate() {
-    showModalBottomSheet<void>(
+    AppTheme.showAppCalendarPickerSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: SizedBox(
-          height: 400,
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 4),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Expanded(
-                child: Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.light(
-                      primary: AppColors.primary,
-                      onSurface: Colors.black87,
-                    ),
-                  ),
-                  child: CalendarDatePicker(
-                    initialDate: _date,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2100),
-                    onDateChanged: (d) {
-                      setState(() => _date = d);
-                      Navigator.pop(ctx);
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+      initialDate: _date,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    ).then((d) {
+      if (d != null) setState(() => _date = d);
+    });
   }
 
   @override
@@ -276,12 +242,13 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
             icon: const Icon(LucideIcons.arrowRight, color: AppColors.primary),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
+          title: Text(
             'حركة جديدة',
             style: TextStyle(
               color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
+              fontFamily: AppFonts.family,
+              fontWeight: FontWeight.w600,
+              fontSize: 17,
             ),
           ),
         ),
@@ -334,13 +301,21 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
                                 // ── المبلغ الكبير ──
                                 Align(
                                   alignment: Alignment.centerRight,
-                                  child: Text(
-                                    _displayText,
-                                    textDirection: TextDirection.ltr,
-                                    style: TextStyle(
-                                      fontSize: 42,
-                                      fontWeight: FontWeight.bold,
-                                      color: _accent,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      _displayText,
+                                      textDirection: TextDirection.ltr,
+                                      style: TextStyle(
+                                        fontFamily: AppFonts.family,
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.w600,
+                                        color: _accent,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -353,8 +328,10 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
                                       '$_expr${_fresh ? '' : _displayNum}',
                                       textDirection: TextDirection.ltr,
                                       style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade500,
+                                        fontFamily: AppFonts.family,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                                        color: AppColors.textMuted,
                                       ),
                                     ),
                                   ),
@@ -490,21 +467,29 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
                                   if (_imagePath != null) ...[
                                     const SizedBox(height: 6),
                                     if (!kIsWeb)
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Image.file(
-                                          File(_imagePath!),
-                                          height: 88,
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: SizedBox(
+                                            width: 108,
+                                            height: 64,
+                                            child: Image.file(
+                                              File(_imagePath!),
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
                                         ),
                                       )
                                     else
                                       Text(
                                         'تم اختيار صورة',
                                         style: TextStyle(
+                                          fontFamily: AppFonts.family,
                                           fontSize: 12,
-                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w400,
+                                          color: AppColors.textMuted,
                                         ),
                                       ),
                                   ],
@@ -516,8 +501,9 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
                                         'اختر المحفظة',
                                         style: TextStyle(
                                           color: AppColors.textSecondary,
+                                          fontFamily: AppFonts.family,
                                           fontSize: 12,
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w400,
                                         ),
                                       ),
                                     ),
@@ -583,9 +569,10 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
                   ),
                   child: Text(
                     _income ? 'تسجيل الدخل' : 'تسجيل المصروف',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                      fontFamily: AppFonts.family,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -651,8 +638,9 @@ class _WalletPill extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    fontFamily: AppFonts.family,
                     color: selected ? Colors.white : AppColors.textSecondary,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ),
@@ -710,8 +698,9 @@ class _TypeChip extends StatelessWidget {
               label,
               style: TextStyle(
                 color: selected ? color : Colors.grey.shade600,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                fontSize: 14,
+                fontFamily: AppFonts.family,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 13,
               ),
             ),
           ],
@@ -743,29 +732,30 @@ class _Chip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
           padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.outlineSoft),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             textDirection: TextDirection.rtl,
             children: [
-              Icon(icon, size: 16, color: AppColors.textMuted),
-              const SizedBox(width: 6),
+              Icon(icon, size: 14, color: AppColors.textMuted),
+              const SizedBox(width: 5),
               Text(
                 label,
                 textDirection:
                     labelLtr ? TextDirection.ltr : TextDirection.rtl,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontFamily: AppFonts.family,
+                  fontSize: 11,
                   color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],

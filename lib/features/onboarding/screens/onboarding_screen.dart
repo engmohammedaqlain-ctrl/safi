@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -10,6 +12,21 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/safi_button.dart';
 import '../../../core/widgets/vault_branded_shell.dart';
 
+/// تمثيل بصري مصغّر داخل بطاقة الأونبوردينغ للفكرة المعروضة.
+enum _OnboardingMiniKind {
+  /// محافظ + أرقام شبيهة بالتطبيق
+  wallets,
+
+  /// مستحقات / ديون بتلوين شبيه بالسجلات
+  debts,
+
+  /// صفوف عملاء + أرصدة
+  customers,
+
+  /// تذكير ورسالة شبيهة بإشعارات التطبيق
+  reminders,
+}
+
 class _OnboardingSlide {
   const _OnboardingSlide({
     required this.headline,
@@ -17,6 +34,7 @@ class _OnboardingSlide {
     required this.icon,
     required this.gradientColors,
     required this.cardTag,
+    required this.miniKind,
   });
 
   final String headline;
@@ -26,6 +44,8 @@ class _OnboardingSlide {
 
   /// سطر مختصر على شكل «بطاقة بنكية»
   final String cardTag;
+
+  final _OnboardingMiniKind miniKind;
 }
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -39,38 +59,61 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _page = PageController();
   int _i = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    _page.addListener(() => setState(() {}));
+  }
+
   static final _slides = <_OnboardingSlide>[
     _OnboardingSlide(
       headline: 'محافظك وأرصدتك في مكان واحد',
       body:
           'نظّم محافظك النقدية والبنكية، وتابع الوارد والصادر لصورة مالية موحّدة.',
       icon: LucideIcons.wallet,
-      gradientColors: const [Color(0xFF9C27B0), Color(0xFF6A1B9A), Color(0xFF4A148C)],
+      gradientColors: const [
+        Color(0xFF9C27B0),
+        Color(0xFF6A1B9A),
+        Color(0xFF4A148C),
+      ],
       cardTag: 'ملخص الأرصدة',
+      miniKind: _OnboardingMiniKind.wallets,
     ),
     _OnboardingSlide(
       headline: 'الديون والمستحقات تحت السيطرة',
-      body:
-          'سجّل ما لك وما عليك، وراقب المبالغ والمواعيد لتبقى صاف حسابك.',
+      body: 'سجّل ما لك وما عليك، وراقب المبالغ والمواعيد لتبقى صاف حسابك.',
       icon: LucideIcons.barChart2,
-      gradientColors: const [Color(0xFF66BB6A), Color(0xFF388E3C), Color(0xFF1B5E20)],
+      gradientColors: const [
+        Color(0xFF66BB6A),
+        Color(0xFF388E3C),
+        Color(0xFF1B5E20),
+      ],
       cardTag: 'المستحقات',
+      miniKind: _OnboardingMiniKind.debts,
     ),
     _OnboardingSlide(
       headline: 'عملاؤك ومديونيتهم',
-      body:
-          'أضف من تتعامل معهم، وتابع رصيد كل عميل وحركات السداد بتفاصيلها.',
+      body: 'أضف من تتعامل معهم، وتابع رصيد كل عميل وحركات السداد بتفاصيلها.',
       icon: LucideIcons.users,
-      gradientColors: const [Color(0xFFB39DDB), Color(0xFF7E57C2), Color(0xFF4527A0)],
+      gradientColors: const [
+        Color(0xFFB39DDB),
+        Color(0xFF7E57C2),
+        Color(0xFF4527A0),
+      ],
       cardTag: 'سجل العملاء',
+      miniKind: _OnboardingMiniKind.customers,
     ),
     _OnboardingSlide(
       headline: 'تذكيرات ذكية للتحصيل',
-      body:
-          'فعّل رسائل التذكير لتقليل التأخير، وتسريع استرداد حقوقك المالية.',
+      body: 'فعّل رسائل التذكير لتقليل التأخير، وتسريع استرداد حقوقك المالية.',
       icon: LucideIcons.sparkles,
-      gradientColors: const [Color(0xFFCE93D8), Color(0xFF8E24AA), Color(0xFF4A148C)],
+      gradientColors: const [
+        Color(0xFFCE93D8),
+        Color(0xFF8E24AA),
+        Color(0xFF4A148C),
+      ],
       cardTag: 'التحصيل الذكي',
+      miniKind: _OnboardingMiniKind.reminders,
     ),
   ];
 
@@ -93,12 +136,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewportPage = _page.hasClients
+        ? _page.page ?? _i.toDouble()
+        : _i.toDouble();
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
     return VaultBrandedShell(
       belowBrand: Center(
-        child: _PageDots(
-          count: _slides.length,
-          index: _i,
-        ),
+        child: _PageDots(count: _slides.length, index: _i),
       ),
       sheet: Column(
         children: [
@@ -124,8 +169,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ),
                         child: Column(
                           children: [
-                            _BankPlasticCard(
+                            _OnboardingAnimatedCard(
                               slide: slide,
+                              pagerDelta: viewportPage - index,
+                              reduceMotion: reduceMotion,
                             ),
                             const SizedBox(height: 28),
                             Text(
@@ -172,9 +219,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               AppSpacing.lg,
             ),
             child: SafiButton(
-              label: _i < _slides.length - 1
-                  ? 'التالي'
-                  : 'ابدأ استخدام صافي',
+              label: _i < _slides.length - 1 ? 'التالي' : 'ابدأ استخدام صافي',
               icon: _i < _slides.length - 1
                   ? LucideIcons.arrowLeft
                   : LucideIcons.check,
@@ -188,10 +233,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 }
 
 class _PageDots extends StatelessWidget {
-  const _PageDots({
-    required this.count,
-    required this.index,
-  });
+  const _PageDots({required this.count, required this.index});
 
   final int count;
   final int index;
@@ -229,20 +271,412 @@ class _PageDots extends StatelessWidget {
   }
 }
 
-/// بطاقة بلاستيكية بتفاصيل تشبه بطاقة بنك (شريحة + شعار + تدرج)
-class _BankPlasticCard extends StatelessWidget {
-  const _BankPlasticCard({
+/// طفو هادئ + ميل perspective مرتبط بسحب [PageView]؛ يُعطّل الطفو عند تقليل الحركة.
+class _OnboardingAnimatedCard extends StatefulWidget {
+  const _OnboardingAnimatedCard({
     required this.slide,
+    required this.pagerDelta,
+    required this.reduceMotion,
   });
 
   final _OnboardingSlide slide;
+  final double pagerDelta;
+  final bool reduceMotion;
+
+  @override
+  State<_OnboardingAnimatedCard> createState() =>
+      _OnboardingAnimatedCardState();
+}
+
+class _OnboardingAnimatedCardState extends State<_OnboardingAnimatedCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _float;
+
+  @override
+  void initState() {
+    super.initState();
+    _float = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2800),
+    );
+    if (!widget.reduceMotion) {
+      _float.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _OnboardingAnimatedCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reduceMotion != widget.reduceMotion) {
+      if (widget.reduceMotion) {
+        _float.stop();
+      } else {
+        _float.repeat(reverse: true);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _float.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = widget.pagerDelta.clamp(-1.2, 1.2);
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _float,
+        builder: (context, _) {
+          final bob = widget.reduceMotion
+              ? 0.0
+              : 5.5 * math.sin(_float.value * math.pi * 2);
+          return Transform.translate(
+            offset: Offset(0, bob),
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.00115)
+                ..rotateY(-d * 0.1),
+              child: _BankPlasticCard(slide: widget.slide, layerShift: d * 16),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// معاينة UI مصغّرة داخل البطاقة البنكية حسب موضوع الشريحة.
+class _OnboardingMiniPreview extends StatelessWidget {
+  const _OnboardingMiniPreview({required this.kind});
+
+  final _OnboardingMiniKind kind;
+
+  static final _caption = AppTextStyles.labelSmall.copyWith(
+    color: Colors.white.withValues(alpha: 0.82),
+    fontSize: 10,
+    height: 1.2,
+  );
+
+  static final _value = AppTextStyles.labelSmall.copyWith(
+    color: Colors.white,
+    fontWeight: FontWeight.w700,
+    fontSize: 11,
+    height: 1.2,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+        child: switch (kind) {
+          _OnboardingMiniKind.wallets => _wallets(),
+          _OnboardingMiniKind.debts => _debts(),
+          _OnboardingMiniKind.customers => _customers(),
+          _OnboardingMiniKind.reminders => _reminders(),
+        },
+      ),
+    );
+  }
+
+  Widget _wallets() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _MiniPill(
+                icon: LucideIcons.banknote,
+                label: 'كاش',
+                value: '١٫٢ ألف',
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: _MiniPill(
+                icon: LucideIcons.landmark,
+                label: 'بنك',
+                value: '٨٫٥ ألف',
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: _MiniPill(
+                icon: LucideIcons.smartphone,
+                label: 'محفظة',
+                value: '٢٫٠ ألف',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('الرصيد الموحّد', style: _caption),
+            Text(' ١١٫٧ ألف ر.س', style: _value),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _debts() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _MiniLedgerRow(
+          dotColor: const Color(0xFFC8E6C9),
+          label: 'لك',
+          amount: '+ ٣٬٠٠٠',
+          positive: true,
+        ),
+        const SizedBox(height: 5),
+        _MiniLedgerRow(
+          dotColor: const Color(0xFFFFCDD2),
+          label: 'عليك',
+          amount: '− ١٬٢٠٠',
+          positive: false,
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 7,
+                child: Container(
+                  height: 4,
+                  color: Colors.white.withValues(alpha: 0.35),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Container(
+                  height: 4,
+                  color: Colors.white.withValues(alpha: 0.12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _customers() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _MiniCustomerRow(name: 'أحمد — محل الأقمشة', amount: '٨٥٠'),
+        const SizedBox(height: 5),
+        _MiniCustomerRow(name: 'بقالة النور', amount: '٢٫١ ألف'),
+        const SizedBox(height: 4),
+        Text(
+          '+ ٣ عملاء في القائمة',
+          textAlign: TextAlign.center,
+          style: _caption.copyWith(fontSize: 9),
+        ),
+      ],
+    );
+  }
+
+  Widget _reminders() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            LucideIcons.bellRing,
+            color: Colors.white.withValues(alpha: 0.95),
+            size: 18,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'اليوم • ١٦:٠٠',
+                style: _caption.copyWith(letterSpacing: 0.2),
+              ),
+              const SizedBox(height: 2),
+              Text('استحقاق: أحمد م.', style: _value.copyWith(fontSize: 12)),
+              const SizedBox(height: 2),
+              Text(
+                'تذكير تلقائي قبل الموعد بساعة',
+                style: _caption.copyWith(fontSize: 9),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniPill extends StatelessWidget {
+  const _MiniPill({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.white.withValues(alpha: 0.88)),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: _OnboardingMiniPreview._caption.copyWith(fontSize: 8.5),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            value,
+            style: _OnboardingMiniPreview._value.copyWith(fontSize: 9.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniLedgerRow extends StatelessWidget {
+  const _MiniLedgerRow({
+    required this.dotColor,
+    required this.label,
+    required this.amount,
+    required this.positive,
+  });
+
+  final Color dotColor;
+  final String label;
+  final String amount;
+  final bool positive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            label,
+            style: _OnboardingMiniPreview._caption.copyWith(fontSize: 10.5),
+          ),
+        ),
+        Text(
+          amount,
+          style: _OnboardingMiniPreview._value.copyWith(
+            fontSize: 10.5,
+            color: positive ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniCustomerRow extends StatelessWidget {
+  const _MiniCustomerRow({required this.name, required this.amount});
+
+  final String name;
+  final String amount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.22),
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            name.isNotEmpty ? String.fromCharCode(name.runes.first) : '؟',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _OnboardingMiniPreview._caption.copyWith(
+              fontSize: 10.5,
+              color: Colors.white.withValues(alpha: 0.92),
+            ),
+          ),
+        ),
+        Text(
+          '$amount ر.س',
+          style: _OnboardingMiniPreview._value.copyWith(fontSize: 10.5),
+        ),
+      ],
+    );
+  }
+}
+
+/// بطاقة بلاستيكية بتفاصيل تشبه بطاقة بنك (شريحة + شعار + تدرج)
+class _BankPlasticCard extends StatelessWidget {
+  const _BankPlasticCard({required this.slide, this.layerShift = 0});
+
+  final _OnboardingSlide slide;
+
+  /// إزاحة أفقية خفيفة للزخارف (parallax داخلي عند السحب).
+  final double layerShift;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(maxWidth: 420),
-      height: 196,
+      height: 254,
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
@@ -269,9 +703,10 @@ class _BankPlasticCard extends StatelessWidget {
         ),
       ),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Positioned(
-            right: -20,
+            right: -20 - layerShift * 0.35,
             top: -20,
             child: Icon(
               LucideIcons.circle,
@@ -279,95 +714,106 @@ class _BankPlasticCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.06),
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          Positioned.fill(
+            child: Transform.translate(
+              offset: Offset(layerShift * 0.55, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 46,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(7),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFFF0E6D2),
-                          Color(0xFFC9A66B),
-                          Color(0xFF9A7847),
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
+                  Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(7),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFF0E6D2),
+                              Color(0xFFC9A66B),
+                              Color(0xFF9A7847),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: AppRadius.rfull,
-                    ),
-                    child: Text(
-                      'صافي',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: Colors.white,
-                        letterSpacing: 1.2,
                       ),
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          slide.cardTag,
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: AppRadius.rfull,
+                        ),
+                        child: Text(
+                          'صافي',
                           style: AppTextStyles.labelSmall.copyWith(
-                            color: Colors.white.withValues(alpha: 0.78),
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '••••  ••••  ••••  8821',
-                          style: AppTextStyles.titleMedium.copyWith(
                             color: Colors.white,
-                            letterSpacing: 2,
+                            letterSpacing: 1.2,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      slide.icon,
-                      color: Colors.white,
-                      size: 32,
-                    ),
+                  const SizedBox(height: 10),
+                  Expanded(child: _OnboardingMiniPreview(kind: slide.miniKind)),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              slide.cardTag,
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: Colors.white.withValues(alpha: 0.78),
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '••••  ••••  ••••  8821',
+                              style: AppTextStyles.titleSmall.copyWith(
+                                color: Colors.white,
+                                letterSpacing: 1.4,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Transform.translate(
+                        offset: Offset(-layerShift * 0.2, 0),
+                        child: Container(
+                          padding: const EdgeInsets.all(11),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            slide.icon,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ],
       ),

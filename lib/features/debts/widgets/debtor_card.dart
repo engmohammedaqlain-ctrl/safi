@@ -30,7 +30,7 @@ class DebtorCard extends StatelessWidget {
         },
         borderRadius: AppRadius.rlg,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
           decoration: BoxDecoration(
             color: AppColors.backgroundSecondary,
             borderRadius: AppRadius.rlg,
@@ -48,31 +48,35 @@ class DebtorCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       debtor.name,
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.w800,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
                         color: AppColors.textPrimary,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 8),
                   StatusPill(label: debtor.status, color: urgencyColor),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     'تفاصيل',
-                    style: AppTextStyles.labelMedium.copyWith(
+                    style: AppTextStyles.labelSmall.copyWith(
                       color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
                     ),
                   ),
                   const SizedBox(width: 2),
                   Icon(
                     LucideIcons.chevronLeft,
-                    size: 16,
+                    size: 15,
                     color: AppColors.textSecondary,
                   ),
                   const Spacer(),
@@ -80,8 +84,8 @@ class DebtorCard extends StatelessWidget {
                     '₪ ${debtor.amount}',
                     style: AppTextStyles.numberMedium.copyWith(
                       color: const Color(0xFF1F1528),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
                     ),
                   ),
                 ],

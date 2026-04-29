@@ -142,7 +142,8 @@ class _PressableKeyState extends State<_PressableKey>
     final Color bg = isPrimary
         ? AppColors.primary.withValues(alpha: _pressed ? 0.18 : 0.08)
         : (_pressed ? const Color(0xFFF3F0F8) : Colors.white);
-    final Color tx = isPrimary ? AppColors.primary : Colors.black87;
+    final Color tx =
+        isPrimary ? AppColors.primary : AppColors.textSecondary;
     final Color borderColor = isPrimary
         ? AppColors.primary.withValues(alpha: _pressed ? 0.45 : 0.20)
         : (_pressed
@@ -164,7 +165,7 @@ class _PressableKeyState extends State<_PressableKey>
         key,
         style: TextStyle(
           fontSize: fs,
-          fontWeight: isPrimary ? FontWeight.bold : FontWeight.w500,
+          fontWeight: isPrimary ? FontWeight.w600 : FontWeight.w400,
           color: tx,
         ),
       );

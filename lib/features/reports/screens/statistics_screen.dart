@@ -147,7 +147,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             style: TextStyle(
               color: AppColors.primary,
               fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
             ),
           ),
           leading: IconButton(
@@ -167,7 +167,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 Row(
@@ -220,7 +220,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                           style: TextStyle(
                             color: AppColors.primary,
                             fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -262,7 +262,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 12),
@@ -356,7 +356,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 12),
@@ -470,7 +470,7 @@ class _PeriodButton extends StatelessWidget {
           style: TextStyle(
             color: isSelected ? AppColors.primary : AppColors.textPrimary,
             fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
       ),

@@ -71,7 +71,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                       'عرض الحركات',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                         fontSize: 16,
                         color: AppColors.primary,
                       ),
@@ -95,7 +95,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
       title: Text(
         title,
         style: TextStyle(
-          fontWeight: sel ? FontWeight.w900 : FontWeight.w600,
+          fontWeight: sel ? FontWeight.w600 : FontWeight.w500,
           color: sel ? AppColors.primary : AppColors.textPrimary,
         ),
       ),
@@ -162,7 +162,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
           icon: const Icon(LucideIcons.plus, size: 20),
           label: const Text(
             'تسجيل حركة',
-            style: TextStyle(fontWeight: FontWeight.w800),
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
         floatingActionButtonLocation:
@@ -197,7 +197,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
           title: const Text(
             'الأرشيف',
             style: TextStyle(
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               fontSize: 18,
               color: Colors.white,
             ),
@@ -218,7 +218,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                         'سجل الحركات',
                         style: AppTextStyles.titleSmall.copyWith(
                           color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                           letterSpacing: 0.2,
                           fontSize: 16,
                         ),
@@ -250,7 +250,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                               Text(
                                 _filterLabel(),
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 11.5,
                                   color: AppColors.primary,
                                 ),
@@ -267,7 +267,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                       '${rows.length} عملية',
                       style: AppTextStyles.labelSmall.copyWith(
                         color: AppColors.textMuted,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -401,10 +401,10 @@ class _ArchiveLedgerTile extends StatelessWidget {
             : Icon(
                 e.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
                 color: c,
-                size: 20,
+                size: 21,
               );
       }
-      return Icon(row.icon, color: c, size: 20);
+      return Icon(row.icon, color: c, size: 21);
     }
 
     return Material(
@@ -416,7 +416,7 @@ class _ArchiveLedgerTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: AppRadius.rlg,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
           decoration: BoxDecoration(
             borderRadius: AppRadius.rlg,
             border: Border.all(color: Colors.grey.shade200),
@@ -425,8 +425,8 @@ class _ArchiveLedgerTile extends StatelessWidget {
             textDirection: TextDirection.rtl,
             children: [
               SizedBox(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 child: Container(
                   decoration: BoxDecoration(
                     color: c.withValues(alpha: 0.12),
@@ -445,8 +445,8 @@ class _ArchiveLedgerTile extends StatelessWidget {
                     Text(
                       row.headline,
                       style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -456,7 +456,7 @@ class _ArchiveLedgerTile extends StatelessWidget {
                         row.detailLine,
                         style: TextStyle(
                           color: AppColors.textMuted,
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
@@ -466,7 +466,7 @@ class _ArchiveLedgerTile extends StatelessWidget {
                       _formatArchiveDate(row.sortTime),
                       style: TextStyle(
                         color: Colors.grey.shade500,
-                        fontSize: 11,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -477,8 +477,8 @@ class _ArchiveLedgerTile extends StatelessWidget {
                 child: Text(
                   '${row.deltaSigned >= 0 ? '+' : '-'} $amountStr ₪',
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                     color: c,
                   ),
                 ),
@@ -521,7 +521,7 @@ class _EmptyLedger extends StatelessWidget {
             textAlign: TextAlign.center,
             style: AppTextStyles.titleSmall.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 6),

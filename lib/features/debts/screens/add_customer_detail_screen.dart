@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../providers/debt_categories_provider.dart';
 import '../providers/debts_ui_provider.dart';
+import '../utils/customer_name_limits.dart';
 import '../widgets/select_categories_bottom_sheet.dart';
 
 class AddCustomerDetailScreen extends ConsumerStatefulWidget {
@@ -62,7 +63,7 @@ class _AddCustomerDetailScreenState
           'إضافة عميل',
           style: TextStyle(
             color: AppColors.primary,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
           ),
         ),
         centerTitle: true,
@@ -81,7 +82,7 @@ class _AddCustomerDetailScreenState
                     'الاسم',
                     style: TextStyle(
                       color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -90,6 +91,9 @@ class _AddCustomerDetailScreenState
                     textAlign: TextAlign.right,
                     textDirection: TextDirection.rtl,
                     textInputAction: TextInputAction.next,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(kMaxCustomerNameLength),
+                    ],
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(4),
@@ -111,7 +115,7 @@ class _AddCustomerDetailScreenState
                     'رقم الهاتف',
                     style: TextStyle(
                       color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -180,7 +184,7 @@ class _AddCustomerDetailScreenState
                     'العنوان',
                     style: TextStyle(
                       color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -240,7 +244,7 @@ class _AddCustomerDetailScreenState
                               'التصنيفات',
                               style: TextStyle(
                                 color: AppColors.primary,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                                 fontSize: 16,
                               ),
                             ),
@@ -360,7 +364,7 @@ class _AddCustomerDetailScreenState
                                     'اختيار التصنيفات',
                                     style: TextStyle(
                                       color: AppColors.primary,
-                                      fontWeight: FontWeight.w800,
+                                      fontWeight: FontWeight.w600,
                                       fontSize: 15,
                                     ),
                                   ),
@@ -430,11 +434,11 @@ class _AddCustomerDetailScreenState
                       return;
                     }
 
+                    final nameTrimmed =
+                        sanitizeCustomerName(_nameCtrl.text);
                     final newCustomer = DebtorUi(
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      name: _nameCtrl.text.trim().isEmpty
-                          ? phoneDigits
-                          : _nameCtrl.text.trim(),
+                      name: nameTrimmed.isEmpty ? phoneDigits : nameTrimmed,
                       phone: formattedPhone,
                       address: _addressCtrl.text.trim(),
                       amount: '0.0',
@@ -454,7 +458,7 @@ class _AddCustomerDetailScreenState
                     'تأكيد',
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
                   ),

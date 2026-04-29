@@ -120,7 +120,7 @@ class _NameSetupScreenState extends ConsumerState<NameSetupScreen> {
                             textAlign: TextAlign.center,
                             style: AppTextStyles.headlineSmall.copyWith(
                               color: const Color(0xFF12121F),
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 10),
