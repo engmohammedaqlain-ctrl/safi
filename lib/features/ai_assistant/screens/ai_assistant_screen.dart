@@ -209,20 +209,20 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
   Widget _bubble({required bool isUser, required String text}) {
     return Align(
-      alignment: isUser ? Alignment.centerLeft : Alignment.centerRight,
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.82,
         ),
-        margin: EdgeInsets.only(left: isUser ? 0 : 32, right: isUser ? 32 : 0),
+        margin: EdgeInsets.only(left: isUser ? 32 : 0, right: isUser ? 0 : 32),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isUser ? AppColors.primary : AppColors.backgroundSecondary,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isUser ? 0 : 16),
-            bottomRight: Radius.circular(isUser ? 16 : 0),
+            bottomLeft: Radius.circular(isUser ? 16 : 0),
+            bottomRight: Radius.circular(isUser ? 0 : 16),
           ),
           boxShadow: [
             BoxShadow(

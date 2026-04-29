@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'prefs_keys.dart';
@@ -95,7 +96,9 @@ class StartupLedgerData {
     }
     accounts = acc;
 
-    debtCategories = _decodeDebtCategories(p.getString(PrefsKeys.debtCategories));
+    debtCategories = _decodeDebtCategories(
+      p.getString(PrefsKeys.debtCategories),
+    );
   }
 
   /// تُقرأ مع [ensureLoaded] في نفس جولة [SharedPreferences] لتفادي انتظار إضافي عند فتح الجلسة.
@@ -140,30 +143,32 @@ class StartupLedgerData {
     }
   }
 
+  static String _encodeDebtors(List<DebtorUi> list) =>
+      jsonEncode([for (final d in list) _debtorToMap(d)]);
+  static String _encodeTransactions(List<TransactionUi> list) =>
+      jsonEncode([for (final t in list) _transactionToMap(t)]);
+  static String _encodeCashbook(List<CashbookEntry> list) =>
+      jsonEncode([for (final c in list) c.toJson()]);
+
   static Future<void> saveDebtors(List<DebtorUi> list) async {
+    final raw = await compute(_encodeDebtors, list);
     final p = await SharedPreferences.getInstance();
-    await p.setString(
-      PrefsKeys.debtors,
-      jsonEncode([for (final d in list) _debtorToMap(d)]),
-    );
+    await p.setString(PrefsKeys.debtors, raw);
     _notifyCloudSyncHook();
   }
 
   static Future<void> saveTransactions(List<TransactionUi> list) async {
+    final raw = await compute(_encodeTransactions, list);
     final p = await SharedPreferences.getInstance();
-    await p.setString(
-      PrefsKeys.transactions,
-      jsonEncode([for (final t in list) _transactionToMap(t)]),
-    );
+    await p.setString(PrefsKeys.transactions, raw);
     _notifyCloudSyncHook();
   }
 
   static Future<void> saveCashbook(List<CashbookEntry> list) async {
+    final raw = await compute(_encodeCashbook, list);
     final p = await SharedPreferences.getInstance();
-    await p.setString(
-      PrefsKeys.cashbook,
-      jsonEncode([for (final c in list) c.toJson()]),
-    );
+    await p.setString(PrefsKeys.cashbook, raw);
+
     _notifyCloudSyncHook();
   }
 
@@ -230,8 +235,7 @@ class StartupLedgerData {
     try {
       final list = jsonDecode(raw) as List<dynamic>;
       return [
-        for (final e in list)
-          _debtCategoryFromMap(e as Map<String, dynamic>),
+        for (final e in list) _debtCategoryFromMap(e as Map<String, dynamic>),
       ];
     } catch (_) {
       return [];
@@ -239,13 +243,13 @@ class StartupLedgerData {
   }
 
   static Map<String, dynamic> _financialAccountToMap(FinancialAccount a) => {
-        'id': a.id,
-        'name': a.name,
-        'type': a.type.name,
-        'balance': a.balance,
-        'accountNumber': a.accountNumber,
-        'accountOwner': a.accountOwner,
-      };
+    'id': a.id,
+    'name': a.name,
+    'type': a.type.name,
+    'balance': a.balance,
+    'accountNumber': a.accountNumber,
+    'accountOwner': a.accountOwner,
+  };
 
   static FinancialAccount _financialAccountFromMap(Map<String, dynamic> m) {
     return FinancialAccount(
@@ -262,10 +266,10 @@ class StartupLedgerData {
   }
 
   static Map<String, dynamic> _debtCategoryToMap(DebtCategory c) => {
-        'id': c.id,
-        'name': c.name,
-        'colorValue': c.colorValue,
-      };
+    'id': c.id,
+    'name': c.name,
+    'colorValue': c.colorValue,
+  };
 
   static DebtCategory _debtCategoryFromMap(Map<String, dynamic> m) {
     return DebtCategory(
@@ -277,18 +281,18 @@ class StartupLedgerData {
 
   // ── DebtorUi JSON ──
   static Map<String, dynamic> _debtorToMap(DebtorUi d) => {
-        'id': d.id,
-        'name': d.name,
-        'phone': d.phone,
-        'amount': d.amount,
-        'status': d.status,
-        'urgency': d.urgency.name,
-        'address': d.address,
-        'categoryIds': d.categoryIds,
-        'isSupplier': d.isSupplier,
-        'editedMs': d.editedMs,
-        'doubleLedger': d.doubleLedger,
-      };
+    'id': d.id,
+    'name': d.name,
+    'phone': d.phone,
+    'amount': d.amount,
+    'status': d.status,
+    'urgency': d.urgency.name,
+    'address': d.address,
+    'categoryIds': d.categoryIds,
+    'isSupplier': d.isSupplier,
+    'editedMs': d.editedMs,
+    'doubleLedger': d.doubleLedger,
+  };
 
   static DebtorUi _debtorFromMap(Map<String, dynamic> m) {
     return DebtorUi(
@@ -313,16 +317,16 @@ class StartupLedgerData {
 
   // ── TransactionUi JSON ──
   static Map<String, dynamic> _transactionToMap(TransactionUi t) => {
-        'id': t.id,
-        'customerId': t.customerId,
-        'amount': t.amount,
-        'type': t.type.name,
-        'note': t.note,
-        'date': t.date.toIso8601String(),
-        'payMethodId': t.payMethodId,
-        'imagePath': t.imagePath,
-        'editedMs': t.editedMs,
-      };
+    'id': t.id,
+    'customerId': t.customerId,
+    'amount': t.amount,
+    'type': t.type.name,
+    'note': t.note,
+    'date': t.date.toIso8601String(),
+    'payMethodId': t.payMethodId,
+    'imagePath': t.imagePath,
+    'editedMs': t.editedMs,
+  };
 
   static TransactionUi _transactionFromMap(Map<String, dynamic> m) {
     return TransactionUi(

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -54,13 +54,10 @@ class AiAssistantState {
 
 class AiAssistantNotifier extends Notifier<AiAssistantState> {
   static const _prefsKey = 'safi_ai_chat_history';
-  static const _apiKey = 'AIzaSyABXnXdc0M9JYI0DoPPF0h2REGLn0WbTb4';
-
-  late final GenerativeModel _model;
+  static const _apiKey = 'sk-6e98977c40bc44b58e9cc425f01d845f';
 
   @override
   AiAssistantState build() {
-    _model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: _apiKey);
     _loadHistory();
     return AiAssistantState();
   }
@@ -124,26 +121,44 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     try {
       final contextStr = _buildContext();
 
-      final chat = _model.startChat(
-        history: updatedHistory
-            .skip(
-              updatedHistory.length > 20 ? updatedHistory.length - 20 : 0,
-            ) // keep context window reasonable
-            .where((m) => m.id != userMsg.id)
-            .map(
-              (m) => Content(m.isUser ? 'user' : 'model', [TextPart(m.text)]),
-            )
-            .toList(),
+      final systemPrompt =
+          '$contextStr\n\nأجب بناءً على السياق السابق، كن مبدعاً جداً في نقاشك، تحدث بلكنة ذكية، وقدم نصائح إبداعية وغير تقليدية عند حاجة المستخدم كخبير مالي متطور وصديق.';
+
+      final recentHistory = updatedHistory
+          .skip(updatedHistory.length > 20 ? updatedHistory.length - 20 : 0)
+          .toList();
+
+      final messages = [
+        {'role': 'system', 'content': systemPrompt},
+        ...recentHistory.map(
+          (m) => {'role': m.isUser ? 'user' : 'assistant', 'content': m.text},
+        ),
+      ];
+
+      final res = await http.post(
+        Uri.parse('https://api.deepseek.com/chat/completions'),
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Authorization': 'Bearer $_apiKey',
+        },
+        body: jsonEncode({
+          'model': 'deepseek-chat',
+          'messages': messages,
+          'temperature': 0.7,
+        }),
       );
 
-      final prompt =
-          '$contextStr\n\nأجب بناءً على السياق السابق، بلغتنا العربية المبسطة وموجهة للمستخدم بلطف. سؤال المستخدم هو: ${userMsg.text}';
-
-      final response = await chat.sendMessage(Content.text(prompt));
+      String reply = 'عذراً لا أستطيع الإجابة حالياً.';
+      if (res.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes));
+        reply = data['choices'][0]['message']['content'] ?? reply;
+      } else {
+        throw Exception('DeepSeek Error: ${res.body}');
+      }
 
       final aiMsg = ChatMessage(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
-        text: response.text ?? 'عذراً لا أستطيع الإجابة حالياً.',
+        text: reply,
         isUser: false,
         timestamp: DateTime.now(),
       );
@@ -151,10 +166,11 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
       final finalHistory = [...updatedHistory, aiMsg];
       state = state.copyWith(history: finalHistory, isTyping: false);
       _saveAndSyncHistory(finalHistory);
-    } catch (e) {
+    } catch (e, st) {
+      print('AI API Error: $e\n$st');
       final errorMsg = ChatMessage(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
-        text: 'عفواً حدث خطأ في الاتصال بالمساعد الذكي.',
+        text: 'راجع مفتاح API أو الاتصال. خطأ: $e',
         isUser: false,
         timestamp: DateTime.now(),
       );
@@ -171,22 +187,30 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     double totalDebts = 0;
     double totalReceivables = 0;
 
+    final detailsBuffer = StringBuffer();
+
     for (final d in debtors) {
       final amt = double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
-      if (amt > 0)
+      if (amt > 0) {
         totalReceivables += amt;
-      else if (amt < 0)
+      } else if (amt < 0) {
         totalDebts += amt.abs();
+      }
+      detailsBuffer.writeln('- ${d.name}: ${d.amount}');
     }
 
     return '''
 ### سياق بيانات تطبيق (صافي - Safi) الخاص بالمستخدم:
 - اسم المستخدم: $userName
 - عدد العملاء/الموردين المسجلين: $debtorCount
-- المبالغ التي للمستخدم (حسابات العملاء - يطالبهم بها): $totalReceivables شيكل.
-- المبالغ التي على المستخدم (ديون للموردين): $totalDebts شيكل.
-أنت بصفتك "المساعد الذكي لتطبيق صافي"، مهمتك مساعدة المستخدم في فهم تقاريره المالية، كتابة رسائل ديون، الرد على الاستفسارات. 
-تحدث باختصار واحترافية وبلهجة عربية مفهومة (شامية/فصحى مبسطة).
+- المبالغ الإجمالية التي للمستخدم: $totalReceivables شيكل.
+- المبالغ الإجمالية التي على المستخدم الدفع: $totalDebts شيكل.
+
+**أرشيف حسابات جميع العملاء / الموردين:**
+${detailsBuffer.toString()}
+
+أنت بصفتك "المساعد الذكي لتطبيق صافي"، مهمتك مساعدة المستخدم في فهم تقاريره المالية، وتحديد أكبر مدين، وكتابة رسائل ديون، والرد على الاستفسارات. 
+تحدث باختصار واحترافية وبلهجة عربية مبسطة.
 ''';
   }
 }

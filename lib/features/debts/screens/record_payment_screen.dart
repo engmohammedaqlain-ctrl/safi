@@ -107,7 +107,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
   String _fmtNum(double v) =>
       v == v.toInt() ? v.toInt().toString() : v.toStringAsFixed(2);
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
     if (_pendingOp != null) _onKey('=');
@@ -137,6 +137,9 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     // Persist to UI Providers which sync to Local Storage & Firebase automatically
     ref.read(transactionsProvider.notifier).addTransaction(tx);
     ref.read(debtorsUiProvider.notifier).updateCustomerBalance(cid, -amount);
+
+    // إضافة تأثير تحميل بسيط حتى لو كان الحفظ الداخلي سريعاً لاعطاء استجابة بصرية للمستخدم
+    await Future.delayed(const Duration(milliseconds: 600));
 
     if (!context.mounted) return;
     Navigator.pushReplacement(

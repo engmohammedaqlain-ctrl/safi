@@ -42,7 +42,7 @@ dependencies:
   connectivity_plus: ^7.1.1
   printing: ^5.13.3
   syncfusion_flutter_pdf: ^33.2.4
-  google_generative_ai: ^0.4.7
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
