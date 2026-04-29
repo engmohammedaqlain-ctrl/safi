@@ -198,4 +198,16 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     ref.invalidate(debtCategoriesProvider);
     ref.read(navIndexProvider.notifier).goTo(1);
   }
+
+  /// مسح دفتر العمليات على هذا الجهاز فقط: عملاء، معاملات، صندوق، تصنيفات،
+  /// وإعادة الحسابات الافتراضية (كاش / بنك / محفظة) برصيد صفر — دون تسجيل خروج.
+  /// السحابة لا تُحدَّث تلقائياً.
+  Future<void> resetLocalLedgerToFactoryDefaults() async {
+    await StartupLedgerData.wipeLocalLedgerStorageAndPersist();
+    ref.invalidate(debtorsUiProvider);
+    ref.invalidate(transactionsProvider);
+    ref.invalidate(cashbookEntriesProvider);
+    ref.invalidate(accountsProvider);
+    ref.invalidate(debtCategoriesProvider);
+  }
 }

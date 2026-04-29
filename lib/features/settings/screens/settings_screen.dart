@@ -309,6 +309,17 @@ class SettingsScreen extends ConsumerWidget {
                     );
                   },
                 ),
+                if (showTeamSettings) ...[
+                  const Divider(height: 1, indent: 52),
+                  _SettingsTile(
+                    icon: LucideIcons.rotateCcw,
+                    title: 'إعادة ضبط الدفتر',
+                    subtitle:
+                        'مسح كل العملاء والديون وحركات الصندوق محلياً وحسابات بصفر (مثل أول تشغيل)',
+                    iconColor: AppColors.error,
+                    onTap: () => _confirmResetLedgerToFactory(context, ref),
+                  ),
+                ],
               ],
             ),
           ),
@@ -357,6 +368,46 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _confirmResetLedgerToFactory(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final go = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        title: const Text('إعادة ضبط الدفتر؟'),
+        content: const Text(
+          'سيتم حذف كل العملاء والمعاملات وحركات الصندوق والتصنيفات من هذا الجهاز، '
+          'وستُعاد حسابات النقد والبنك والمحفظة برصيد صفر (كأول تشغيل). لا يمكن التراجع.\n\n'
+          'البيانات على السحابة لا تُمسح تلقائياً؛ عند المزامنة قد تُستعاد سجلات قديمة إن وُجدت.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('مسح وإعادة الضبط'),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (go != true || !context.mounted) return;
+  await ref.read(appSessionProvider.notifier).resetLocalLedgerToFactoryDefaults();
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('تمت إعادة ضبط الدفتر على هذا الجهاز'),
+      backgroundColor: AppColors.success,
+    ),
+  );
 }
 
 class _SectionLabel extends StatelessWidget {
