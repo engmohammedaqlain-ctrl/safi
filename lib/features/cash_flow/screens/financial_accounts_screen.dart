@@ -481,7 +481,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     const SizedBox(height: 10),
                     _SoftField(
                       controller: _name,
-                      hint: 'مثال: بنك فلسطين / جوال بي / الدرج الرئيسي',
+                      hint: 'مثال: بنك فلسطين / جوال بي / كاش',
                     ),
                     const SizedBox(height: 18),
                     _SectionLabel('رقم الحساب أو المحفظة (اختياري)'),

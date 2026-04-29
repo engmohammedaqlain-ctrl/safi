@@ -8,6 +8,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../cash_flow/providers/accounts_provider.dart';
+import '../../../core/widgets/vault_branded_shell.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../../../core/router/app_page_route.dart';
@@ -121,58 +122,45 @@ class CustomerDetailScreen extends ConsumerWidget {
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          surfaceTintColor: Colors.transparent,
-          scrolledUnderElevation: 0,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.arrowRight, color: AppColors.primary),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          iconTheme: const IconThemeData(color: AppColors.primary),
-          centerTitle: true,
-          toolbarHeight: hasCustomerNote ? 74 : kToolbarHeight,
-          title: GestureDetector(
-            onTap: () {
-              _showCustomerInfo(context, ref, currentDebtor);
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  currentDebtor.name,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+      child: VaultInsetPageShell(
+        headerExtent: hasCustomerNote ? 74 : kToolbarHeight,
+        title: GestureDetector(
+          onTap: () {
+            _showCustomerInfo(context, ref, currentDebtor);
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                currentDebtor.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
-                if (hasCustomerNote)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      noteTrimmed,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        height: 1.25,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (hasCustomerNote)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    noteTrimmed,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.78),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.25,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
-        body: Column(
+        child: Column(
           children: [
             Expanded(
               child: ListView(
@@ -347,13 +335,13 @@ class CustomerDetailScreen extends ConsumerWidget {
                         'معاملات (${transactions.length})',
                         style: const TextStyle(
                           color: AppColors.primary,
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // ── قائمة المعاملات أو الحالة الفارغة ──
                   if (transactions.isEmpty)
@@ -370,7 +358,10 @@ class CustomerDetailScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.background,
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade200),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
@@ -657,7 +648,7 @@ class _TransactionTile extends ConsumerWidget {
       child: InkWell(
         onTap: () => _openTransactionDetailSheet(context, ref, debtor, tx),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
             border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
           ),
@@ -665,15 +656,15 @@ class _TransactionTile extends ConsumerWidget {
             textDirection: TextDirection.rtl,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: color, size: 18),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,8 +673,8 @@ class _TransactionTile extends ConsumerWidget {
                       label,
                       style: TextStyle(
                         color: color,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     if (tx.note.isNotEmpty)
@@ -707,13 +698,17 @@ class _TransactionTile extends ConsumerWidget {
                     textDirection: TextDirection.ltr,
                     style: TextStyle(
                       color: color,
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                   Text(
                     dateStr,
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),

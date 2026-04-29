@@ -99,9 +99,8 @@ class SalesScreen extends ConsumerWidget {
                   style: const TextStyle(
                     fontFamily: AppFonts.family,
                     color: AppColors.primary,
-                    fontSize: 18,
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    height: 1.25,
                   ),
                 ),
               ],
@@ -112,13 +111,10 @@ class SalesScreen extends ConsumerWidget {
               const _EmptyTransactions()
             else
               ...unifiedRows.map(
-                (row) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _UnifiedLedgerTile(
-                    row: row,
-                    hideAmount: hidden,
-                    onOpen: () => openUnifiedRow(row),
-                  ),
+                (row) => _UnifiedLedgerTile(
+                  row: row,
+                  hideAmount: hidden,
+                  onOpen: () => openUnifiedRow(row),
                 ),
               ),
           ],
@@ -486,10 +482,10 @@ class _UnifiedLedgerTile extends StatelessWidget {
             : Icon(
                 e.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
                 color: c,
-                size: 24,
+                size: 18,
               );
       }
-      return Icon(row.icon, color: c, size: 24);
+      return Icon(row.icon, color: c, size: 18);
     }
 
     return Material(
@@ -497,7 +493,7 @@ class _UnifiedLedgerTile extends StatelessWidget {
       child: InkWell(
         onTap: onOpen,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
             border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
           ),
@@ -505,16 +501,16 @@ class _UnifiedLedgerTile extends StatelessWidget {
             textDirection: TextDirection.rtl,
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: c.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Center(child: leadingIcon()),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,11 +520,10 @@ class _UnifiedLedgerTile extends StatelessWidget {
                       row.headline,
                       style: const TextStyle(
                         fontFamily: AppFonts.family,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        height: 1.25,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (row.detailLine.isNotEmpty && row.detailLine != '—')
@@ -536,10 +531,8 @@ class _UnifiedLedgerTile extends StatelessWidget {
                         row.detailLine,
                         style: TextStyle(
                           fontFamily: AppFonts.family,
-                          color: AppColors.textMuted,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          height: 1.3,
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -549,9 +542,7 @@ class _UnifiedLedgerTile extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: AppFonts.family,
                         color: Colors.grey.shade500,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        height: 1.3,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -560,10 +551,11 @@ class _UnifiedLedgerTile extends StatelessWidget {
               _ShekelAmountLine(
                 amount: amountStr,
                 valueColor: c,
-                numberStyle: const TextStyle(
+                numberStyle: TextStyle(
                   fontFamily: AppFonts.family,
-                  fontSize: 19,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                   height: 1.2,
                 ),
                 alignEnd: false,

@@ -17,14 +17,15 @@ class AccountsNotifier extends Notifier<List<FinancialAccount>> {
   }
 
   void addAccount(FinancialAccount acc) {
-    state = [...state, acc];
+    state = [...state, StartupLedgerData.normalizeFinancialAccount(acc)];
     _persist();
   }
 
   void updateAccount(FinancialAccount acc) {
+    final n = StartupLedgerData.normalizeFinancialAccount(acc);
     state = [
       for (final a in state)
-        if (a.id == acc.id) acc else a,
+        if (a.id == n.id) n else a,
     ];
     _persist();
   }

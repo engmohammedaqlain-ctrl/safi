@@ -13,6 +13,10 @@ import '../../features/sales/models/cashbook_entry.dart';
 class StartupLedgerData {
   StartupLedgerData._();
 
+  /// اسم قديم لمحفظة النقد الافتراضية — يُستبدل تلقائياً بعدم التخزين في الواجهة.
+  static const String legacyMainDrawerWalletName = 'الدرج الرئيسي';
+  static const String _defaultCashWalletDisplayName = 'كاش';
+
   static List<DebtorUi> debtors = [];
   static List<TransactionUi> transactions = [];
   static List<CashbookEntry> cashbook = [];
@@ -37,6 +41,31 @@ class StartupLedgerData {
 
   static void _notifyCloudSyncHook() {
     onLedgerPersistedForCloud?.call();
+  }
+
+  static String _normalizeWalletName(String name) {
+    if (name == legacyMainDrawerWalletName) return _defaultCashWalletDisplayName;
+    return name;
+  }
+
+  /// يمنع إدخال أو بقاء [legacyMainDrawerWalletName] في القائمة أو التخزين.
+  static FinancialAccount normalizeFinancialAccount(FinancialAccount a) {
+    final n = _normalizeWalletName(a.name);
+    if (n == a.name) return a;
+    return a.copyWith(name: n);
+  }
+
+  static List<FinancialAccount> normalizeFinancialAccounts(
+    List<FinancialAccount> list,
+  ) =>
+      [for (final a in list) normalizeFinancialAccount(a)];
+
+  /// بعد دمج سحابي/محلي: إزالة الاسم القديم من JSON المحفوظ.
+  static String migrateLegacyAccountNamesInAccountsJson(String raw) {
+    final list = _decodeAccounts(raw);
+    return jsonEncode([
+      for (final a in normalizeFinancialAccounts(list)) _financialAccountToMap(a),
+    ]);
   }
 
   /// إعادة قراءة [SharedPreferences] إلى الذاكرة الثابتة (بعد سحب سحابي مثلاً).
@@ -93,6 +122,13 @@ class StartupLedgerData {
       _notifyCloudSyncHook();
     } else {
       acc = _decodeAccounts(accountsRaw);
+      if (accountsRaw.contains(legacyMainDrawerWalletName)) {
+        await p.setString(
+          PrefsKeys.accounts,
+          jsonEncode([for (final a in acc) _financialAccountToMap(a)]),
+        );
+        _notifyCloudSyncHook();
+      }
     }
     accounts = acc;
 
@@ -173,7 +209,7 @@ class StartupLedgerData {
   }
 
   static Future<void> saveAccounts(List<FinancialAccount> list) async {
-    accounts = List<FinancialAccount>.from(list);
+    accounts = normalizeFinancialAccounts(list);
     final p = await SharedPreferences.getInstance();
     await p.setString(
       PrefsKeys.accounts,
@@ -196,7 +232,7 @@ class StartupLedgerData {
   static const List<FinancialAccount> _seedFinancialAccounts = [
     FinancialAccount(
       id: '1',
-      name: 'الدرج الرئيسي',
+      name: 'كاش',
       type: AccountType.cash,
       balance: 1200,
     ),
@@ -254,7 +290,7 @@ class StartupLedgerData {
   static FinancialAccount _financialAccountFromMap(Map<String, dynamic> m) {
     return FinancialAccount(
       id: m['id'] as String,
-      name: m['name'] as String,
+      name: _normalizeWalletName(m['name'] as String),
       type: AccountType.values.firstWhere(
         (t) => t.name == (m['type'] as String? ?? 'cash'),
         orElse: () => AccountType.cash,

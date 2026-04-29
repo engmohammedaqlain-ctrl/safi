@@ -290,7 +290,7 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                                   filter: _filter,
                                 ),
                     )
-                  : ListView.separated(
+                  : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(
                         AppSpacing.lg,
                         0,
@@ -298,8 +298,6 @@ class _CashFlowScreenState extends ConsumerState<CashFlowScreen> {
                         112,
                       ),
                       itemCount: rows.length,
-                      separatorBuilder:
-                          (context, index) => const SizedBox(height: 10),
                       itemBuilder: (context, i) {
                         final row = rows[i];
                         return _ArchiveLedgerTile(
@@ -394,47 +392,37 @@ class _ArchiveLedgerTile extends StatelessWidget {
       if (row.isCashbook && row.cashbookEntry != null) {
         final e = row.cashbookEntry!;
         return (!kIsWeb && e.imagePath != null && e.imagePath!.isNotEmpty)
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(File(e.imagePath!), fit: BoxFit.cover),
-              )
+            ? Image.file(File(e.imagePath!), fit: BoxFit.cover)
             : Icon(
                 e.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
                 color: c,
-                size: 21,
+                size: 18,
               );
       }
-      return Icon(row.icon, color: c, size: 21);
+      return Icon(row.icon, color: c, size: 18);
     }
 
     return Material(
       color: Colors.white,
-      elevation: 0,
-      borderRadius: AppRadius.rlg,
-      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: AppRadius.rlg,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
-            borderRadius: AppRadius.rlg,
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
           ),
           child: Row(
             textDirection: TextDirection.rtl,
             children: [
-              SizedBox(
-                width: 44,
-                height: 44,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: c.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Center(child: leadingIcon()),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                clipBehavior: Clip.antiAlias,
+                child: Center(child: leadingIcon()),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -445,19 +433,20 @@ class _ArchiveLedgerTile extends StatelessWidget {
                     Text(
                       row.headline,
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontFamily: AppFonts.family,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (row.detailLine.isNotEmpty && row.detailLine != '—')
                       Text(
                         row.detailLine,
                         style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontFamily: AppFonts.family,
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -465,6 +454,7 @@ class _ArchiveLedgerTile extends StatelessWidget {
                     Text(
                       _formatArchiveDate(row.sortTime),
                       style: TextStyle(
+                        fontFamily: AppFonts.family,
                         color: Colors.grey.shade500,
                         fontSize: 12,
                       ),
@@ -477,9 +467,12 @@ class _ArchiveLedgerTile extends StatelessWidget {
                 child: Text(
                   '${row.deltaSigned >= 0 ? '+' : '-'} $amountStr ₪',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontFamily: AppFonts.family,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: c,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    height: 1.2,
                   ),
                 ),
               ),

@@ -22,7 +22,7 @@ class SafiApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'صافي',
+      title: 'كاش',
       debugShowCheckedModeBanner: false,
       navigatorKey: NotificationService().navigatorKey,
       theme: AppTheme.light,

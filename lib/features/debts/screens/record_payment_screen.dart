@@ -18,6 +18,8 @@ import '../../../core/theme/app_text_styles.dart';
 
 import '../../../core/utils/app_snackbar.dart';
 
+import '../../../core/widgets/vault_branded_shell.dart';
+
 import '../../cash_flow/data/financial_account_model.dart';
 
 import '../../cash_flow/providers/accounts_provider.dart';
@@ -250,42 +252,19 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
         ? AppColors.flowOut
         : AppColors.flowIn;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-
-        elevation: 0,
-
-        surfaceTintColor: Colors.transparent,
-
-        scrolledUnderElevation: 0,
-
-        centerTitle: true,
-
-        leading: IconButton(
-          icon: const Icon(LucideIcons.arrowRight, color: AppColors.primary),
-
-          onPressed: () => Navigator.pop(context),
-        ),
-
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: VaultInsetPageShell(
         title: Text(
           c?.name ?? '',
-
           style: TextStyle(
             fontFamily: AppFonts.family,
-
-            color: AppColors.primary,
-
+            color: Colors.white,
             fontWeight: FontWeight.w600,
-
             fontSize: 17,
           ),
         ),
-      ),
-
-      body: Column(
+        child: Column(
         children: [
           Expanded(
             child: CustomScrollView(
@@ -655,6 +634,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
             CalculatorKeypad(onKeyTap: _onKey),
         ],
       ),
+    ),
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/app_colors.dart';
@@ -90,13 +91,160 @@ class _VaultGridDotsPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+/// نفس شريط [MainShell] الداكن مع [VaultBackgroundDecor] + لوحة المحتوى (أبيض مثل التبويبات).
+class VaultInsetPageShell extends StatelessWidget {
+  const VaultInsetPageShell({
+    super.key,
+    required this.title,
+    required this.child,
+    this.onBack,
+    this.trailing = const <Widget>[],
+    this.headerExtent,
+    this.resizeToAvoidBottomInset = true,
+  });
+
+  final Widget title;
+  final Widget child;
+  final VoidCallback? onBack;
+  final List<Widget> trailing;
+  final double? headerExtent;
+  final bool resizeToAvoidBottomInset;
+
+  @override
+  Widget build(BuildContext context) {
+    final h = headerExtent ?? kToolbarHeight;
+    final back = _VaultInsetBackChip(
+      onTap: onBack ?? () => Navigator.maybePop(context),
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF1A0A24),
+        resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const VaultBackgroundDecor(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.sm,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      AppSpacing.md,
+                    ),
+                    child: SizedBox(
+                      height: h,
+                      child: Row(
+                        textDirection: TextDirection.rtl,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          back,
+                          Expanded(
+                            child: Center(
+                              child: title,
+                            ),
+                          ),
+                          if (trailing.isEmpty)
+                            const SizedBox(width: 44, height: 44)
+                          else
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              textDirection: TextDirection.rtl,
+                              children: trailing,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(32),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.18),
+                          blurRadius: 30,
+                          offset: const Offset(0, -6),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(32),
+                      ),
+                      child: SafeArea(
+                        top: false,
+                        bottom: true,
+                        child: Material(
+                          color: AppColors.background,
+                          child: child,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VaultInsetBackChip extends StatelessWidget {
+  const _VaultInsetBackChip({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.18),
+            ),
+          ),
+          child: const Icon(
+            LucideIcons.arrowRight,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// هيكل علوي داكن + لوحة سفلية فاتحة كما في الأونبوردنغ.
 class VaultBrandedShell extends StatelessWidget {
   const VaultBrandedShell({
     super.key,
     this.belowBrand,
     required this.sheet,
-    this.headerSubtitle = 'ديونك وصندوقك معاً',
+    this.headerSubtitle = 'كاش: ديونك وكل محافظك معاً',
   });
 
   /// يُعرض تحت صف العلامة (مثلاً نقاط الشرائح).
@@ -181,11 +329,11 @@ class VaultBrandedShell extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(top: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F4F8),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(32),
-                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(32),
+                      ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.18),

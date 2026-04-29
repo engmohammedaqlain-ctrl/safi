@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_snackbar.dart';
+import '../../../core/widgets/vault_branded_shell.dart';
 import '../providers/debt_categories_provider.dart';
 import '../providers/debts_ui_provider.dart';
 import '../utils/customer_name_limits.dart';
@@ -56,22 +57,17 @@ class _AddCustomerDetailScreenState
   Widget build(BuildContext context) {
     final allCategories = ref.watch(debtCategoriesProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: VaultInsetPageShell(
         title: const Text(
           'إضافة عميل',
           style: TextStyle(
-            color: AppColors.primary,
+            color: Colors.white,
             fontWeight: FontWeight.w600,
+            fontSize: 17,
           ),
         ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
-      body: SafeArea(
         child: Column(
           children: [
             Expanded(

@@ -280,9 +280,10 @@ class LedgerFirestoreSync {
     ]);
     final prefs = await SharedPreferences.getInstance();
     final local = prefs.getString(PrefsKeys.accounts) ?? '[]';
+    final merged = LedgerJsonMerge.mergeAccounts(remote, local);
     await prefs.setString(
       PrefsKeys.accounts,
-      LedgerJsonMerge.mergeAccounts(remote, local),
+      StartupLedgerData.migrateLegacyAccountNamesInAccountsJson(merged),
     );
     await _bumpTrackedMs(prefs);
   }

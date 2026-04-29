@@ -121,27 +121,28 @@ class _MainShellState extends ConsumerState<MainShell> {
                     textDirection: TextDirection.rtl,
                     children: [
                       Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          textDirection: TextDirection.rtl,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.18),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              textDirection: TextDirection.rtl,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.18),
+                                    ),
+                                  ),
+                                  child: const SafiBrandMark(size: 26),
                                 ),
-                              ),
-                              child: const SafiBrandMark(size: 26),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Consumer(
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Consumer(
                                     builder: (context, ref, _) {
                                       final asyncName =
                                           ref.watch(userNameProvider);
@@ -149,6 +150,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                                         asyncName.value ?? '',
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.right,
                                         style: AppTextStyles.headlineSmall
                                             .copyWith(
                                           color: Colors.white,
@@ -158,19 +160,20 @@ class _MainShellState extends ConsumerState<MainShell> {
                                       );
                                     },
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'ديونك وصندوقك معاً',
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.78),
-                                      height: 1.25,
-                                    ),
-                                  ),
-                                ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'صافي: ديونك وكل محافظك معاً',
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color:
+                                    Colors.white.withValues(alpha: 0.78),
+                                height: 1.25,
                               ),
                             ),
                           ],
@@ -254,7 +257,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                   width: double.infinity,
                   margin: const EdgeInsets.only(top: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF2F4F8),
+                    color: AppColors.background,
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(32),
                     ),
@@ -275,7 +278,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                       children: [
                         Expanded(
                           child: Material(
-                            color: const Color(0xFFF2F4F8),
+                            color: AppColors.background,
                             child: SafeArea(
                               top: false,
                               bottom: false,
@@ -449,7 +452,7 @@ class _SafiCompactBottomNav extends StatelessWidget {
             textDirection: TextDirection.rtl,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              item(0, LucideIcons.bookOpen, 'دفتر الديون'),
+              item(0, LucideIcons.bookMarked, 'دفتر الديون'),
               item(1, LucideIcons.wallet, 'الصافي'),
               item(2, LucideIcons.layoutGrid, 'المزيد'),
             ],
