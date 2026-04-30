@@ -73,7 +73,8 @@ final activeAccountsProvider = Provider<List<FinancialAccount>>((ref) {
 /// مجموع الرصيد الفعلي لكل المحافظ النشطة — يطابق «ملخص الأرصدة» في شاشة المحافظ.
 final walletsEffectiveTotalProvider = Provider<double>((ref) {
   final accounts = ref.watch(activeAccountsProvider);
-  final entries = ref.watch(activeCashbookEntriesProvider);
+  // نفس مصدر حركات الصندوق المستخدم في تفاصيل المحفظة (يشمل المنطق الكامل للرصيد المبدئي + الحركات).
+  final entries = ref.watch(cashbookEntriesProvider);
   final txs = ref.watch(transactionsProvider);
   final includeDebts = ref.watch(includeDebtsInWalletBalanceProvider);
   var s = 0.0;

@@ -26,7 +26,7 @@ class FinancialAccountsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accounts = ref.watch(activeAccountsProvider);
-    final entries = ref.watch(activeCashbookEntriesProvider);
+    final entries = ref.watch(cashbookEntriesProvider);
     final txs = ref.watch(transactionsProvider);
     final hidden = ref.watch(hideBalanceProvider);
     final includeDebts = ref.watch(includeDebtsInWalletBalanceProvider);
@@ -927,16 +927,42 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     const SizedBox(height: 10),
                     _SoftField(controller: _owner),
                     const SizedBox(height: 18),
-                    _SectionLabel('الرصيد الحالي'),
-                    const SizedBox(height: 10),
-                    _SoftField(
-                      controller: _balance,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
+                    if (!isEdit) ...[
+                      _SectionLabel('الرصيد الحالي (ابتدائي للمحفظة)'),
+                      const SizedBox(height: 10),
+                      _SoftField(
+                        controller: _balance,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        suffix: '₪',
+                        ltr: true,
                       ),
-                      suffix: '₪',
-                      ltr: true,
-                    ),
+                    ] else ...[
+                      _SectionLabel('الرصيد الابتدائي'),
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Text(
+                          'ثابت عند الإنشاء: ${widget.existingAccount!.balance == widget.existingAccount!.balance.roundToDouble() ? widget.existingAccount!.balance.toStringAsFixed(0) : widget.existingAccount!.balance.toStringAsFixed(2)} ₪\n'
+                          'يتغيّر الرصيد الفعلي عبر حركات الصندوق والديون المرتبطة بهذه المحفظة.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: Colors.grey.shade800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -982,9 +1008,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       );
       return;
     }
-    final balance = double.tryParse(_balance.text.trim()) ??
-        widget.existingAccount?.balance ??
-        0;
+    final balance = widget.existingAccount != null
+        ? widget.existingAccount!.balance
+        : (double.tryParse(_balance.text.trim()) ?? 0);
 
     final acc = FinancialAccount(
       id: widget.existingAccount?.id ??

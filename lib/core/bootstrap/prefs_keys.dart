@@ -36,4 +36,7 @@ abstract final class PrefsKeys {
   /// صلاحيات المستخدم الحالي (المالك أو عضو فريق)
   static const userRole = 'safi_user_role'; // 'owner', 'cashier', 'viewer'
   static const userPermissions = 'safi_user_permissions'; // List<String>
+
+  /// محادثة المساعد الذكي (محلياً + تُرفع إلى `users/{uid}/ai_history`)
+  static const aiChatHistory = 'safi_ai_chat_history';
 }

@@ -375,6 +375,100 @@ class LedgerFirestoreSync {
     _connectedUid = null;
   }
 
+  /// يحذف كل وثائق الدفتر والفريق ومساعد الدردشة تحت `users/{ownerUid}`،
+  /// ودعوات الفريق على `team_invites`، ويزيل اسم المتجر من `registered_phones` إن وُجد.
+  /// يُعيد `true` عند اكتمال العملية، أو `false` عند خطأ شبكة/صلاحيات.
+  Future<bool> wipeOwnerLedgerCloudAndRelated({
+    required String ownerUid,
+    String? registeredPhoneDocId,
+  }) async {
+    final ud = _userDocRef(ownerUid);
+
+    Future<void> wipeSub(String name) async {
+      final col = ud.collection(name);
+      while (true) {
+        final snap = await col.limit(400).get();
+        if (snap.docs.isEmpty) break;
+        var batch = _firestore.batch();
+        var n = 0;
+        for (final d in snap.docs) {
+          batch.delete(d.reference);
+          n++;
+          if (n >= 400) {
+            await batch.commit();
+            batch = _firestore.batch();
+            n = 0;
+          }
+        }
+        if (n > 0) await batch.commit();
+      }
+    }
+
+    try {
+      await Future.wait([
+        wipeSub('debtors'),
+        wipeSub('transactions'),
+        wipeSub('cashbook'),
+        wipeSub('accounts'),
+        wipeSub('debt_categories'),
+        wipeSub('team'),
+        wipeSub('ledger_access'),
+        wipeSub('ai_history'),
+      ]);
+
+      try {
+        await ud.collection('safi').doc('ledger_state').delete();
+      } catch (_) {}
+
+      final invites = await _firestore
+          .collection('team_invites')
+          .where('ownerUid', isEqualTo: ownerUid)
+          .get();
+      if (invites.docs.isNotEmpty) {
+        var batch = _firestore.batch();
+        var n = 0;
+        for (final d in invites.docs) {
+          batch.delete(d.reference);
+          n++;
+          if (n >= 400) {
+            await batch.commit();
+            batch = _firestore.batch();
+            n = 0;
+          }
+        }
+        if (n > 0) await batch.commit();
+      }
+
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      await ud.set(
+        {
+          'ledgerSchemaV': 2,
+          'ledgerUpdatedMs': nowMs,
+          'storeDisplayHint': FieldValue.delete(),
+          'registeredPhoneHint': FieldValue.delete(),
+          'ledgerMigratedAt': FieldValue.delete(),
+          'firebaseDisplayHint': FieldValue.delete(),
+        },
+        SetOptions(merge: true),
+      );
+
+      if (registeredPhoneDocId != null && registeredPhoneDocId.isNotEmpty) {
+        await _firestore.collection('registered_phones').doc(registeredPhoneDocId).set(
+              {'displayName': FieldValue.delete()},
+              SetOptions(merge: true),
+            );
+      }
+
+      return true;
+    } on FirebaseException catch (e, st) {
+      debugPrint('wipeOwnerLedgerCloudAndRelated: $e\n$st');
+      return false;
+    } catch (e, st) {
+      debugPrint('wipeOwnerLedgerCloudAndRelated: $e\n$st');
+      return false;
+    }
+  }
+
   /// يُعيد [true] عند اكتمال الرفع وتحديث الطابع المحلي، أو [false] عند الفشل.
   Future<bool> pushNow(String uid) async {
     final ud = _userDocRef(uid);

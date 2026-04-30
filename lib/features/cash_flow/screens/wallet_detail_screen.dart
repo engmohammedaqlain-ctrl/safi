@@ -27,7 +27,6 @@ import 'financial_accounts_screen.dart' show AccountFormScreen;
 
 /// تفاصيل محفظة واحدة:
 /// - بطاقة الرصيد مع ملخص الدخل والمصروف وعدد الحركات، ومعلومات الحساب
-/// - إجراءات الهيدر: تقرير المحفظة (قريباً) وتعديل الحساب
 /// - قائمة الحركات (مفلترة بـ accountId)
 class WalletDetailScreen extends ConsumerWidget {
   const WalletDetailScreen({super.key, required this.accountId});
@@ -174,8 +173,15 @@ class WalletDetailScreen extends ConsumerWidget {
         ),
         trailing: [
           IconButton(
-            tooltip: 'تعديل',
-            onPressed: () => _editWallet(context, ref, acc),
+            tooltip: 'تعديل الاسم والبيانات',
+            onPressed: () {
+              Navigator.push<void>(
+                context,
+                AppPageRoute<void>(
+                  builder: (_) => AccountFormScreen(existingAccount: acc),
+                ),
+              );
+            },
             icon: Icon(
               LucideIcons.edit,
               color: Colors.white.withValues(alpha: 0.95),
@@ -273,15 +279,6 @@ class WalletDetailScreen extends ConsumerWidget {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _editWallet(BuildContext context, WidgetRef ref, FinancialAccount acc) {
-    Navigator.push<void>(
-      context,
-      AppPageRoute<void>(
-        builder: (_) => AccountFormScreen(existingAccount: acc),
       ),
     );
   }

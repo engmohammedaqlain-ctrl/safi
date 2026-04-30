@@ -9,7 +9,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../debts/providers/debts_ui_provider.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
-import '../../sales/models/cashbook_entry.dart';
+import '../../cash_flow/data/financial_account_model.dart';
+import '../../cash_flow/providers/accounts_provider.dart';
+import '../../cash_flow/providers/include_debts_in_wallet_balance_provider.dart';
+import '../../cash_flow/utils/wallet_balance_math.dart';
 import '../../../core/bootstrap/prefs_keys.dart';
 import '../../../core/bootstrap/startup_ledger_data.dart';
 
@@ -58,8 +61,6 @@ class AiAssistantState {
 }
 
 class AiAssistantNotifier extends Notifier<AiAssistantState> {
-  static const _prefsKey = 'safi_ai_chat_history';
-
   /// مفتاح DeepSeek API (مضمّن في التطبيق — لا يُقرأ من .env).
   static const String _deepseekApiKey =
       'sk-6e98977c40bc44b58e9cc425f01d845f';
@@ -73,7 +74,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
   Future<void> _loadHistory() async {
     try {
       final p = await SharedPreferences.getInstance();
-      final raw = p.getString(_prefsKey);
+      final raw = p.getString(PrefsKeys.aiChatHistory);
       if (raw != null) {
         final list = jsonDecode(raw) as List<dynamic>;
         final history = list
@@ -88,7 +89,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     try {
       final p = await SharedPreferences.getInstance();
       await p.setString(
-        _prefsKey,
+        PrefsKeys.aiChatHistory,
         jsonEncode(history.map((e) => e.toMap()).toList()),
       );
 
@@ -157,11 +158,6 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final role = prefs.getString(PrefsKeys.userRole) ?? 'owner';
-    final perms = prefs.getStringList(PrefsKeys.userPermissions) ?? [];
-    final isOwner = role == 'owner';
-
     final userMsg = ChatMessage(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       text: text.trim(),
@@ -179,8 +175,13 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
 $contextStr
 
 أنت خبير مالي معتمد تتحدث بالعربية الفصحى الموجزة بأسلوب رسمي ومهني دائماً، مع فهم عملي للتجارة والتزامات الديون كما يمارَس في فلسطين.
+وضعك «محادثة وتحليل فقط»: لا تستطيع تنفيذ أي إجراء داخل التطبيق (لا إضافة ولا تعديل ولا حذف). إن طُلب منك ذلك فاشرح بلطف أن الدور يقتصر على الإرشاد وفق البيانات أعلاه، ووجّه المستخدم لإدخال البيانات من شاشات التطبيق.
+لا تخلط بين «اسم صاحب المتجر» أعلاه وبين أسماء العملاء/الموردين؛ الصفوف في قسم «تفصيل كل عميل ومورد» هي وحدها سجلات الدفتر.
+انسخ أسماء العملاء والموردين **حرفياً** كما في السياق؛ إن وُجد نص «بدون اسم» أو معرّف فأظهره كما هو ولا تستبدله بعناوين عامة مثل «عميل 1».
+قسم «المحافظ المالية» يضم الأرصدة الابتدائية والرصيد الفعلي لكل محفظة — استخدمه للإجابة عن الصندوق والصافي.
+عند الطلب استند بالكامل إلى التفاصيل المذكورة في السياق (أسماء، أرصدة، معاملات، صندوق، محافظ) ولا تكتفي بملخص رقمي عام إن كان المستخدم يطلب التفصيل.
 قدّم إجابة واضحة ومنظّمة (فقرات قصيرة أو نقاط مرقّمة عند الحاجة). تجنّب العامية والتهريج والعبارات الترويجية أو الخفيفة.
-لا تخترع أرقاماً أو أسماء عملاء غير واردة في السياق أعلاه. إن كان المستخدم كاشيراً أو مشاهدًا فقط، التزم بنطاق الصلاحيات الظاهر من بيانات الدفتر.
+لا تخترع أرقاماً أو أسماء غير واردة في السياق أعلاه.
 إلزامي: لا تستخدم أي إيموجي أو رموزاً تعبيرية (Emoji أو رموز يونيكود الزخرفية) ولا رموزاً بديلة مثل ":)" أو "؛)"؛ اكتفِ بالحروف العربية وعلامات الترقيم المعتادة.
 ''';
 
@@ -195,132 +196,7 @@ $contextStr
         ),
       ];
 
-      final tools = [
-        {
-          "type": "function",
-          "function": {
-            "name": "add_customer",
-            "description": "إضافة عميل أو مورد جديد إلى دفتر الديون.",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "description": "اسم العميل أو المورد"
-                },
-                "phone": {
-                  "type": "string",
-                  "description": "رقم الهاتف"
-                },
-                "amount": {
-                  "type": "number",
-                  "description": "الرصيد الابتدائي (موجب إذا كان العميل مديناً لك، سالب إذا كنت مديناً له)"
-                },
-                "isSupplier": {
-                  "type": "boolean",
-                  "description": "هل هذا مورد؟ (true للمورد، false للعميل)"
-                }
-              },
-              "required": ["name", "amount", "isSupplier"]
-            }
-          }
-        },
-        {
-          "type": "function",
-          "function": {
-            "name": "add_cashbook_entry",
-            "description": "إضافة حركة مالية جديدة إلى الصندوق (محفظة الكاش).",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "title": {
-                  "type": "string",
-                  "description": "وصف الحركة المالية (مثال: مبيعات، راتب، إيجار)"
-                },
-                "amount": {
-                  "type": "number",
-                  "description": "قيمة الحركة المالية"
-                },
-                "isIncome": {
-                  "type": "boolean",
-                  "description": "هل هذه الحركة دخل (true) أم مصروف (false)؟"
-                }
-              },
-              "required": ["title", "amount", "isIncome"]
-            }
-          }
-        },
-        {
-          "type": "function",
-          "function": {
-            "name": "delete_customer",
-            "description": "حذف عميل أو مورد من دفتر الديون باستخدام اسمه.",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "description": "اسم العميل أو المورد المراد حذفه"
-                }
-              },
-              "required": ["name"]
-            }
-          }
-        },
-        {
-          "type": "function",
-          "function": {
-            "name": "record_transaction",
-            "description": "تسجيل سداد أو دين جديد لعميل أو مورد موجود مسبقاً.",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "customerName": {
-                  "type": "string",
-                  "description": "اسم العميل أو المورد"
-                },
-                "amount": {
-                  "type": "number",
-                  "description": "قيمة السداد أو الدين"
-                },
-                "type": {
-                  "type": "string",
-                  "enum": ["gave", "received"],
-                  "description": "نوع المعاملة: gave (دين جديد على حساب العميل/المورد)، received (سداد من العميل/المورد)"
-                },
-                "note": {
-                  "type": "string",
-                  "description": "ملاحظة أو وصف للمعاملة"
-                }
-              },
-              "required": ["customerName", "amount", "type"]
-            }
-          }
-        },
-        {
-          "type": "function",
-          "function": {
-            "name": "update_due_date",
-            "description": "تحديد أو تحديث موعد سداد الدين لعميل أو مورد.",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "customerName": {
-                  "type": "string",
-                  "description": "اسم العميل أو المورد"
-                },
-                "daysFromNow": {
-                  "type": "number",
-                  "description": "عدد الأيام من اليوم حتى موعد السداد (مثال: 7 يعني بعد أسبوع)"
-                }
-              },
-              "required": ["customerName", "daysFromNow"]
-            }
-          }
-        }
-      ];
-
-      var res = await http.post(
+      final res = await http.post(
         Uri.parse('https://api.deepseek.com/chat/completions'),
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
@@ -329,7 +205,6 @@ $contextStr
         body: jsonEncode({
           'model': 'deepseek-chat',
           'messages': messages,
-          'tools': tools,
           'temperature': 0.45,
         }),
       );
@@ -338,126 +213,8 @@ $contextStr
       if (res.statusCode == 200) {
         final data = jsonDecode(utf8.decode(res.bodyBytes));
         final message = data['choices'][0]['message'];
-        
-        if (message['tool_calls'] != null) {
-          // Handle tool calls
-          final toolCalls = message['tool_calls'] as List<dynamic>;
-          for (final toolCall in toolCalls) {
-            final functionName = toolCall['function']['name'];
-            final args = jsonDecode(toolCall['function']['arguments'] as String);
-            
-            if (functionName == 'add_customer') {
-              if (!isOwner && !perms.contains('add_debt')) {
-                reply = 'ليس لديك صلاحية إضافة عملاء.';
-                continue;
-              }
-              final name = args['name'] as String;
-              final phone = args['phone'] as String? ?? '';
-              final amount = (args['amount'] as num).toDouble();
-              final isSupplier = args['isSupplier'] as bool;
-              
-              ref.read(debtorsUiProvider.notifier).addCustomer(
-                DebtorUi(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  editedMs: DateTime.now().millisecondsSinceEpoch,
-                  name: name,
-                  phone: phone,
-                  amount: amount.toStringAsFixed(1),
-                  status: 'تمت الإضافة بواسطة المساعد',
-                  urgency: DebtUrgency.low,
-                  isSupplier: isSupplier,
-                ),
-              );
-              reply = 'تم إضافة ${isSupplier ? 'المورد' : 'العميل'} "$name" بنجاح برصيد $amount شيكل.';
-            } else if (functionName == 'add_cashbook_entry') {
-              if (!isOwner && !perms.contains('record_payment')) {
-                reply = 'ليس لديك صلاحية إضافة حركات مالية.';
-                continue;
-              }
-              final title = args['title'] as String;
-              final amount = (args['amount'] as num).toDouble();
-              final isIncome = args['isIncome'] as bool;
-              
-              ref.read(cashbookEntriesProvider.notifier).add(
-                CashbookEntry(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  title: title,
-                  amount: amount,
-                  isIncome: isIncome,
-                  date: DateTime.now(),
-                ),
-              );
-              reply = 'تم إضافة الحركة "$title" بقيمة $amount شيكل كـ ${isIncome ? 'دخل' : 'مصروف'} في الصندوق بنجاح.';
-            } else if (functionName == 'delete_customer') {
-              if (!isOwner && !perms.contains('delete_records')) {
-                reply = 'ليس لديك صلاحية الحذف.';
-                continue;
-              }
-              final name = args['name'] as String;
-              final debtors = ref.read(debtorsUiProvider);
-              final matches = debtors.where((d) => d.name.toLowerCase() == name.toLowerCase()).toList();
-              if (matches.isNotEmpty) {
-                reply = 'وجدت العميل "$name"، لكن للحفاظ على أمان بياناتك، يرجى حذفه يدوياً من صفحة تفاصيل العميل.';
-              } else {
-                reply = 'لم أتمكن من العثور على عميل باسم "$name".';
-              }
-            } else if (functionName == 'record_transaction') {
-              if (!isOwner && !perms.contains('record_payment')) {
-                reply = 'ليس لديك صلاحية تسجيل معاملات.';
-                continue;
-              }
-              final customerName = args['customerName'] as String;
-              final amount = (args['amount'] as num).toDouble();
-              final typeStr = args['type'] as String;
-              final note = args['note'] as String? ?? '';
-              
-              final debtors = ref.read(debtorsUiProvider);
-              final matches = debtors.where((d) => d.name.toLowerCase().contains(customerName.toLowerCase())).toList();
-              
-              if (matches.isNotEmpty) {
-                final customer = matches.first;
-                final isGave = typeStr == 'gave';
-                final delta = isGave ? amount : -amount;
-                
-                ref.read(transactionsProvider.notifier).addTransaction(
-                  TransactionUi(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    customerId: customer.id,
-                    amount: amount,
-                    type: isGave ? TransactionType.gave : TransactionType.received,
-                    note: note,
-                    date: DateTime.now(),
-                  ),
-                );
-                
-                ref.read(debtorsUiProvider.notifier).updateCustomerBalance(customer.id, delta);
-                
-                reply = 'تم تسجيل المعاملة بنجاح: ${isGave ? 'دين جديد' : 'سداد'} $amount شيكل ${isGave ? 'لـ' : 'من'} "${customer.name}".';
-              } else {
-                reply = 'لم أتمكن من العثور على عميل باسم "$customerName".';
-              }
-            } else if (functionName == 'update_due_date') {
-              final customerName = args['customerName'] as String;
-              final daysFromNow = (args['daysFromNow'] as num).toInt();
-              
-              final debtors = ref.read(debtorsUiProvider);
-              final matches = debtors.where((d) => d.name.toLowerCase().contains(customerName.toLowerCase())).toList();
-              
-              if (matches.isNotEmpty) {
-                final customer = matches.first;
-                final dueDate = DateTime.now().add(Duration(days: daysFromNow));
-                
-                ref.read(debtorsUiProvider.notifier).updateCustomerDueDate(customer.id, dueDate);
-                
-                reply = 'تم تحديث موعد السداد للعميل "${customer.name}" ليكون بعد $daysFromNow أيام (${dueDate.year}/${dueDate.month}/${dueDate.day}).';
-              } else {
-                reply = 'لم أتمكن من العثور على عميل باسم "$customerName".';
-              }
-            }
-          }
-        } else {
-          reply = message['content'] ?? reply;
-        }
+        final raw = message['content'];
+        reply = (raw is String ? raw : raw?.toString()) ?? reply;
       } else {
         throw Exception('DeepSeek Error: ${res.body}');
       }
@@ -508,29 +265,146 @@ $contextStr
     return false;
   }
 
+  String _ymd(DateTime d) => '${d.year}/${d.month}/${d.day}';
+
   String _buildContext() {
-    final userName = StartupLedgerData.bootstrapUserName ?? 'صاحب المتجر';
-    final debtors = ref.read(debtorsUiProvider);
+    final userName =
+        (StartupLedgerData.bootstrapUserName ?? '').trim().isEmpty
+            ? '(غير محدد في الإعدادات)'
+            : StartupLedgerData.bootstrapUserName!.trim();
+
+    final debtors = ref.read(debtorsUiProvider).where((d) => !d.isDeleted).toList();
+
+    String debtorLabel(DebtorUi d) {
+      final n = d.name.trim();
+      if (n.isEmpty) return 'بدون اسم (معرّف ${d.id})';
+      return n;
+    }
+
+    final idToName = {for (final d in debtors) d.id: debtorLabel(d)};
+
+    final txs = ref
+        .read(transactionsProvider)
+        .where((t) => !t.isDeleted)
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    final cash = List.of(ref.read(activeCashbookEntriesProvider))
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    final cbSum = ref.read(cashbookSummaryProvider);
+
+    final accounts = ref.read(activeAccountsProvider);
+    final allEntries = ref.read(cashbookEntriesProvider);
+    final allTx = ref.read(transactionsProvider);
+    final includeDebts = ref.read(includeDebtsInWalletBalanceProvider);
+
+    final accLines = StringBuffer();
+    if (accounts.isEmpty) {
+      accLines.writeln('(لا توجد محافظ نشطة.)');
+    } else {
+      for (final a in accounts) {
+        if (a.isDeleted) continue;
+        final eff = effectiveWalletBalance(
+          acc: a,
+          entries: allEntries,
+          txs: allTx,
+          accounts: accounts,
+          includeDebtEffect: includeDebts,
+        );
+        accLines.writeln(
+          '- ${a.name} (${a.type.label}) | معرّف ${a.id} | رصيد ابتدائي مخزَّن: ${a.balance} شيكل | رصيد فعّال في التطبيق (مع الحركات): $eff شيكل',
+        );
+      }
+    }
+
+    final totalWalletsEffective = ref.read(walletsEffectiveTotalProvider);
 
     int debtorCount = debtors.length;
-    double totalDebts = 0;
+    double totalLiabilities = 0;
     double totalReceivables = 0;
 
+    final debtorLines = StringBuffer();
     for (final d in debtors) {
       final amt = double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
       if (amt > 0) {
         totalReceivables += amt;
       } else if (amt < 0) {
-        totalDebts += amt.abs();
+        totalLiabilities += amt.abs();
+      }
+
+      final role = d.isSupplier ? 'مورد' : 'عميل';
+      final due =
+          d.dueDate != null ? _ymd(d.dueDate!) : 'غير محدد';
+      final phone = d.phone.trim().isEmpty ? '—' : d.phone;
+      final addr = (d.address == null || d.address!.trim().isEmpty)
+          ? ''
+          : ' | عنوان: ${d.address}';
+      final note =
+          (d.note == null || d.note!.trim().isEmpty) ? '' : ' | ملاحظة: ${d.note}';
+      final displayName = debtorLabel(d);
+      debtorLines.writeln(
+        '- [$role] الاسم في الدفتر: $displayName | معرّف السجل: ${d.id} | هاتف: $phone$addr | الرصيد الحالي: ${d.amount} شيكل (موجب=عليهم لك دين مستحق، سالب=أنت مدين لهم) | موعد الاستحقاق: $due | بيان الحالة في التطبيق: ${d.status}$note',
+      );
+    }
+
+    final txLines = StringBuffer();
+    if (txs.isEmpty) {
+      txLines.writeln('(لا توجد معاملات دين/سداد مسجلة في السياق الحالي.)');
+    } else {
+      for (final t in txs) {
+        final name = idToName[t.customerId] ?? 'غير معروف (معرّف ${t.customerId})';
+        final kind =
+            t.type == TransactionType.gave ? 'إضافة دين (بيع آجل/تدوين لهم)' : 'سداد أو تحصيل';
+        final method = transactionPayMethodLabel(t.payMethodId);
+        final note = t.note.trim().isEmpty ? '—' : t.note.trim();
+        txLines.writeln(
+          '- ${_ymd(t.date)} | $name | $kind | ${t.amount} شيكل | وسيلة الدفع: $method | ملاحظة: $note',
+        );
       }
     }
 
+    final cashLines = StringBuffer();
+    if (cash.isEmpty) {
+      cashLines.writeln('(لا توجد حركات صندوق مسجلة.)');
+    } else {
+      for (final e in cash) {
+        final kind = e.isIncome ? 'وارد (دخل)' : 'صادر (مصروف)';
+        final note = e.note.trim().isEmpty ? '' : ' | ملاحظة: ${e.note}';
+        final cat =
+            (e.category == null || e.category!.trim().isEmpty)
+                ? ''
+                : ' | تصنيف: ${e.category}';
+        cashLines.writeln(
+          '- ${_ymd(e.date)} | ${e.title} | $kind | ${e.amount} شيكل$cat$note',
+        );
+      }
+    }
+
+    final debtBlock = debtorCount == 0
+        ? '(لا يوجد عملاء أو موردون غير محذوفين في الدفتر.)'
+        : debtorLines.toString().trim();
+
     return '''
-### سياق دفتر «الصافي» (للمحادثة فقط؛ لا تُضِف أرقاماً خارجها):
-- اسم صاحب الجلسة المعروض في التطبيق: $userName
-- عدد سجلات العملاء/الموردين: $debtorCount
-- إجمالي المستحق للمستخدم (موجب الرصيد لدى الغير): $totalReceivables شيكل
-- إجمالي مطلوبات المستخدم (سالب الرصيد): $totalDebts شيكل
+### سياق دفتر «الصافي» — بيانات فعلية من التطبيق (للقراءة فقط؛ لا تُخترع أرقاماً خارجها):
+- اسم صاحب المتجر من الإعدادات فقط (**ليس** أحد سجلات العملاء أو الموردين في الدفتر): $userName
+- عدد سجلات العملاء/الموردين (غير محذوفة): $debtorCount
+- إجمالي المبالغ المستحقة للمستخدم (رصيد موجب لدى الغير): $totalReceivables شيكل
+- إجمالي مطلوبات المستخدم تجاه الغير (رصيد سالب مجمّع كقيمة مطلقة): $totalLiabilities شيكل
+- **مجموع أرصدة المحافظ الفعلية** (الرصيد المبدئي لكل محفظة + حركات الصندوق المعنونة لها + تأثير الديون حسب إعداد التطبيق): $totalWalletsEffective شيكل
+- ملخص حركات الصندوق فقط (غير المحذوفة): رصيد من الحركات ${cbSum.balance} شيكل؛ إجمالي وارد ${cbSum.income}؛ إجمالي صادر ${cbSum.expense}؛ عدد الحركات ${cbSum.transactionCount}
+
+#### المحافظ المالية (كل محفظة نشطة):
+${accLines.toString().trim()}
+
+#### تفصيل كل عميل / مورد (أسماء من الدفتر فقط):
+$debtBlock
+
+#### سجل معاملات الدين والسداد (من الأحدث للأقدم):
+${txLines.toString().trim()}
+
+#### حركات الصندوق / الكاش (من الأحدث للأقدم):
+${cashLines.toString().trim()}
 ''';
   }
 }

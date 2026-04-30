@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/auth/firestore_registered_phone_auth.dart';
 import '../../../core/auth/resolve_firebase_user.dart';
 import '../../../core/bootstrap/app_session.dart';
 import '../../../core/bootstrap/prefs_keys.dart';
@@ -317,14 +318,14 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 if (showTeamSettings) ...[
                   const Divider(height: 1, indent: 52),
-                  _SettingsTile(
-                    icon: LucideIcons.rotateCcw,
-                    title: 'إعادة ضبط الدفتر',
+                _SettingsTile(
+                  icon: LucideIcons.rotateCcw,
+                  title: 'إعادة ضبط الدفتر',
                     subtitle:
-                        'مسح كل العملاء والديون وحركات الصندوق محلياً وحسابات بصفر (مثل أول تشغيل)',
-                    iconColor: AppColors.error,
-                    onTap: () => _confirmResetLedgerToFactory(context, ref),
-                  ),
+                        'مسح السحابة والجهاز بالكامل ثم تسجيل الخروج (للمالك فقط)',
+                  iconColor: AppColors.error,
+                  onTap: () => _confirmResetLedgerToFactory(context, ref),
+                ),
                 ],
               ],
             ),
@@ -387,9 +388,8 @@ Future<void> _confirmResetLedgerToFactory(
       child: AlertDialog(
         title: const Text('إعادة ضبط الدفتر؟'),
         content: const Text(
-          'سيتم حذف كل العملاء والمعاملات وحركات الصندوق والتصنيفات من هذا الجهاز، '
-          'وستُعاد حسابات النقد والبنك والمحفظة برصيد صفر (كأول تشغيل). لا يمكن التراجع.\n\n'
-          'البيانات على السحابة لا تُمسح تلقائياً؛ عند المزامنة قد تُستعاد سجلات قديمة إن وُجدت.',
+          'سيتم حذف كل بيانات الدفتر من السحابة ومن هذا الجهاز، ثم تسجيل الخروج، '
+          'ويمكنك إعادة إضافة نفس رقم الهاتف لاحقاً مع دفتر فارغ.',
         ),
         actions: [
           TextButton(
@@ -399,21 +399,90 @@ Future<void> _confirmResetLedgerToFactory(
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('مسح وإعادة الضبط'),
+            child: const Text('مسح كل شيء'),
           ),
         ],
       ),
     ),
   );
   if (go != true || !context.mounted) return;
-  await ref.read(appSessionProvider.notifier).resetLocalLedgerToFactoryDefaults();
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('تمت إعادة ضبط الدفتر على هذا الجهاز'),
-      backgroundColor: AppColors.success,
+
+  void closeLoading() {
+    if (!context.mounted) return;
+    final nav = Navigator.of(context, rootNavigator: true);
+    if (nav.canPop()) nav.pop();
+  }
+
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => PopScope(
+      canPop: false,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Center(
+          child: Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'جاري مسح الدفتر محلياً وعلى السحابة…',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     ),
   );
+
+  try {
+    await FirestoreRegisteredPhoneAuth.trySilentReauthFromPrefs();
+    final ok =
+        await ref.read(appSessionProvider.notifier).resetLedgerFullOfflineAndCloud();
+    if (!context.mounted) return;
+    closeLoading();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'تم مسح الدفتر من السحابة والجهاز وتسجيل الخروج. سجّل الدخول من جديد لدفتر نظيف.'
+              : 'تعذّر إكمال المسح على السحابة. تحقّق من الإنترنت ومن أنك مالك الدفتر.',
+        ),
+        backgroundColor: ok ? AppColors.success : AppColors.error,
+      ),
+    );
+  } catch (e) {
+    if (context.mounted) {
+      closeLoading();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر المسح: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
 }
 
 class _SectionLabel extends StatelessWidget {

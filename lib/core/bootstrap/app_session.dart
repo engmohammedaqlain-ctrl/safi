@@ -10,6 +10,8 @@ import '../router/main_shell.dart' as main_shell_router;
 import '../router/nav_provider.dart';
 import '../sync/ledger_firestore_sync.dart';
 import '../sync/post_login_loading.dart';
+import '../auth/firestore_registered_phone_auth.dart';
+import '../../features/ai_assistant/providers/ai_assistant_provider.dart';
 import '../../features/cash_flow/providers/accounts_provider.dart';
 import '../../features/debts/providers/debt_categories_provider.dart';
 import '../../features/debts/providers/debts_ui_provider.dart';
@@ -177,6 +179,7 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     await p.remove(PrefsKeys.onboardingDone);
     await p.remove(PrefsKeys.userRole);
     await p.remove(PrefsKeys.userPermissions);
+    await p.remove(PrefsKeys.aiChatHistory);
 
     await StartupLedgerData.reloadFromDiskIntoMemory();
 
@@ -192,6 +195,7 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     ref.invalidate(main_shell_router.displayStoreNameProvider);
     _invalidateTeamProviders();
     ref.invalidate(ledgerSyncUiProvider);
+    ref.invalidate(aiAssistantProvider);
 
     state = AppSessionPhase.login;
   }
@@ -203,6 +207,42 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     ref.invalidate(accountsProvider);
     ref.invalidate(debtCategoriesProvider);
     ref.read(navIndexProvider.notifier).goTo(1);
+  }
+
+  /// مسح الدفتر على السحابة ثم تسجيل الخروج الكامل (جهاز + جلسة)—للمالك فقط.
+  /// يُعيد `false` إن لم يكن المستخدم مالك الدفتر، أو فشل مسح السحابة.
+  Future<bool> resetLedgerFullOfflineAndCloud() async {
+    final p = await SharedPreferences.getInstance();
+    final ledgerUid = p.getString(PrefsKeys.ledgerOwnerUid);
+    final authUid = FirebaseAuth.instance.currentUser?.uid;
+    if (ledgerUid == null || authUid == null || ledgerUid != authUid) {
+      return false;
+    }
+
+    final phoneDocId = p.getString(PrefsKeys.phoneDocId);
+
+    try {
+      await FirestoreRegisteredPhoneAuth.trySilentReauthFromPrefs();
+
+      final sync = ref.read(ledgerFirestoreSyncProvider);
+      await sync.detach();
+      final cloudOk = await sync.wipeOwnerLedgerCloudAndRelated(
+        ownerUid: ledgerUid,
+        registeredPhoneDocId: phoneDocId,
+      );
+      if (!cloudOk) {
+        try {
+          await sync.attachIfNeeded(ledgerUid);
+        } catch (_) {}
+        return false;
+      }
+
+      await logout();
+      return true;
+    } catch (e, st) {
+      debugPrint('resetLedgerFullOfflineAndCloud: $e\n$st');
+      return false;
+    }
   }
 
   /// مسح دفتر العمليات على هذا الجهاز فقط: عملاء، معاملات، صندوق، تصنيفات،

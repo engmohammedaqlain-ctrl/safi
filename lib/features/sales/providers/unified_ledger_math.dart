@@ -77,9 +77,12 @@ class UnifiedLedgerMath {
 
   static String debtName(List<DebtorUi> debtors, String id) {
     for (final d in debtors) {
-      if (d.id == id) return d.name;
+      if (d.id == id) {
+        final n = d.name.trim();
+        return n.isEmpty ? 'بدون اسم (معرّف $id)' : n;
+      }
     }
-    return 'جهة';
+    return 'غير مربوط بسجل عميل (معرّف $id)';
   }
 
   static List<UnifiedLedgerRowUi> buildRowsNewestFirst({
