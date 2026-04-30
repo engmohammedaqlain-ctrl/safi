@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/bootstrap/prefs_keys.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -44,6 +46,22 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
   String get _displayText => _displayNum.isEmpty ? '0' : _displayNum;
 
   double get _displayValue => double.tryParse(_displayText) ?? 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final role = prefs.getString(PrefsKeys.userRole) ?? 'owner';
+      final perms = prefs.getStringList(PrefsKeys.userPermissions) ?? [];
+      if (role != 'owner' && !perms.contains('add_debt')) {
+        if (mounted) {
+          Navigator.of(context).pop();
+          showAppSnackBar(context, 'ليس لديك صلاحية إضافة ديون');
+        }
+      }
+    });
+  }
 
   void _onKey(String k) {
     setState(() {
@@ -161,7 +179,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
   @override
   Widget build(BuildContext context) {
     final c = widget.forCustomer;
-    final accounts = ref.watch(accountsProvider);
+    final accounts = ref.watch(activeAccountsProvider);
     final dateStr =
         '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
 

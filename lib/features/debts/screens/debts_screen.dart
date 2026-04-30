@@ -10,6 +10,7 @@ import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import 'add_customer_screen.dart';
 import 'customer_detail_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
+import '../../settings/providers/team_provider.dart';
 
 /// أدنى عرض لعمود المبالغ في القائمة (يتوسّع مع العرض حتى حد أقصى).
 const double _kDebtMoneyColumnMin = 120;
@@ -121,6 +122,14 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
       }).toList();
     }
     final hidden = ref.watch(hideBalanceProvider);
+    final permsAsync = ref.watch(userPermissionsProvider);
+    final roleAsync = ref.watch(userRoleProvider);
+    final canAddDebt = permsAsync.value?.contains('add_debt') ?? false;
+    final isOwner = roleAsync.when(
+      data: (r) => r == 'owner',
+      loading: () => true,
+      error: (_, __) => true,
+    );
 
     final entityLabel = isSuppliersTab ? 'الموردين' : 'العملاء';
     final emptyLabel = isSuppliersTab ? 'لا يوجد موردون' : 'لا يوجد عملاء';
@@ -407,7 +416,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: Padding(
+      floatingActionButton: (isOwner || canAddDebt) ? Padding(
         padding: const EdgeInsetsDirectional.only(end: 8, bottom: 8),
         child: FloatingActionButton.extended(
           onPressed: () {
@@ -439,7 +448,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
             ),
           ),
         ),
-      ),
+      ) : null,
     );
   }
 }

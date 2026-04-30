@@ -18,7 +18,7 @@ final selectedTimeframeProvider = NotifierProvider<SelectedTimeframeNotifier, St
 
 final analyticsDataProvider = Provider((ref) {
   final timeframe = ref.watch(selectedTimeframeProvider);
-  final cashbook = ref.watch(cashbookEntriesProvider);
+  final cashbook = ref.watch(activeCashbookEntriesProvider);
   final txs = ref.watch(transactionsProvider);
 
   final now = DateTime.now();

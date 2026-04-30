@@ -13,8 +13,8 @@ final isOnlineProvider = Provider<bool>((ref) {
   final async = ref.watch(connectivityListProvider);
   return async.when(
     data: isOnlineConnectivityResults,
-    loading: () => true,
-    error: (Object _, StackTrace _) => true,
+    loading: () => false,
+    error: (Object _, StackTrace _) => false,
   );
 });
 

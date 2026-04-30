@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/bootstrap/startup_ledger_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../cash_flow/data/financial_account_model.dart';
+import '../utils/customer_name_limits.dart';
 
 enum DebtUrgency { low, medium, high }
 
@@ -40,6 +41,8 @@ class TransactionUi {
     this.payMethodId,
     this.imagePath,
     this.editedMs = 0,
+    this.isDeleted = false,
+    this.deletedMs = 0,
   });
 
   final String id;
@@ -56,6 +59,8 @@ class TransactionUi {
   final String? imagePath;
 
   final int editedMs;
+  final bool isDeleted;
+  final int deletedMs;
 }
 
 /// أرقام ملخصة لرأس شاشة الديون
@@ -88,6 +93,8 @@ class DebtorUi {
     this.doubleLedger = false,
     this.dueDate,
     this.note,
+    this.isDeleted = false,
+    this.deletedMs = 0,
   });
 
   final String id;
@@ -105,7 +112,7 @@ class DebtorUi {
   /// أحدث وقت تعديل لتفضيل نسخة عند المزامنة
   final int editedMs;
 
-  /// دفتر/حساب مزدوج اختياري للعميل
+  /// احتياطياً للتوافق مع JSON القديم — دائماً false (الميزة أُلغيت).
   final bool doubleLedger;
 
   /// موعد استحقاق الدين
@@ -113,6 +120,9 @@ class DebtorUi {
 
   /// ملاحظة شخصية عن العميل/المورد (تُعرض تحت الاسم)
   final String? note;
+
+  final bool isDeleted;
+  final int deletedMs;
 }
 
 Color urgencyToColor(DebtUrgency u) {
@@ -199,6 +209,66 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
     _persist();
   }
 
+  /// تحديث الاسم والجوال والعنوان معاً (محلي فقط — المزامنة عبر [StartupLedgerData.saveDebtors]).
+  /// يعيد `null` عند النجاح، أو رسالة خطأ للمستخدم.
+  String? updateCustomerCoreDetails({
+    required String customerId,
+    required String name,
+    required String phoneRaw,
+    required String addressRaw,
+  }) {
+    final phoneDigits = phoneRaw.replaceAll(RegExp(r'\D'), '');
+    if (phoneDigits.isEmpty) {
+      return 'الرجاء إدخال رقم الجوال';
+    }
+    if (phoneDigits.length < 7) {
+      return 'رقم الجوال قصير جداً (على الأقل 7 أرقام)';
+    }
+    final formattedPhone = '+$phoneDigits';
+
+    for (final other in state) {
+      if (other.id == customerId || other.isDeleted) continue;
+      final stored = other.phone.replaceAll(RegExp(r'\D'), '');
+      if (other.phone == formattedPhone ||
+          stored == phoneDigits ||
+          other.phone.replaceAll('+', '') == phoneDigits) {
+        return 'رقم الجوال مسجل لجهة أخرى';
+      }
+    }
+
+    final nameTrimmed = sanitizeCustomerName(name);
+    if (nameTrimmed.isEmpty) {
+      return 'الرجاء إدخال الاسم';
+    }
+
+    final addrTrim = addressRaw.trim();
+    final storedAddr = addrTrim.isEmpty ? null : addrTrim;
+
+    state = [
+      for (final d in state)
+        if (d.id == customerId)
+          DebtorUi(
+            id: d.id,
+            name: nameTrimmed,
+            phone: formattedPhone,
+            address: storedAddr,
+            amount: d.amount,
+            status: d.status,
+            urgency: d.urgency,
+            categoryIds: d.categoryIds,
+            isSupplier: d.isSupplier,
+            editedMs: _touchMs(),
+            doubleLedger: d.doubleLedger,
+            dueDate: d.dueDate,
+            note: d.note,
+          )
+        else
+          d,
+    ];
+    _persist();
+    return null;
+  }
+
   /// تحديث رصيد العميل بمقدار delta
   /// delta موجب = دين جديد (الدين يزيد)، delta سالب = سداد (الدين يقل)
   /// إزالة مُعرّف تصنيف من كل العملاء (عند حذف التصنيف)
@@ -279,6 +349,33 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
     _persist();
   }
 
+  void removeCustomer(String id) {
+    state = [
+      for (final d in state)
+        if (d.id == id)
+          DebtorUi(
+            id: d.id,
+            name: d.name,
+            phone: d.phone,
+            address: d.address,
+            amount: d.amount,
+            status: d.status,
+            urgency: d.urgency,
+            categoryIds: d.categoryIds,
+            isSupplier: d.isSupplier,
+            editedMs: _touchMs(),
+            doubleLedger: d.doubleLedger,
+            dueDate: d.dueDate,
+            note: d.note,
+            isDeleted: true,
+            deletedMs: _touchMs(),
+          )
+        else
+          d,
+    ];
+    _persist();
+  }
+
   void updateCustomerBalance(String customerId, double delta) {
     state = [
       for (final d in state)
@@ -321,12 +418,12 @@ final debtorsUiProvider = NotifierProvider<DebtorsUiNotifier, List<DebtorUi>>(
 
 /// عملاء فقط (isSupplier = false)
 final customersOnlyProvider = Provider<List<DebtorUi>>((ref) {
-  return ref.watch(debtorsUiProvider).where((d) => !d.isSupplier).toList();
+  return ref.watch(debtorsUiProvider).where((d) => !d.isSupplier && !d.isDeleted).toList();
 });
 
 /// موردون فقط (isSupplier = true)
 final suppliersOnlyProvider = Provider<List<DebtorUi>>((ref) {
-  return ref.watch(debtorsUiProvider).where((d) => d.isSupplier).toList();
+  return ref.watch(debtorsUiProvider).where((d) => d.isSupplier && !d.isDeleted).toList();
 });
 
 DebtMyNumbers _computeNumbers(List<DebtorUi> list) {
@@ -391,7 +488,25 @@ class TransactionsNotifier extends Notifier<List<TransactionUi>> {
   }
 
   void removeTransactionById(String id) {
-    state = [for (final t in state) if (t.id != id) t];
+    state = [
+      for (final t in state)
+        if (t.id == id)
+          TransactionUi(
+            id: t.id,
+            customerId: t.customerId,
+            amount: t.amount,
+            type: t.type,
+            note: t.note,
+            date: t.date,
+            payMethodId: t.payMethodId,
+            imagePath: t.imagePath,
+            editedMs: DateTime.now().millisecondsSinceEpoch,
+            isDeleted: true,
+            deletedMs: DateTime.now().millisecondsSinceEpoch,
+          )
+        else
+          t
+    ];
     _persist();
   }
 }
@@ -405,7 +520,7 @@ final transactionsProvider =
 final customerTransactionsProvider =
     Provider.family<List<TransactionUi>, String>((ref, customerId) {
       final all = ref.watch(transactionsProvider);
-      final filtered = all.where((t) => t.customerId == customerId).toList()
+      final filtered = all.where((t) => t.customerId == customerId && !t.isDeleted).toList()
         ..sort((a, b) => b.date.compareTo(a.date));
       return filtered;
     });

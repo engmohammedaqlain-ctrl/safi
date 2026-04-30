@@ -20,7 +20,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cashbookEntries = ref.watch(cashbookEntriesProvider);
+    final cashbookEntries = ref.watch(activeCashbookEntriesProvider);
     final transactions = ref.watch(transactionsProvider);
 
     // Filter by period
@@ -37,7 +37,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     }
 
     final filteredCashbook = cashbookEntries.where((e) => e.date.isAfter(startDate)).toList();
-    final filteredTransactions = transactions.where((t) => t.date.isAfter(startDate)).toList();
+    final filteredTransactions = transactions
+        .where((t) => !t.isDeleted && t.date.isAfter(startDate))
+        .toList();
 
     double totalIncome = 0;
     double totalExpense = 0;
@@ -71,7 +73,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         e.date.month == date.month && 
         e.date.day == date.day
       );
-      final dailyTrans = transactions.where((t) => 
+      final dailyTrans = transactions.where((t) =>
+        !t.isDeleted &&
         t.type == TransactionType.received && 
         t.date.year == date.year && 
         t.date.month == date.month && 
@@ -117,7 +120,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
           }
         }
         
-        final dTrans = transactions.where((t) => t.date.year == date.year && t.date.month == date.month && t.date.day == date.day);
+        final dTrans = transactions.where((t) =>
+            !t.isDeleted &&
+            t.date.year == date.year &&
+            t.date.month == date.month &&
+            t.date.day == date.day);
         for (final t in dTrans) {
           if (t.type == TransactionType.received) {
             dayIn += t.amount;

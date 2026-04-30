@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../bootstrap/prefs_keys.dart';
+import '../bootstrap/startup_ledger_data.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -17,6 +18,8 @@ import '../../features/debts/screens/debts_screen.dart';
 import '../../features/more/screens/more_home_screen.dart';
 import '../../features/reports/screens/unified_reports_screen.dart';
 import '../../features/sales/screens/sales_screen.dart';
+
+import '../../features/settings/providers/team_provider.dart';
 
 class HideBalanceNotifier extends Notifier<bool> {
   @override
@@ -32,6 +35,27 @@ final userNameProvider = FutureProvider<String>((ref) async {
   return p.getString(PrefsKeys.userName) ?? 'المستخدم الأول';
 });
 
+/// الاسم المعروض في الهيدر والمزيد — يُحدَّث فوراً عند [AppSessionNotifier.saveName] (لا يعتمد على إعادة جلب Future).
+String _displayStoreTitleFromBootstrap() {
+  final t = StartupLedgerData.bootstrapUserName?.trim() ?? '';
+  return t.isEmpty ? 'المستخدم الأول' : t;
+}
+
+class DisplayStoreNameNotifier extends Notifier<String> {
+  @override
+  String build() => _displayStoreTitleFromBootstrap();
+
+  void setFromSavedName(String raw) {
+    final t = raw.trim();
+    state = t.isEmpty ? 'المستخدم الأول' : t;
+  }
+}
+
+final displayStoreNameProvider =
+    NotifierProvider<DisplayStoreNameNotifier, String>(
+      DisplayStoreNameNotifier.new,
+    );
+
 /// عنوان وبطّاقة المتجر من التخزين — يُفعَّل تجديد الواجهة بعد «إعدادات المتجر».
 final storeCardDisplayProvider =
     FutureProvider.autoDispose<({String title, String subtitle})>((ref) async {
@@ -41,10 +65,9 @@ final storeCardDisplayProvider =
 
   final curRaw =
       (p.getString(PrefsKeys.storeCurrencyLabel) ?? 'شيكل (₪)').trim();
-  final addrRaw = (p.getString(PrefsKeys.storeAddress) ?? 'غزة العزة').trim();
+  final addrRaw = (p.getString(PrefsKeys.storeAddress) ?? '').trim();
   final currency = curRaw.isEmpty ? 'شيكل (₪)' : curRaw;
-  final address = addrRaw.isEmpty ? 'غزة العزة' : addrRaw;
-  final subtitle = '$currency · $address';
+  final subtitle = [currency, if (addrRaw.isNotEmpty) addrRaw].join(' · ');
 
   return (title: title, subtitle: subtitle);
 });
@@ -78,42 +101,33 @@ class _MainShellState extends ConsumerState<MainShell> {
     super.dispose();
   }
 
+  bool _isProgrammaticNav = false;
+
   /// يُستدعى عند الضغط على أيقونة الشريط السفلي → انتقال بانزلاق+تلاشٍ
   void _onNavTap(int index) {
+    _isProgrammaticNav = true;
     ref.read(navIndexProvider.notifier).goTo(index);
     _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 380),
       curve: Curves.easeInOutCubic,
-    );
+    ).then((_) => _isProgrammaticNav = false);
   }
 
   /// يُستدعى عند السحب اليدوي → تحديث الـ provider بالصفحة الجديدة
   void _onPageChanged(int index) {
-    ref.read(navIndexProvider.notifier).goTo(index);
+    if (!_isProgrammaticNav) {
+      ref.read(navIndexProvider.notifier).goTo(index);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final index = ref.watch(navIndexProvider);
     final debtsLedgerTab = ref.watch(debtsLedgerTabProvider);
+    final storeDisplayTitle = ref.watch(displayStoreNameProvider);
     final isDebtsShell = index == 0;
     final isSuppliersInDebts = debtsLedgerTab == 1;
-
-    // إذا طلب الـ provider صفحةً مختلفة (مثلاً deep link أو إعادة تحميل)
-    // نتأكد أن PageView يتبعه دون أنيميشن مكرّر
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_pageController.hasClients) {
-        final current = _pageController.page?.round() ?? 0;
-        if (current != index) {
-          _pageController.animateToPage(
-            index,
-            duration: const Duration(milliseconds: 380),
-            curve: Curves.easeInOutCubic,
-          );
-        }
-      }
-    });
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A0A24),
@@ -159,23 +173,17 @@ class _MainShellState extends ConsumerState<MainShell> {
                                 ),
                                 const SizedBox(width: AppSpacing.md),
                                 Expanded(
-                                  child: Consumer(
-                                    builder: (context, ref, _) {
-                                      final asyncName =
-                                          ref.watch(userNameProvider);
-                                      return Text(
-                                        asyncName.value ?? '',
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.right,
-                                        style: AppTextStyles.headlineSmall
-                                            .copyWith(
-                                          color: Colors.white,
-                                          letterSpacing: 0.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      );
-                                    },
+                                  child: Text(
+                                    storeDisplayTitle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
+                                    style:
+                                        AppTextStyles.headlineSmall.copyWith(
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -212,20 +220,37 @@ class _MainShellState extends ConsumerState<MainShell> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            _VaultHeaderIconButton(
-                              icon: LucideIcons.fileSpreadsheet,
-                              tooltip: 'التقارير',
-                              onTap: () => Navigator.of(context).push<void>(
-                                AppPageRoute<void>(
-                                  builder: (_) => UnifiedReportsScreen(
-                                    initialFilter: isSuppliersInDebts
-                                        ? AppReportDebtFilter.suppliersOnly
-                                        : AppReportDebtFilter.customersOnly,
-                                    lockDebtScope: true,
+                            Consumer(
+                              builder: (context, ref, _) {
+                                final permsAsync = ref.watch(userPermissionsProvider);
+                                final roleAsync = ref.watch(userRoleProvider);
+                                final canViewStats = permsAsync.value?.contains('view_statistics') ?? false;
+                                final isOwner = roleAsync.when(
+                                  data: (r) => r == 'owner',
+                                  loading: () => true,
+                                  error: (_, __) => true,
+                                );
+                                
+                                if (!isOwner && !canViewStats) return const SizedBox.shrink();
+                                
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: _VaultHeaderIconButton(
+                                    icon: LucideIcons.fileSpreadsheet,
+                                    tooltip: 'التقارير',
+                                    onTap: () => Navigator.of(context).push<void>(
+                                      AppPageRoute<void>(
+                                        builder: (_) => UnifiedReportsScreen(
+                                          initialFilter: isSuppliersInDebts
+                                              ? AppReportDebtFilter.suppliersOnly
+                                              : AppReportDebtFilter.customersOnly,
+                                          lockDebtScope: true,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -303,10 +328,12 @@ class _MainShellState extends ConsumerState<MainShell> {
                                 controller: _pageController,
                                 pageCount: _pageCount,
                                 onPageChanged: _onPageChanged,
-                                pages: const [
-                                  RepaintBoundary(child: DebtsScreen()),
+                                pages: [
+                                  const RepaintBoundary(
+                                      child: DebtsScreen()),
                                   RepaintBoundary(child: SalesScreen()),
-                                  RepaintBoundary(child: MoreHomeScreen()),
+                                  const RepaintBoundary(
+                                      child: MoreHomeScreen()),
                                 ],
                               ),
                             ),

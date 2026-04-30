@@ -15,9 +15,11 @@ import '../../../core/router/app_page_route.dart';
 import '../models/debt_category_model.dart';
 import '../providers/debt_categories_provider.dart';
 import '../providers/debts_ui_provider.dart';
+import '../utils/customer_name_limits.dart';
 import '../utils/debt_transaction_share.dart';
 import '../../reports/screens/client_report_screen.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
+import '../../settings/providers/team_provider.dart';
 import 'add_debt_screen.dart';
 import 'record_payment_screen.dart';
 
@@ -72,6 +74,15 @@ class CustomerDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentDebtor = ref.watch(debtorByIdProvider(debtor.id)) ?? debtor;
     final transactions = ref.watch(customerTransactionsProvider(debtor.id));
+    final permsAsync = ref.watch(userPermissionsProvider);
+    final roleAsync = ref.watch(userRoleProvider);
+    final canAddDebt = permsAsync.value?.contains('add_debt') ?? false;
+    final canRecordPayment = permsAsync.value?.contains('record_payment') ?? false;
+    final isOwner = roleAsync.when(
+      data: (r) => r == 'owner',
+      loading: () => true,
+      error: (_, __) => true,
+    );
 
     final amountText = currentDebtor.amount.isEmpty
         ? '0.0'
@@ -355,7 +366,7 @@ class CustomerDetailScreen extends ConsumerWidget {
             ),
 
             // ── أزرار دين جديد / تسجيل سداد ──
-            Container(
+            if (isOwner || canAddDebt || canRecordPayment) Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.background,
@@ -373,7 +384,7 @@ class CustomerDetailScreen extends ConsumerWidget {
               child: Row(
                 textDirection: TextDirection.rtl,
                 children: [
-                  Expanded(
+                  if (isOwner || canAddDebt) Expanded(
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.push<bool>(
@@ -402,8 +413,8 @@ class CustomerDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                  if ((isOwner || canAddDebt) && (isOwner || canRecordPayment)) const SizedBox(width: 12),
+                  if (isOwner || canRecordPayment) Expanded(
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.push<bool>(
@@ -581,7 +592,7 @@ class _CustomerCategoryChipsInline extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final all = ref.watch(debtCategoriesProvider);
+    final all = ref.watch(activeDebtCategoriesProvider);
     final chips = <Widget>[];
     for (final id in debtor.categoryIds) {
       DebtCategory? cat;
@@ -635,9 +646,18 @@ class _TransactionTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final permsAsync = ref.watch(userPermissionsProvider);
+    final roleAsync = ref.watch(userRoleProvider);
+    final canDelete = permsAsync.value?.contains('delete_records') ?? false;
+    final isOwner = roleAsync.when(
+      data: (r) => r == 'owner',
+      loading: () => true,
+      error: (_, __) => true,
+    );
+    
     final isGave = tx.type == TransactionType.gave;
     final color = isGave ? Colors.red : Colors.green;
-    final icon = isGave ? LucideIcons.arrowDownLeft : LucideIcons.arrowUpRight;
+    const icon = LucideIcons.bookMarked;
     final label = isGave ? 'دين' : 'سداد';
     final sign = isGave ? '−' : '+';
     final amountWest = tx.amount.toStringAsFixed(1);
@@ -869,8 +889,17 @@ class _TransactionDetailSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final permsAsync = ref.watch(userPermissionsProvider);
+    final roleAsync = ref.watch(userRoleProvider);
+    final canDelete = permsAsync.value?.contains('delete_records') ?? false;
+    final isOwner = roleAsync.when(
+      data: (r) => r == 'owner',
+      loading: () => true,
+      error: (_, __) => true,
+    );
+
     final tx = transaction;
-    final accounts = ref.watch(accountsProvider);
+    final accounts = ref.watch(activeAccountsProvider);
     final isGave = tx.type == TransactionType.gave;
     final color = isGave ? Colors.red : Colors.green;
     final typeLabel = isGave ? 'دين' : 'سداد';
@@ -883,7 +912,7 @@ class _TransactionDetailSheet extends ConsumerWidget {
     final when = _formatSheetHeaderDate(tx.date);
     final bottom = MediaQuery.paddingOf(context).bottom;
     final maxSheetH = MediaQuery.sizeOf(context).height * 0.82;
-    final icon = isGave ? LucideIcons.arrowDownLeft : LucideIcons.arrowUpRight;
+    const icon = LucideIcons.bookMarked;
 
     final cardDecoration = BoxDecoration(
       color: Colors.white,
@@ -1184,69 +1213,71 @@ class _TransactionDetailSheet extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final ok = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                title: const Text('حذف المعاملة؟'),
-                                content: const Text(
-                                  'سُحذف السجل ويُعدَّل الرصيد تلقائياً.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(ctx, false),
-                                    child: const Text('إلغاء'),
+                      if (isOwner || canDelete) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final ok = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  FilledButton(
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFFE8E6),
-                                      foregroundColor: const Color(0xFFC62828),
+                                  title: const Text('حذف المعاملة؟'),
+                                  content: const Text(
+                                    'سُحذف السجل ويُعدَّل الرصيد تلقائياً.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: const Text('إلغاء'),
                                     ),
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('حذف'),
-                                  ),
-                                ],
+                                    FilledButton(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: const Color(0xFFFFE8E6),
+                                        foregroundColor: const Color(0xFFC62828),
+                                      ),
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      child: const Text('حذف'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (ok != true || !context.mounted) return;
+                              final delta = tx.type == TransactionType.gave
+                                  ? -tx.amount
+                                  : tx.amount;
+                              ref
+                                  .read(debtorsUiProvider.notifier)
+                                  .updateCustomerBalance(tx.customerId, delta);
+                              ref
+                                  .read(transactionsProvider.notifier)
+                                  .removeTransactionById(tx.id);
+                              if (!context.mounted) return;
+                              Navigator.of(context).pop();
+                              showAppSnackBar(context, 'تم حذف المعاملة');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade50,
+                              foregroundColor: const Color(0xFFE53935),
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                            );
-                            if (ok != true || !context.mounted) return;
-                            final delta = tx.type == TransactionType.gave
-                                ? -tx.amount
-                                : tx.amount;
-                            ref
-                                .read(debtorsUiProvider.notifier)
-                                .updateCustomerBalance(tx.customerId, delta);
-                            ref
-                                .read(transactionsProvider.notifier)
-                                .removeTransactionById(tx.id);
-                            if (!context.mounted) return;
-                            Navigator.of(context).pop();
-                            showAppSnackBar(context, 'تم حذف المعاملة');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.shade50,
-                            foregroundColor: const Color(0xFFE53935),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
                             ),
-                          ),
-                          child: const Text(
-                            'حذف',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                            child: const Text(
+                              'حذف',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],
@@ -1481,275 +1512,221 @@ class _CustomerInfoSheet extends ConsumerStatefulWidget {
 }
 
 class _CustomerInfoSheetState extends ConsumerState<_CustomerInfoSheet> {
-  bool _isEditingAddress = false;
+  late TextEditingController _nameCtrl;
+  late TextEditingController _phoneCtrl;
   late TextEditingController _addressCtrl;
 
   @override
   void initState() {
     super.initState();
-    _addressCtrl = TextEditingController(text: widget.debtor.address ?? '');
+    final d = widget.debtor;
+    _nameCtrl = TextEditingController(text: d.name);
+    var p = d.phone.replaceAll(RegExp(r'\D'), '');
+    if (p.startsWith('00')) p = p.substring(2);
+    _phoneCtrl = TextEditingController(text: p);
+    _addressCtrl = TextEditingController(text: d.address ?? '');
   }
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
     _addressCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
+    final keyboardSpace = MediaQuery.viewInsetsOf(context).bottom;
+    final role = widget.debtor.isSupplier ? 'المورد' : 'العميل';
 
     return Container(
-      margin: const EdgeInsets.only(top: 64),
-      padding: EdgeInsets.only(
-        bottom: keyboardSpace > 0 ? keyboardSpace + 16 : 32,
+      margin: const EdgeInsetsDirectional.only(top: 48),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.92,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'معلومات العميل',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+            const SizedBox(height: 16),
+            Text(
+              'معلومات $role',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-
-          // Phone Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
+            const SizedBox(height: 6),
+            Text(
+              'يُحفظ على الجهاز فوراً ويُرفَع للسحابة عند توفر الاتصال',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(24, 0, 24, keyboardSpace + 16),
+                children: [
+                  const Text(
+                    'الاسم',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  child: const Icon(
-                    LucideIcons.phone,
-                    color: AppColors.primary,
-                    size: 20,
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _nameCtrl,
+                    textAlign: TextAlign.right,
+                    textInputAction: TextInputAction.next,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(kMaxCustomerNameLength),
+                    ],
+                    decoration: _sheetInputDecoration('اسم $role'),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
+                  const SizedBox(height: 18),
+                  const Text(
+                    'رقم الجوال',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'رقم الجوال',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      Expanded(
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: TextField(
+                            controller: _phoneCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              signed: false,
+                              decimal: false,
+                            ),
+                            textInputAction: TextInputAction.next,
+                            textAlign: TextAlign.left,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(15),
+                            ],
+                            decoration: _sheetInputDecoration('أرقام فقط'),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.debtor.phone,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 52,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          '+',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    LucideIcons.copy,
-                    color: Colors.grey,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: widget.debtor.phone));
-                    showAppSnackBar(context, 'تم نسخ رقم الجوال');
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-          const Divider(height: 1),
-          const SizedBox(height: 24),
-
-          // Address Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    LucideIcons.mapPin,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _isEditingAddress
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'تعديل الموقع',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _addressCtrl,
-                              autofocus: true,
-                              decoration: InputDecoration(
-                                hintText: 'أدخل موقع أو عنوان العميل',
-                                hintStyle: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 14,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      ref
-                                          .read(debtorsUiProvider.notifier)
-                                          .updateCustomerAddress(
-                                            widget.debtor.id,
-                                            _addressCtrl.text.trim(),
-                                          );
-                                      setState(() => _isEditingAddress = false);
-                                      showAppSnackBar(context, 'تم حفظ الموقع');
-                                    },
-                                    child: const Text(
-                                      'حفظ',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                TextButton(
-                                  onPressed: () {
-                                    _addressCtrl.text =
-                                        widget.debtor.address ?? '';
-                                    setState(() => _isEditingAddress = false);
-                                  },
-                                  child: const Text(
-                                    'إلغاء',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'الموقع / العنوان',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              (widget.debtor.address == null ||
-                                      widget.debtor.address!.isEmpty)
-                                  ? 'لم يتم تسجيل موقع للعميل'
-                                  : widget.debtor.address!,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight:
-                                    (widget.debtor.address == null ||
-                                        widget.debtor.address!.isEmpty)
-                                    ? FontWeight.w400
-                                    : FontWeight.w600,
-                                color:
-                                    (widget.debtor.address == null ||
-                                        widget.debtor.address!.isEmpty)
-                                    ? Colors.grey.shade500
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                            if (widget.debtor.address == null ||
-                                widget.debtor.address!.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: InkWell(
-                                  onTap: () =>
-                                      setState(() => _isEditingAddress = true),
-                                  child: const Text(
-                                    '+ إضافة موقع',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                ),
-                if (!_isEditingAddress &&
-                    widget.debtor.address != null &&
-                    widget.debtor.address!.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(
-                      LucideIcons.edit2,
-                      color: Colors.grey,
-                      size: 20,
+                  const SizedBox(height: 18),
+                  const Text(
+                    'الموقع / العنوان',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
                     ),
-                    onPressed: () => setState(() => _isEditingAddress = true),
                   ),
-              ],
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _addressCtrl,
+                    maxLines: 3,
+                    minLines: 1,
+                    textAlign: TextAlign.right,
+                    decoration:
+                        _sheetInputDecoration('اختياري — عنوان أو موقع'),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: () {
+                      final err = ref
+                          .read(debtorsUiProvider.notifier)
+                          .updateCustomerCoreDetails(
+                            customerId: widget.debtor.id,
+                            name: _nameCtrl.text,
+                            phoneRaw: _phoneCtrl.text,
+                            addressRaw: _addressCtrl.text,
+                          );
+                      if (!context.mounted) return;
+                      if (err != null) {
+                        showAppSnackBar(context, err, backgroundColor: Colors.red);
+                        return;
+                      }
+                      Navigator.pop(context);
+                      showAppSnackBar(context, 'تم حفظ التعديلات');
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'حفظ التعديلات',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _sheetInputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
       ),
     );
   }

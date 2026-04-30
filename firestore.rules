@@ -1,0 +1,53 @@
+rules_version = '2';
+// مهم: ادمج هذا الملف مع قواعدك الحالية في Firebase Console ثم انشر: firebase deploy --only firestore:rules
+//
+// يضيف دعم عضو الفريق: قراءة/كتابة مجموعات الدفتر فقط تحت users/{ownerId} عند وجود
+// users/{ownerId}/ledger_access/{عضو} مع active == true
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function ledgerDataCollection(sub) {
+      return sub in ['debtors', 'transactions', 'cashbook', 'accounts', 'debt_categories', 'team'];
+    }
+
+    function hasActiveLedgerAccess(ownerId) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(ownerId)/ledger_access/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(ownerId)/ledger_access/$(request.auth.uid)).data.active == true;
+    }
+
+    // المجموعات الفرعية تحت المستخدم (ما عدا ledger_access يُعالج أدناه)
+    match /users/{ownerId}/{subcollection}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == ownerId;
+      allow read, write: if request.auth != null
+        && ledgerDataCollection(subcollection)
+        && hasActiveLedgerAccess(ownerId);
+    }
+
+    match /users/{ownerId} {
+      allow read, write: if request.auth != null && request.auth.uid == ownerId;
+      // العضو يحتاج قراءة وثيقة المستخدم الجذرية للمزامنة
+      allow read: if request.auth != null && hasActiveLedgerAccess(ownerId);
+      // الكاشير يحدّث حقول وصف الدفتر فقط (pushNow + ترحيل المخطط) — لا بيانات شخصية للمالك
+      allow update: if request.auth != null
+        && hasActiveLedgerAccess(ownerId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            'ledgerSchemaV',
+            'ledgerUpdatedMs',
+            'storeDisplayHint',
+            'registeredPhoneHint',
+            'ledgerMigratedAt',
+            'firebaseDisplayHint',
+          ]);
+    }
+
+    // العضو يقرأ سجله فقط؛ المالك يدير كل السجلات
+    match /users/{ownerId}/ledger_access/{memberId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == ownerId || request.auth.uid == memberId);
+      allow write: if request.auth != null && request.auth.uid == ownerId;
+    }
+  }
+}

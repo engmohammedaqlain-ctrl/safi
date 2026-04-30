@@ -67,7 +67,15 @@ class LedgerJsonMerge {
   ) {
     final ae = (a['editedMs'] as num?)?.toInt() ?? 0;
     final be = (b['editedMs'] as num?)?.toInt() ?? 0;
-    if (ae == be) return b;
-    return ae > be ? a : b;
+    
+    // Check for deletedMs if editedMs is the same or missing
+    final ad = (a['deletedMs'] as num?)?.toInt() ?? 0;
+    final bd = (b['deletedMs'] as num?)?.toInt() ?? 0;
+    
+    final aMax = ae > ad ? ae : ad;
+    final bMax = be > bd ? be : bd;
+
+    if (aMax == bMax) return b;
+    return aMax > bMax ? a : b;
   }
 }

@@ -24,8 +24,8 @@ class FinancialAccountsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accounts = ref.watch(accountsProvider);
-    final entries = ref.watch(cashbookEntriesProvider);
+    final accounts = ref.watch(activeAccountsProvider);
+    final entries = ref.watch(activeCashbookEntriesProvider);
     final txs = ref.watch(transactionsProvider);
     final hidden = ref.watch(hideBalanceProvider);
 

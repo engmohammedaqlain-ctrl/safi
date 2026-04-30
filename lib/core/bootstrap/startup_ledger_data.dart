@@ -31,6 +31,9 @@ class StartupLedgerData {
   static bool _sessionOnboardingDone = false;
   static String? _sessionUserName;
   static bool _sessionMergeDebtsIntoSafiTab = false;
+  static String _sessionUserRole = 'owner';
+  static List<String> _sessionUserPermissions = [];
+  static String? _sessionLedgerOwnerUid;
 
   static Future<void>? _loadFuture;
 
@@ -45,7 +48,8 @@ class StartupLedgerData {
   }
 
   static String _normalizeWalletName(String name) {
-    if (name == legacyMainDrawerWalletName) return _defaultCashWalletDisplayName;
+    if (name == legacyMainDrawerWalletName)
+      return _defaultCashWalletDisplayName;
     return name;
   }
 
@@ -58,14 +62,14 @@ class StartupLedgerData {
 
   static List<FinancialAccount> normalizeFinancialAccounts(
     List<FinancialAccount> list,
-  ) =>
-      [for (final a in list) normalizeFinancialAccount(a)];
+  ) => [for (final a in list) normalizeFinancialAccount(a)];
 
   /// بعد دمج سحابي/محلي: إزالة الاسم القديم من JSON المحفوظ.
   static String migrateLegacyAccountNamesInAccountsJson(String raw) {
     final list = _decodeAccounts(raw);
     return jsonEncode([
-      for (final a in normalizeFinancialAccounts(list)) _financialAccountToMap(a),
+      for (final a in normalizeFinancialAccounts(list))
+        _financialAccountToMap(a),
     ]);
   }
 
@@ -137,7 +141,10 @@ class StartupLedgerData {
       p.getString(PrefsKeys.debtCategories),
     );
     _sessionMergeDebtsIntoSafiTab =
-        p.getBool(PrefsKeys.mergeDebtsIntoSafiTab) ?? false;
+        p.getBool(PrefsKeys.mergeDebtsIntoSafiTab) ?? true;
+    _sessionUserRole = p.getString(PrefsKeys.userRole) ?? 'owner';
+    _sessionUserPermissions = p.getStringList(PrefsKeys.userPermissions) ?? [];
+    _sessionLedgerOwnerUid = p.getString(PrefsKeys.ledgerOwnerUid);
   }
 
   /// تُقرأ مع [ensureLoaded] في نفس جولة [SharedPreferences] لتفادي انتظار إضافي عند فتح الجلسة.
@@ -148,7 +155,22 @@ class StartupLedgerData {
   static String? get bootstrapUserName => _sessionUserName;
 
   /// يُقرأ مع [ensureLoaded] — يغذّي [mergeDebtsIntoSafiProvider].
-  static bool get bootstrapMergeDebtsIntoSafiTab => _sessionMergeDebtsIntoSafiTab;
+  static bool get bootstrapMergeDebtsIntoSafiTab =>
+      _sessionMergeDebtsIntoSafiTab;
+
+  /// يبقي قيمة الجلسة متسقة مع [mergeDebtsIntoSafiProvider] بعد تغيير المفتاح محلياً.
+  static void cacheMergeDebtsIntoSafiTab(bool value) {
+    _sessionMergeDebtsIntoSafiTab = value;
+  }
+
+  /// الدور المحفوظ محلياً منذ آخر تسجيل دخول.
+  static String get bootstrapUserRole => _sessionUserRole;
+
+  /// الصلاحيات المحفوظة محلياً منذ آخر تسجيل دخول.
+  static List<String> get bootstrapUserPermissions => _sessionUserPermissions;
+
+  /// آخر [ledgerOwnerUid] مخزَّن محلياً.
+  static String? get bootstrapLedgerOwnerUid => _sessionLedgerOwnerUid;
 
   static List<DebtorUi> _decodeDebtors(String? raw) {
     if (raw == null || raw.isEmpty) return [];
@@ -237,25 +259,22 @@ class StartupLedgerData {
   /// بذور أول تشغيل — تُستخدم فقط لو لا يوجد `accounts_json` بعد.
   static const List<FinancialAccount> _seedFinancialAccounts = [
     FinancialAccount(
-      id: '1',
-      name: 'كاش',
+      id: 'seed_cash',
+      name: 'النقدية',
       type: AccountType.cash,
-      balance: 1200,
+      balance: 0,
     ),
     FinancialAccount(
-      id: '2',
-      name: 'حساب بنك فلسطين',
+      id: 'seed_bank',
+      name: 'البنك',
       type: AccountType.bank,
-      balance: 4500,
-      accountNumber: '12345678',
-      accountOwner: 'المالك',
+      balance: 0,
     ),
     FinancialAccount(
-      id: '3',
-      name: 'جوال بي',
+      id: 'seed_wallet',
+      name: 'المحفظة',
       type: AccountType.wallet,
-      balance: 300,
-      accountNumber: '0599123456',
+      balance: 0,
     ),
   ];
 
@@ -291,6 +310,9 @@ class StartupLedgerData {
     'balance': a.balance,
     'accountNumber': a.accountNumber,
     'accountOwner': a.accountOwner,
+    'editedMs': a.editedMs,
+    'isDeleted': a.isDeleted,
+    'deletedMs': a.deletedMs,
   };
 
   static FinancialAccount _financialAccountFromMap(Map<String, dynamic> m) {
@@ -304,6 +326,9 @@ class StartupLedgerData {
       balance: (m['balance'] as num?)?.toDouble() ?? 0,
       accountNumber: m['accountNumber'] as String?,
       accountOwner: m['accountOwner'] as String?,
+      editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
+      isDeleted: m['isDeleted'] as bool? ?? false,
+      deletedMs: (m['deletedMs'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -311,6 +336,9 @@ class StartupLedgerData {
     'id': c.id,
     'name': c.name,
     'colorValue': c.colorValue,
+    'editedMs': c.editedMs,
+    'isDeleted': c.isDeleted,
+    'deletedMs': c.deletedMs,
   };
 
   static DebtCategory _debtCategoryFromMap(Map<String, dynamic> m) {
@@ -318,6 +346,9 @@ class StartupLedgerData {
       id: m['id'] as String,
       name: m['name'] as String,
       colorValue: (m['colorValue'] as num?)?.toInt() ?? 0xFF000000,
+      editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
+      isDeleted: m['isDeleted'] as bool? ?? false,
+      deletedMs: (m['deletedMs'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -333,9 +364,11 @@ class StartupLedgerData {
     'categoryIds': d.categoryIds,
     'isSupplier': d.isSupplier,
     'editedMs': d.editedMs,
-    'doubleLedger': d.doubleLedger,
+    'doubleLedger': false,
     'dueDate': d.dueDate?.toIso8601String(),
     'note': d.note,
+    'isDeleted': d.isDeleted,
+    'deletedMs': d.deletedMs,
   };
 
   static DebtorUi _debtorFromMap(Map<String, dynamic> m) {
@@ -355,9 +388,14 @@ class StartupLedgerData {
           : [for (final c in m['categoryIds'] as List<dynamic>) c as String],
       isSupplier: m['isSupplier'] as bool? ?? false,
       editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
-      doubleLedger: m['doubleLedger'] as bool? ?? false,
-      dueDate: m['dueDate'] != null ? DateTime.tryParse(m['dueDate'] as String) : null,
+      // خيار «دفتر مزدوج» أُلغي — لا نعيد تفعيله من JSON القديم.
+      doubleLedger: false,
+      dueDate: m['dueDate'] != null
+          ? DateTime.tryParse(m['dueDate'] as String)
+          : null,
       note: m['note'] as String?,
+      isDeleted: m['isDeleted'] as bool? ?? false,
+      deletedMs: (m['deletedMs'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -372,6 +410,8 @@ class StartupLedgerData {
     'payMethodId': t.payMethodId,
     'imagePath': t.imagePath,
     'editedMs': t.editedMs,
+    'isDeleted': t.isDeleted,
+    'deletedMs': t.deletedMs,
   };
 
   static TransactionUi _transactionFromMap(Map<String, dynamic> m) {
@@ -388,6 +428,8 @@ class StartupLedgerData {
       payMethodId: m['payMethodId'] as String?,
       imagePath: m['imagePath'] as String?,
       editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
+      isDeleted: m['isDeleted'] as bool? ?? false,
+      deletedMs: (m['deletedMs'] as num?)?.toInt() ?? 0,
     );
   }
 

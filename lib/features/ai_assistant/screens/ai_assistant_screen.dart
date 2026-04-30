@@ -56,7 +56,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
     return ReportsStylePage(
       title: 'المساعد الذكي',
-      subtitle: 'أسئلة ومسودات وفق حساباتك في الصافي',
+      subtitle: 'صياغة وتحليل رسمي وفق بيانات دفتر الصافي',
       headerTrailing: IconButton(
         icon: const Icon(LucideIcons.trash2, color: Colors.white),
         tooltip: 'مسح المحادثة',
@@ -79,7 +79,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       _bubble(
                         isUser: false,
                         text:
-                            'أهلاً بك! أنا المساعد الذكي لتطبيق الصافي، جاهز للإجابة عن أسئلتك، كتابة خطابات للعملاء، أو تحليل ديونك.',
+                            'السلام عليكم. أنا المساعد المالي ضمن تطبيق الصافي؛ يمكنني الإجابة بأسلوب رسمي، وصياغة مراسلات متعلقة بالديون والسداد، وتلخيص وضعك وفق البيانات المعروضة لديك فقط.',
                       ),
                       if (history.isEmpty) ...[
                         const SizedBox(height: 16),
@@ -88,9 +88,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           runSpacing: 8,
                           children: [
                             for (final t in const [
-                              'مين أكثر شخص مدين لي؟',
-                              'لخص لي حالتي المالية؟',
-                              'اكتب رسالة طلب سداد ديون محترمة',
+                              'من أكبر المدينين لي حسب المبلغ؟',
+                              'لخص الوضع المالي بإيجاز رسمي',
+                              'صيغة رسالة مطالبة بسداد بلهجة رسمية',
                             ])
                               ActionChip(
                                 label: Text(
@@ -132,7 +132,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'المساعد يكتب...',
+                    'جاري التجهيز…',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textMuted,
                     ),

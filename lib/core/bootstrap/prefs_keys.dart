@@ -4,7 +4,7 @@ abstract final class PrefsKeys {
   static const onboardingDone = 'safi_onboarding_done';
   static const userName = 'safi_user_name';
 
-  /// العملة والموقع للبطاقة والتقارير (محليّان؛ الاسم من [userName]).
+  /// عنوان فرعية بطاقة المتجر (محلياً؛ التقارير تستخدم الاسم مع [userName]).
   static const storeCurrencyLabel = 'safi_store_currency_label';
   static const storeAddress = 'safi_store_address';
 
@@ -13,7 +13,8 @@ abstract final class PrefsKeys {
 
   /// آخر مستند مسجِّل لتسجيل الدخول (أرقام فقط لـ [registered_phones]).
   static const phoneDocId = 'safi_phone_doc_id';
-  /// عند `true`: إظهار معاملات الدين/السداد في تبويب «الصافي» وبطاقته الموحّدة.
+  /// عند `true` (الافتراضي لأول تشغيل): تُعرض وتُحسب ديون/سداد مع تبويب «الصافي».
+  /// عند `false`: الصندوق وحده في «الصافي»، والكل في الأرشيف.
   static const mergeDebtsIntoSafiTab = 'safi_merge_debts_into_safi_tab';
 
   static const debtors = 'safi_ledger_debtors_v1';
@@ -25,4 +26,8 @@ abstract final class PrefsKeys {
 
   /// آخر طابع زمني طبّقناه مع سحب/دفع سحابي للحافظة (مطابقة بسيطة).
   static const lastLedgerSyncedMs = 'safi_last_ledger_synced_ms';
+
+  /// صلاحيات المستخدم الحالي (المالك أو عضو فريق)
+  static const userRole = 'safi_user_role'; // 'owner', 'cashier', 'viewer'
+  static const userPermissions = 'safi_user_permissions'; // List<String>
 }

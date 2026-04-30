@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:lucide_icons/lucide_icons.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/bootstrap/prefs_keys.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -70,6 +72,22 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
   /// نص وألوان على خلفية خضراء فاتحة (بدون الأخضر الغامق في الزر)
 
   static const Color _paymentBtnFg = Color(0xFF43A047);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final role = prefs.getString(PrefsKeys.userRole) ?? 'owner';
+      final perms = prefs.getStringList(PrefsKeys.userPermissions) ?? [];
+      if (role != 'owner' && !perms.contains('record_payment')) {
+        if (mounted) {
+          Navigator.of(context).pop();
+          showAppSnackBar(context, 'ليس لديك صلاحية تسجيل دفعات');
+        }
+      }
+    });
+  }
 
   void _onKey(String k) {
     setState(() {
@@ -241,7 +259,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
   Widget build(BuildContext context) {
     final c = widget.forCustomer;
 
-    final accounts = ref.watch(accountsProvider);
+    final accounts = ref.watch(activeAccountsProvider);
 
     final dateStr =
         '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';

@@ -11,6 +11,8 @@ class CashbookEntry {
     this.category,
     this.imagePath,
     this.editedMs = 0,
+    this.isDeleted = false,
+    this.deletedMs = 0,
   });
 
   final String id;
@@ -30,6 +32,9 @@ class CashbookEntry {
   /// أحدث وقت تعديل لتفضيل نسخة عند المزامنة
   final int editedMs;
 
+  final bool isDeleted;
+  final int deletedMs;
+
   CashbookEntry copyWith({
     String? id,
     String? title,
@@ -41,6 +46,8 @@ class CashbookEntry {
     String? category,
     String? imagePath,
     int? editedMs,
+    bool? isDeleted,
+    int? deletedMs,
   }) {
     return CashbookEntry(
       id: id ?? this.id,
@@ -53,6 +60,8 @@ class CashbookEntry {
       category: category ?? this.category,
       imagePath: imagePath ?? this.imagePath,
       editedMs: editedMs ?? this.editedMs,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedMs: deletedMs ?? this.deletedMs,
     );
   }
 
@@ -67,6 +76,8 @@ class CashbookEntry {
         'category': category,
         'imagePath': imagePath,
         'editedMs': editedMs,
+        'isDeleted': isDeleted,
+        'deletedMs': deletedMs,
       };
 
   factory CashbookEntry.fromJson(Map<String, dynamic> m) {
@@ -81,6 +92,8 @@ class CashbookEntry {
       category: m['category'] as String?,
       imagePath: m['imagePath'] as String?,
       editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
+      isDeleted: m['isDeleted'] as bool? ?? false,
+      deletedMs: (m['deletedMs'] as num?)?.toInt() ?? 0,
     );
   }
 }

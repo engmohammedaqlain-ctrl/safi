@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,11 +8,13 @@ import 'prefs_keys.dart';
 import 'startup_ledger_data.dart';
 import '../router/main_shell.dart' as main_shell_router;
 import '../router/nav_provider.dart';
+import '../sync/ledger_firestore_sync.dart';
 import '../sync/post_login_loading.dart';
 import '../../features/cash_flow/providers/accounts_provider.dart';
 import '../../features/debts/providers/debt_categories_provider.dart';
 import '../../features/debts/providers/debts_ui_provider.dart';
 import '../../features/sales/providers/cashbook_ui_provider.dart';
+import '../../features/settings/providers/team_provider.dart';
 
 /// مراحل دخول المستخدم: دخول → اسم → إعداد أولي → التطبيق.
 /// لا توجد مرحلة splash داخلية — شاشة النظام تغطّي الإقلاع.
@@ -30,7 +33,9 @@ enum AppSessionPhase {
 }
 
 final appSessionProvider =
-    NotifierProvider<AppSessionNotifier, AppSessionPhase>(AppSessionNotifier.new);
+    NotifierProvider<AppSessionNotifier, AppSessionPhase>(
+      AppSessionNotifier.new,
+    );
 
 class AppSessionNotifier extends Notifier<AppSessionPhase> {
   @override
@@ -50,22 +55,45 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
   ///
   /// [displayNameFromFirestore]: من مستند `registered_phones/{doc}` إذا وُجد.
   Future<void> onLoginSuccess({
-    String? phoneDocId,
+    required String phoneDocId,
     String? displayNameFromFirestore,
+    String? ownerUidOverride,
+    String? role,
+    List<String>? permissions,
   }) async {
     final p = await SharedPreferences.getInstance();
     await p.setBool(PrefsKeys.loggedIn, true);
-    if (phoneDocId != null && phoneDocId.isNotEmpty) {
-      await p.setString(PrefsKeys.phoneDocId, phoneDocId);
-    }
+    await p.setString(PrefsKeys.phoneDocId, phoneDocId);
+
+    final resolvedRole = role ?? 'owner';
+    final resolvedPerms = List<String>.from(permissions ?? []);
+
+    await p.setString(PrefsKeys.userRole, resolvedRole);
+    await p.setStringList(PrefsKeys.userPermissions, resolvedPerms);
+
+    // ◀ تحديث فوري للواجهة قبل أي await آخر
+    ref
+        .read(userRoleNotifierProvider.notifier)
+        .setRole(resolvedRole, resolvedPerms);
+
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
+      final targetUid = ownerUidOverride ?? uid;
       final storedOwner = p.getString(PrefsKeys.ledgerOwnerUid);
-      if (storedOwner != uid) {
+      if (storedOwner != targetUid) {
         await StartupLedgerData.wipeLocalLedgerStorageAndPersist();
-        await p.setString(PrefsKeys.ledgerOwnerUid, uid);
+        await p.setString(PrefsKeys.ledgerOwnerUid, targetUid);
         await StartupLedgerData.reloadFromDiskIntoMemory();
         _invalidateLedgerUi();
+
+        // ◀ إعادة المزامنة مع Firestore لجلب بيانات المالك الجديد
+        try {
+          final sync = ref.read(ledgerFirestoreSyncProvider);
+          await sync.detach();
+          await sync.attachIfNeeded(targetUid);
+        } catch (e) {
+          debugPrint('AppSession: re-sync after ownerUid change: $e');
+        }
       }
     }
     final trimmedRemote = displayNameFromFirestore?.trim();
@@ -76,7 +104,20 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
       await p.setString(PrefsKeys.userName, trimmedRemote);
     }
     await StartupLedgerData.refreshCachedUserName();
+    final display = (p.getString(PrefsKeys.userName) ?? '').trim();
+    ref
+        .read(main_shell_router.displayStoreNameProvider.notifier)
+        .setFromSavedName(display);
+    _invalidateTeamProviders();
     await _advanceAfterName(p);
+  }
+
+  void _invalidateTeamProviders() {
+    // reload() يُعيد القراءة من Prefs ويُحدّث الـ state
+    ref.read(userRoleNotifierProvider.notifier).reload();
+    ref.invalidate(teamMembersProvider);
+    ref.invalidate(pendingInvitesProvider);
+    ref.invalidate(canManageTeamProvider);
   }
 
   /// تحديث منطق المرحلة بعد أي تغيير في الاسم المخزّن.
@@ -97,6 +138,9 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     final p = await SharedPreferences.getInstance();
     await p.setString(PrefsKeys.userName, name);
     await StartupLedgerData.refreshCachedUserName();
+    ref
+        .read(main_shell_router.displayStoreNameProvider.notifier)
+        .setFromSavedName(name);
     final docId = p.getString(PrefsKeys.phoneDocId);
     if (docId != null && docId.isNotEmpty) {
       try {
@@ -120,6 +164,9 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
 
   /// تسجيل خروج — يمسح المحتوى المحلي المرتبط بالحساب ويعيد لوحة إدخال الرقم.
   Future<void> logout() async {
+    // أولاً: تحديث فوري للواجهة
+    ref.read(userRoleNotifierProvider.notifier).setRole('owner', []);
+
     await StartupLedgerData.wipeLocalLedgerStorageAndPersist();
 
     final p = await SharedPreferences.getInstance();
@@ -130,6 +177,8 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     await p.remove(PrefsKeys.storeCurrencyLabel);
     await p.remove(PrefsKeys.storeAddress);
     await p.remove(PrefsKeys.onboardingDone);
+    await p.remove(PrefsKeys.userRole);
+    await p.remove(PrefsKeys.userPermissions);
 
     await StartupLedgerData.reloadFromDiskIntoMemory();
 
@@ -142,6 +191,9 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     _invalidateLedgerUi();
     ref.invalidate(main_shell_router.userNameProvider);
     ref.invalidate(main_shell_router.storeCardDisplayProvider);
+    ref.invalidate(main_shell_router.displayStoreNameProvider);
+    _invalidateTeamProviders();
+    ref.invalidate(ledgerSyncUiProvider);
 
     state = AppSessionPhase.login;
   }
@@ -153,5 +205,17 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     ref.invalidate(accountsProvider);
     ref.invalidate(debtCategoriesProvider);
     ref.read(navIndexProvider.notifier).goTo(1);
+  }
+
+  /// مسح دفتر العمليات على هذا الجهاز فقط: عملاء، معاملات، صندوق، تصنيفات،
+  /// وإعادة الحسابات الافتراضية (كاش / بنك / محفظة) برصيد صفر — دون تسجيل خروج.
+  /// السحابة لا تُحدَّث تلقائياً.
+  Future<void> resetLocalLedgerToFactoryDefaults() async {
+    await StartupLedgerData.wipeLocalLedgerStorageAndPersist();
+    ref.invalidate(debtorsUiProvider);
+    ref.invalidate(transactionsProvider);
+    ref.invalidate(cashbookEntriesProvider);
+    ref.invalidate(accountsProvider);
+    ref.invalidate(debtCategoriesProvider);
   }
 }

@@ -22,13 +22,11 @@ import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
 import '../utils/wallet_balance_math.dart';
 import 'cashbook_entry_detail_screen.dart';
-import 'cash_entry_screen.dart';
 import 'financial_accounts_screen.dart' show AccountFormScreen;
 
 /// تفاصيل محفظة واحدة:
-/// - بطاقة الرصيد + معلومات الحساب
-/// - أزرار: + دخل / − مصروف
-/// - أزرار ثانوية: تعديل / تقرير المحفظة / حذف
+/// - بطاقة الرصيد مع ملخص الدخل والمصروف وعدد الحركات، ومعلومات الحساب
+/// - إجراءات الهيدر: تقرير المحفظة (قريباً) وتعديل الحساب
 /// - قائمة الحركات (مفلترة بـ accountId)
 class WalletDetailScreen extends ConsumerWidget {
   const WalletDetailScreen({super.key, required this.accountId});
@@ -47,7 +45,7 @@ class WalletDetailScreen extends ConsumerWidget {
       ),
     );
 
-    if (acc.id == '_missing') {
+    if (acc.id == '_missing' || acc.isDeleted) {
       return Directionality(
         textDirection: TextDirection.rtl,
         child: VaultInsetPageShell(
@@ -78,17 +76,23 @@ class WalletDetailScreen extends ConsumerWidget {
     }
 
     final hidden = ref.watch(hideBalanceProvider);
+    final activeAccounts = ref.watch(activeAccountsProvider);
     final allEntries = ref.watch(cashbookEntriesProvider);
     final allTx = ref.watch(transactionsProvider);
     final debtors = ref.watch(debtorsUiProvider);
 
     final cashEntries = allEntries.where((e) {
-      final rid = resolvedCashAccountIdForEntry(e, accounts);
+      if (e.isDeleted) return false;
+      final rid = resolvedCashAccountIdForEntry(e, activeAccounts);
       return rid == acc.id;
     }).toList(growable: false);
 
     final debtTxs = allTx
-        .where((t) => debtPayTouchesWallet(t, acc, accounts))
+        .where(
+          (t) =>
+              !t.isDeleted &&
+              debtPayTouchesWallet(t, acc, activeAccounts),
+        )
         .toList(growable: false);
 
     final cashIncome = cashEntries
@@ -122,7 +126,7 @@ class WalletDetailScreen extends ConsumerWidget {
       acc: acc,
       entries: allEntries,
       txs: allTx,
-      accounts: accounts,
+      accounts: activeAccounts,
     );
 
     return Directionality(
@@ -172,6 +176,16 @@ class WalletDetailScreen extends ConsumerWidget {
               color: Colors.white.withValues(alpha: 0.95),
             ),
           ),
+          IconButton(
+            tooltip: 'تقرير المحفظة',
+            onPressed: () {
+              showAppSnackBar(context, 'تقرير المحفظة — قريباً');
+            },
+            icon: Icon(
+              LucideIcons.fileText,
+              color: Colors.white.withValues(alpha: 0.95),
+            ),
+          ),
         ],
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
@@ -180,85 +194,9 @@ class WalletDetailScreen extends ConsumerWidget {
               account: acc,
               hidden: hidden,
               effectiveBalance: effectiveBalance,
-            ),
-            const SizedBox(height: 18),
-            _IncomeExpenseStrip(
               income: income,
               expense: expense,
-              hidden: hidden,
-              count: movementCount,
-              accent: _WalletUi.typeAccent(acc.type),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _SoftCta(
-                    label: '+ دخل',
-                    bg: AppColors.successLight,
-                    fg: AppColors.flowIn,
-                    icon: LucideIcons.trendingUp,
-                    onTap: () => Navigator.push<void>(
-                      context,
-                      AppPageRoute<void>(
-                        builder: (_) => CashEntryScreen(
-                          initialIncome: true,
-                          initialAccountId: acc.id,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _SoftCta(
-                    label: '− مصروف',
-                    bg: AppColors.errorLight,
-                    fg: AppColors.flowOut,
-                    icon: LucideIcons.trendingDown,
-                    onTap: () => Navigator.push<void>(
-                      context,
-                      AppPageRoute<void>(
-                        builder: (_) => CashEntryScreen(
-                          initialIncome: false,
-                          initialAccountId: acc.id,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _OutlineAction(
-                    icon: LucideIcons.fileText,
-                    label: 'تقرير',
-                    onTap: () {
-                      showAppSnackBar(context, 'تقرير المحفظة — قريباً');
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _OutlineAction(
-                    icon: LucideIcons.edit,
-                    label: 'تعديل',
-                    onTap: () => _editWallet(context, ref, acc),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _OutlineAction(
-                    icon: LucideIcons.trash2,
-                    label: 'حذف',
-                    color: AppColors.error,
-                    onTap: () => _deleteWallet(context, ref, acc),
-                  ),
-                ),
-              ],
+              movementCount: movementCount,
             ),
             const SizedBox(height: 22),
             Row(
@@ -343,37 +281,6 @@ class WalletDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _deleteWallet(
-    BuildContext context,
-    WidgetRef ref,
-    FinancialAccount acc,
-  ) async {
-    final res = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('حذف المحفظة'),
-          content: Text('هل تريد حذف "${acc.name}"؟ لا يمكن التراجع.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('حذف'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (res == true) {
-      ref.read(accountsProvider.notifier).deleteAccount(acc.id);
-      if (context.mounted) Navigator.pop(context);
-    }
-  }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -445,6 +352,9 @@ class _WalletHeroPlasticCard extends StatelessWidget {
     required this.account,
     required this.hidden,
     required this.effectiveBalance,
+    required this.income,
+    required this.expense,
+    required this.movementCount,
   });
 
   final FinancialAccount account;
@@ -452,6 +362,9 @@ class _WalletHeroPlasticCard extends StatelessWidget {
 
   /// الرصيد بعد استيفاء الحقل المخزَّن وجميع حركات الصندوق والديون لهذه المحفظة.
   final double effectiveBalance;
+  final double income;
+  final double expense;
+  final int movementCount;
 
   @override
   Widget build(BuildContext context) {
@@ -602,6 +515,13 @@ class _WalletHeroPlasticCard extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 14),
+              _WalletHeroGlassStats(
+                hidden: hidden,
+                income: income,
+                expense: expense,
+                movementCount: movementCount,
+              ),
               if (infoLines.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 DecoratedBox(
@@ -652,99 +572,69 @@ class _WalletHeroPlasticCard extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-//  شريط الدخل / المصروف / عدد الحركات
-// ════════════════════════════════════════════════════════════════
-class _IncomeExpenseStrip extends StatelessWidget {
-  const _IncomeExpenseStrip({
+/// ملخص داخل البطاقة: دخل / مصروف / عدد الحركات — شريط شفاف داخل التدرّج.
+class _WalletHeroGlassStats extends StatelessWidget {
+  const _WalletHeroGlassStats({
+    required this.hidden,
     required this.income,
     required this.expense,
-    required this.hidden,
-    required this.count,
-    required this.accent,
+    required this.movementCount,
   });
 
+  final bool hidden;
   final double income;
   final double expense;
-  final bool hidden;
-  final int count;
-  final Color accent;
+  final int movementCount;
+
+  static const _softIn = Color(0xFFC8E6C9);
+  static const _softOut = Color(0xFFFFCCBC);
 
   @override
   Widget build(BuildContext context) {
+    final incStr = hidden ? obscureAmountText() : formatShekelAmount(income);
+    final expStr = hidden ? obscureAmountText() : formatShekelAmount(expense);
+
+    TextStyle valueStyle(Color fg, {double size = 13}) =>
+        AppTextStyles.labelLarge.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w700,
+          fontSize: size,
+          fontFeatures: const [FontFeature.tabularFigures()],
+          height: 1.15,
+        );
+
+    Widget vBar() => Container(
+          width: 1,
+          height: 40,
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          color: Colors.white.withValues(alpha: 0.22),
+        );
+
     Widget cell({
       required IconData icon,
       required String label,
-      required String amount,
-      required Color color,
-      Color? bgTint,
-      Color? borderTint,
-      bool showCurrencySuffix = true,
+      required Widget value,
+      required Color iconColor,
     }) {
-      final bg = bgTint ?? Colors.white;
-      final bd = borderTint ?? AppColors.outlineSoft;
       return Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          decoration: BoxDecoration(
-            color: bg,
-            border: Border.all(color: bd),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: color, size: 18),
-              const SizedBox(height: 6),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Directionality(
-                  textDirection: TextDirection.ltr,
-                  child: showCurrencySuffix
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              amount,
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              ' ₪',
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Text(
-                          amount,
-                          style: TextStyle(
-                            color: color,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                ),
-              ),
+              Icon(icon, size: 15, color: iconColor),
+              const SizedBox(height: 4),
+              FittedBox(fit: BoxFit.scaleDown, child: value),
               const SizedBox(height: 2),
               Text(
                 label,
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 11,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: Colors.white.withValues(alpha: 0.78),
                   fontWeight: FontWeight.w600,
+                  fontSize: 10,
                 ),
               ),
             ],
@@ -753,144 +643,75 @@ class _IncomeExpenseStrip extends StatelessWidget {
       );
     }
 
-    final incStr = hidden ? obscureAmountText() : formatShekelAmount(income);
-    final expStr = hidden ? obscureAmountText() : formatShekelAmount(expense);
-
-    return Row(
-      textDirection: TextDirection.rtl,
-      children: [
-        cell(
-          icon: LucideIcons.trendingUp,
-          label: 'الدخل',
-          amount: incStr,
-          color: AppColors.flowIn,
-          bgTint: AppColors.successLight,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
         ),
-        const SizedBox(width: 8),
-        cell(
-          icon: LucideIcons.trendingDown,
-          label: 'المصروف',
-          amount: expStr,
-          color: AppColors.flowOut,
-          bgTint: AppColors.errorLight,
-        ),
-        const SizedBox(width: 8),
-        cell(
-          icon: LucideIcons.layers,
-          label: 'عدد الحركات',
-          amount: '$count',
-          color: accent,
-          bgTint: accent.withValues(alpha: 0.08),
-          borderTint: accent.withValues(alpha: 0.28),
-          showCurrencySuffix: false,
-        ),
-      ],
-    );
-  }
-}
-
-// ════════════════════════════════════════════════════════════════
-//  أزرار CTA الناعمة (+ دخل / − مصروف)
-// ════════════════════════════════════════════════════════════════
-class _SoftCta extends StatelessWidget {
-  const _SoftCta({
-    required this.label,
-    required this.bg,
-    required this.fg,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color bg;
-  final Color fg;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(14),
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: fg, size: 20),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: fg,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+        child: Row(
+          textDirection: TextDirection.rtl,
+          children: [
+            cell(
+              icon: LucideIcons.trendingUp,
+              label: 'الدخل',
+              iconColor: _softIn,
+              value: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(incStr, style: valueStyle(_softIn)),
+                    Text(
+                      ' ₪',
+                      style: valueStyle(_softIn, size: 11).copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ════════════════════════════════════════════════════════════════
-//  زر مخطط (تقرير / تعديل / حذف)
-// ════════════════════════════════════════════════════════════════
-class _OutlineAction extends StatelessWidget {
-  const _OutlineAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = color ?? AppColors.primary;
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            border: Border.all(color: c.withValues(alpha: 0.25)),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: c, size: 18),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: c,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+            ),
+            vBar(),
+            cell(
+              icon: LucideIcons.trendingDown,
+              label: 'المصروف',
+              iconColor: _softOut,
+              value: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(expStr, style: valueStyle(_softOut)),
+                    Text(
+                      ' ₪',
+                      style: valueStyle(_softOut, size: 11).copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            vBar(),
+            cell(
+              icon: LucideIcons.layers,
+              label: 'عدد الحركات',
+              iconColor: Colors.white.withValues(alpha: 0.9),
+              value: Text(
+                '$movementCount',
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  height: 1.15,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1030,18 +851,21 @@ class _DebtWalletTile extends StatelessWidget {
                             children: [
                               Text(
                                 '${isGave ? '-' : '+'} $amount',
-                                style: TextStyle(
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   color: c,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                  height: 1.2,
                                 ),
                               ),
                               Text(
                                 ' ₪',
-                                style: TextStyle(
+                                style: AppTextStyles.bodySmall.copyWith(
                                   color: c,
-                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
+                                  height: 1.2,
                                 ),
                               ),
                             ],
@@ -1189,18 +1013,21 @@ class _MovementTile extends StatelessWidget {
                             children: [
                               Text(
                                 '${entry.isIncome ? '+' : '-'} $amount',
-                                style: TextStyle(
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   color: c,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                  height: 1.2,
                                 ),
                               ),
                               Text(
                                 ' ₪',
-                                style: TextStyle(
+                                style: AppTextStyles.bodySmall.copyWith(
                                   color: c,
-                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
+                                  height: 1.2,
                                 ),
                               ),
                             ],

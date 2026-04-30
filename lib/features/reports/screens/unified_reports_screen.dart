@@ -123,7 +123,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
   }
 
   Future<Uint8List> _buildPdfBytes() async {
-    final cash = ref.read(cashbookEntriesProvider);
+    final cash = ref.read(activeCashbookEntriesProvider);
     final txs = ref.read(transactionsProvider);
     final debtors = ref.read(debtorsUiProvider);
     // Use the cached user name as the report header (no extra async call needed)

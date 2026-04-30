@@ -43,6 +43,46 @@ class CashbookEntryDetailScreen extends ConsumerWidget {
       }
     }
 
+    if (live.isDeleted) {
+      return Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(LucideIcons.arrowRight, color: AppColors.primary),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(
+              'تفاصيل المعاملة',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontFamily: AppFonts.family,
+                fontWeight: FontWeight.w600,
+                fontSize: 17,
+              ),
+            ),
+          ),
+          body: const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'تم حذف هذه الحركة',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final isIncome = live.isIncome;
     final accent = isIncome ? AppColors.flowIn : AppColors.warning;
     final typeLabel = isIncome ? 'دخل' : 'مصروف';

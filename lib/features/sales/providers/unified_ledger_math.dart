@@ -27,8 +27,53 @@ class UnifiedLedgerRowUi {
   final String? debtTransactionId;
 }
 
+/// تصفية صفوف الدفتر الموحّد (صندوق + ديون) — نفس منطق شاشة الأرشيف.
+enum UnifiedLedgerListFilter {
+  all,
+  debtsOnly,
+  cashIncomeOnly,
+  cashExpenseOnly,
+}
+
+extension UnifiedLedgerListFilterX on UnifiedLedgerListFilter {
+  String get labelAr => switch (this) {
+        UnifiedLedgerListFilter.all => 'كل الحركات',
+        UnifiedLedgerListFilter.debtsOnly => 'ديون فقط',
+        UnifiedLedgerListFilter.cashIncomeOnly => 'وارد فقط',
+        UnifiedLedgerListFilter.cashExpenseOnly => 'صادر فقط',
+      };
+}
+
 class UnifiedLedgerMath {
   UnifiedLedgerMath._();
+
+  static List<UnifiedLedgerRowUi> applyListFilter(
+    List<UnifiedLedgerRowUi> all,
+    UnifiedLedgerListFilter f,
+  ) {
+    switch (f) {
+      case UnifiedLedgerListFilter.all:
+        return List<UnifiedLedgerRowUi>.from(all);
+      case UnifiedLedgerListFilter.debtsOnly:
+        return [for (final r in all) if (!r.isCashbook) r];
+      case UnifiedLedgerListFilter.cashIncomeOnly:
+        return [
+          for (final r in all)
+            if (r.isCashbook &&
+                r.cashbookEntry != null &&
+                r.cashbookEntry!.isIncome)
+              r,
+        ];
+      case UnifiedLedgerListFilter.cashExpenseOnly:
+        return [
+          for (final r in all)
+            if (r.isCashbook &&
+                r.cashbookEntry != null &&
+                !r.cashbookEntry!.isIncome)
+              r,
+        ];
+    }
+  }
 
   static String debtName(List<DebtorUi> debtors, String id) {
     for (final d in debtors) {
@@ -73,6 +118,7 @@ class UnifiedLedgerMath {
   }) {
     final rows = <UnifiedLedgerRowUi>[];
     for (final e in cash) {
+      if (e.isDeleted) continue;
       final signed = e.isIncome ? e.amount : -e.amount;
       final hint = [
         if (e.title.isNotEmpty) e.title,
@@ -91,6 +137,7 @@ class UnifiedLedgerMath {
       );
     }
     for (final t in txs) {
+      if (t.isDeleted) continue;
       final name = debtName(debtors, t.customerId);
       final isGave = t.type == TransactionType.gave;
       // مواءمة مع الوارد / الصادر في البطاقة: قيمة خارجة = سالب، واردة للصندوق = موجب
@@ -126,6 +173,7 @@ class UnifiedLedgerMath {
   }) {
     double infl = 0, outf = 0;
     for (final e in cash) {
+      if (e.isDeleted) continue;
       if (e.isIncome) {
         infl += e.amount;
       } else {
@@ -133,6 +181,7 @@ class UnifiedLedgerMath {
       }
     }
     for (final t in txs) {
+      if (t.isDeleted) continue;
       if (t.type == TransactionType.gave) {
         outf += t.amount;
       } else {

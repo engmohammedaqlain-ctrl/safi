@@ -30,7 +30,7 @@ class FinancialTimelineItem {
 
 final financialTimelineItemsProvider =
     Provider<List<FinancialTimelineItem>>((ref) {
-  final cash = ref.watch(cashbookEntriesProvider);
+  final cash = ref.watch(activeCashbookEntriesProvider);
   final txs = ref.watch(transactionsProvider);
   final debtors = ref.watch(debtorsUiProvider);
 
@@ -60,7 +60,7 @@ final financialTimelineItemsProvider =
 });
 
 final financialTimelineNetSignedProvider = Provider<double>((ref) {
-  final cash = ref.watch(cashbookEntriesProvider);
+  final cash = ref.watch(activeCashbookEntriesProvider);
   final txs = ref.watch(transactionsProvider);
   return UnifiedLedgerMath.netSignedTotal(cash: cash, txs: txs);
 });
