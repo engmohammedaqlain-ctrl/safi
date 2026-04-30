@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 
-/// شارة هوية صافي — محفظة على تدرج (واضحة بأي حجم، بخلاف حرف عربي صغير).
+/// شارة هوية صافي — حرف «ص» على تدرج.
 class SafiBrandMark extends StatelessWidget {
   const SafiBrandMark({super.key, this.size = 24});
 
@@ -12,7 +12,7 @@ class SafiBrandMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = (size * 0.25).clamp(4.0, 10.0);
-    final iconSize = size * 0.52;
+    final fontSize = size * 0.56;
     return Container(
       width: size,
       height: size,
@@ -20,10 +20,17 @@ class SafiBrandMark extends StatelessWidget {
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(radius),
       ),
-      child: Icon(
-        LucideIcons.wallet,
-        color: Colors.white,
-        size: iconSize,
+      alignment: Alignment.center,
+      child: Text(
+        'ص',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontFamily: AppFonts.family,
+          color: Colors.white,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+          height: 1.0,
+        ),
       ),
     );
   }

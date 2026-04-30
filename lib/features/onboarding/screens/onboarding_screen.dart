@@ -10,6 +10,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/safi_button.dart';
+import '../../../core/widgets/safi_brand_mark.dart';
 import '../../../core/widgets/vault_branded_shell.dart';
 
 /// تمثيل بصري مصغّر داخل بطاقة الأونبوردينغ للفكرة المعروضة.
@@ -35,6 +36,7 @@ class _OnboardingSlide {
     required this.gradientColors,
     required this.cardTag,
     required this.miniKind,
+    this.cornerSafiBrand = false,
   });
 
   final String headline;
@@ -46,6 +48,9 @@ class _OnboardingSlide {
   final String cardTag;
 
   final _OnboardingMiniKind miniKind;
+
+  /// بدل أيقونة زاوية البطاقة — شارة «ص» كالهيدر الرئيسي.
+  final bool cornerSafiBrand;
 }
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -78,6 +83,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ],
       cardTag: 'ملخص الأرصدة',
       miniKind: _OnboardingMiniKind.wallets,
+      cornerSafiBrand: true,
     ),
     _OnboardingSlide(
       headline: 'الديون والمستحقات تحت السيطرة',
@@ -796,18 +802,31 @@ class _BankPlasticCard extends StatelessWidget {
                       ),
                       Transform.translate(
                         offset: Offset(-layerShift * 0.2, 0),
-                        child: Container(
-                          padding: const EdgeInsets.all(11),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.18),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            slide.icon,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
+                        child: slide.cornerSafiBrand
+                            ? Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.18),
+                                  ),
+                                ),
+                                child: const SafiBrandMark(size: 28),
+                              )
+                            : Container(
+                                padding: const EdgeInsets.all(11),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.18),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  slide.icon,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
                       ),
                     ],
                   ),

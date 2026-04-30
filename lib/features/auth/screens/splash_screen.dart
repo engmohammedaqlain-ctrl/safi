@@ -5,11 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/bootstrap/app_session.dart';
 import '../../../core/bootstrap/startup_ledger_data.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../features/debts/providers/debts_ui_provider.dart';
 import '../../../features/sales/providers/cashbook_ui_provider.dart';
 
-/// مرحلة إقلاع تقنية فقط — نفس لون الـ native splash (#F3EFF7) دون شعار مكرر.
-/// التصميم الظاهر للمستخدم يبقى من شاشة النظام الأصلية حتى الانتقال للخطوة التالية.
+/// مرحلة إقلاع — خلفية مطابقة لـ native splash وحرف «ص» داخل مربع أرجواني.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -45,18 +46,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       label: 'الصافي، جاري التحميل',
       child: Scaffold(
         backgroundColor: SplashScreen.nativeSplashColor,
-        body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                SplashScreen.nativeSplashColor,
-                Color(0xFFECE5F3),
-              ],
+        body: Center(
+          child: Container(
+            width: 96,
+            height: 96,
+            color: AppColors.primary,
+            alignment: Alignment.center,
+            child: Text(
+              'ص',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.onPrimary,
+                fontSize: 52,
+                fontWeight: FontWeight.w900,
+                fontFamily: AppFonts.family,
+                height: 1,
+              ),
             ),
           ),
-          child: const SizedBox.expand(),
         ),
       ),
     );

@@ -428,7 +428,11 @@ class _SafiCompactBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget item(int i, IconData icon, String label) {
+    Widget item(
+      int i,
+      String label,
+      Widget Function(bool sel) leading,
+    ) {
       final sel = index == i;
       return Expanded(
         child: Material(
@@ -454,12 +458,7 @@ class _SafiCompactBottomNav extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 4),
-                      child: Icon(
-                        icon,
-                        size: sel ? 26 : 24,
-                        color:
-                            sel ? AppColors.primary : AppColors.textMuted,
-                      ),
+                      child: leading(sel),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -496,9 +495,37 @@ class _SafiCompactBottomNav extends StatelessWidget {
             textDirection: TextDirection.rtl,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              item(0, LucideIcons.bookMarked, 'دفتر الديون'),
-              item(1, LucideIcons.wallet, 'الصافي'),
-              item(2, LucideIcons.layoutGrid, 'المزيد'),
+              item(
+                0,
+                'دفتر الديون',
+                (sel) => Icon(
+                  LucideIcons.bookMarked,
+                  size: sel ? 26 : 24,
+                  color: sel ? AppColors.primary : AppColors.textMuted,
+                ),
+              ),
+              item(
+                1,
+                'الصافي',
+                (sel) => Text(
+                  'ص',
+                  style: TextStyle(
+                    fontSize: sel ? 22 : 20,
+                    fontWeight: FontWeight.w800,
+                    height: 1.0,
+                    color: sel ? AppColors.primary : AppColors.textMuted,
+                  ),
+                ),
+              ),
+              item(
+                2,
+                'المزيد',
+                (sel) => Icon(
+                  LucideIcons.layoutGrid,
+                  size: sel ? 26 : 24,
+                  color: sel ? AppColors.primary : AppColors.textMuted,
+                ),
+              ),
             ],
           ),
         ),

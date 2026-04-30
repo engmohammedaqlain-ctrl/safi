@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_snackbar.dart';
+import '../../../core/widgets/safi_brand_mark.dart';
 import '../../../core/widgets/vault_branded_shell.dart';
 import '../../debts/providers/debts_ui_provider.dart';
 import '../../sales/models/cashbook_entry.dart';
@@ -470,16 +471,15 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.all(11),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.18),
+                      ),
                     ),
-                    child: Icon(
-                      LucideIcons.wallet,
-                      color: Colors.white,
-                      size: 26,
-                    ),
+                    child: const SafiBrandMark(size: 26),
                   ),
                 ],
               ),

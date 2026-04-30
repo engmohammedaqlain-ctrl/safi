@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/safi_brand_mark.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../cash_flow/providers/accounts_provider.dart';
 import '../../cash_flow/screens/cash_entry_screen.dart';
@@ -409,7 +410,7 @@ class _QuickNavIconsLabeledRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget cell(String title, IconData icon, VoidCallback onTap) {
+    Widget cell(String title, Widget mark, VoidCallback onTap) {
       return Expanded(
         child: Material(
           color: Colors.transparent,
@@ -432,7 +433,7 @@ class _QuickNavIconsLabeledRow extends StatelessWidget {
                         color: AppColors.primary.withValues(alpha: 0.12),
                       ),
                     ),
-                    child: Icon(icon, color: AppColors.primary, size: 27),
+                    child: mark,
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -458,9 +459,17 @@ class _QuickNavIconsLabeledRow extends StatelessWidget {
     return Row(
       textDirection: TextDirection.rtl,
       children: [
-        cell('المحافظ', LucideIcons.wallet, onWallets),
-        cell('الأرشيف', LucideIcons.inbox, onArchive),
-        cell('التقارير', LucideIcons.fileSpreadsheet, onReports),
+        cell('المحافظ', const SafiBrandMark(size: 27), onWallets),
+        cell(
+          'الأرشيف',
+          Icon(LucideIcons.inbox, color: AppColors.primary, size: 27),
+          onArchive,
+        ),
+        cell(
+          'التقارير',
+          Icon(LucideIcons.fileSpreadsheet, color: AppColors.primary, size: 27),
+          onReports,
+        ),
       ],
     );
   }
