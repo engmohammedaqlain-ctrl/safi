@@ -16,11 +16,11 @@ import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/reports_style_shell.dart';
 import '../../../core/router/app_page_route.dart';
 import '../../../core/router/main_shell.dart';
-import '../../sales/providers/unified_ledger_provider.dart';
 import 'store_settings_screen.dart';
 import 'team_settings_screen.dart';
 import 'smart_features_screen.dart';
 import '../providers/team_provider.dart';
+import '../../cash_flow/providers/include_debts_in_wallet_balance_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -132,7 +132,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          _SectionLabel('الصافي والعرض'),
+          _SectionLabel('المحافظ والديون'),
           GlassCard(
             padding: EdgeInsets.zero,
             child: SwitchListTile(
@@ -145,22 +145,28 @@ class SettingsScreen extends ConsumerWidget {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(LucideIcons.wallet, color: AppColors.primary, size: 20),
+                child: const Icon(
+                  LucideIcons.wallet,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
               ),
               title: Text(
-                'دمج حركات الديون في الصافي',
+                'دمج الديون في أرصدة المحافظ',
                 style: AppTextStyles.titleSmall,
               ),
               subtitle: Text(
-                'عند الإيقاف: الصندوق وحده في «الصافي»، والديون في الأرشيف فقط. '
-                'عند التفعيل (الوضع الافتراضي): نفس قائمة الأرشيف — صندوق + ديون مع بطاقة الصافي الموحّدة.',
+                'عند التفعيل (الافتراضي): الدين الجديد والسداد يعدّلان الرصيد الفعلي '
+                'لكل محفظة حسب وسيلة الدفع في المعاملة. عند الإيقاف: الرصيد المعروض '
+                'من الصندوق والرصيد المخزَّن فقط (دون تأثير الديون).',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textMuted,
                 ),
               ),
-              value: ref.watch(mergeDebtsIntoSafiProvider),
-              onChanged: (v) =>
-                  ref.read(mergeDebtsIntoSafiProvider.notifier).setMerged(v),
+              value: ref.watch(includeDebtsInWalletBalanceProvider),
+              onChanged: (v) => ref
+                  .read(includeDebtsInWalletBalanceProvider.notifier)
+                  .setIncludeDebts(v),
             ),
           ),
 

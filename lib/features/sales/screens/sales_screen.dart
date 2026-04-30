@@ -8,6 +8,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../cash_flow/providers/accounts_provider.dart';
 import '../../cash_flow/screens/cash_entry_screen.dart';
 import '../../cash_flow/screens/cashbook_entry_detail_screen.dart';
 import '../../cash_flow/screens/cash_flow_screen.dart';
@@ -33,7 +34,7 @@ class SalesScreen extends ConsumerStatefulWidget {
 class _SalesScreenState extends ConsumerState<SalesScreen> {
   UnifiedLedgerListFilter _listFilter = UnifiedLedgerListFilter.all;
 
-  void _showFilterSheet(bool mergeDebtsIntoSafi) {
+  void _showFilterSheet() {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
@@ -63,8 +64,6 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                     ),
                   ),
                   _filterTile(UnifiedLedgerListFilter.all),
-                  if (mergeDebtsIntoSafi)
-                    _filterTile(UnifiedLedgerListFilter.debtsOnly),
                   _filterTile(UnifiedLedgerListFilter.cashIncomeOnly),
                   _filterTile(UnifiedLedgerListFilter.cashExpenseOnly),
                 ],
@@ -99,22 +98,14 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mergeDebtsIntoSafi = ref.watch(mergeDebtsIntoSafiProvider);
-    final baseRows = mergeDebtsIntoSafi
-        ? ref.watch(unifiedLedgerRowsProvider)
-        : ref.watch(safiCashOnlyLedgerRowsProvider);
-    final effFilter =
-        (!mergeDebtsIntoSafi && _listFilter == UnifiedLedgerListFilter.debtsOnly)
-            ? UnifiedLedgerListFilter.all
-            : _listFilter;
+    final baseRows = ref.watch(safiCashOnlyLedgerRowsProvider);
+    final effFilter = _listFilter == UnifiedLedgerListFilter.debtsOnly
+        ? UnifiedLedgerListFilter.all
+        : _listFilter;
     final unifiedRows =
         UnifiedLedgerMath.applyListFilter(baseRows, effFilter);
-    final netSigned = mergeDebtsIntoSafi
-        ? ref.watch(unifiedNetSignedProvider)
-        : ref.watch(safiCashOnlyNetSignedProvider);
-    final io = mergeDebtsIntoSafi
-        ? ref.watch(unifiedInflowOutflowProvider)
-        : ref.watch(safiCashOnlyInflowOutflowProvider);
+    final netSigned = ref.watch(walletsEffectiveTotalProvider);
+    final io = ref.watch(safiCashOnlyInflowOutflowProvider);
     final hidden = ref.watch(hideBalanceProvider);
 
     void push(Widget page) {
@@ -178,9 +169,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    mergeDebtsIntoSafi
-                        ? 'كل حركات الصندوق والديون'
-                        : 'حركات الصندوق',
+                    'حركات الصندوق',
                     style: TextStyle(
                       fontFamily: AppFonts.family,
                       color: AppColors.primary.withValues(alpha: 0.85),
@@ -196,7 +185,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                     borderRadius: BorderRadius.circular(999),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(999),
-                      onTap: () => _showFilterSheet(mergeDebtsIntoSafi),
+                      onTap: _showFilterSheet,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,

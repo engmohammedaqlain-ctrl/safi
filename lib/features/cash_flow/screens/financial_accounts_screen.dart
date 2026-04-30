@@ -15,6 +15,7 @@ import '../../sales/models/cashbook_entry.dart';
 import '../../sales/providers/cashbook_ui_provider.dart';
 import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
+import '../providers/include_debts_in_wallet_balance_provider.dart';
 import '../utils/wallet_balance_math.dart';
 import 'wallet_detail_screen.dart';
 
@@ -28,12 +29,14 @@ class FinancialAccountsScreen extends ConsumerWidget {
     final entries = ref.watch(activeCashbookEntriesProvider);
     final txs = ref.watch(transactionsProvider);
     final hidden = ref.watch(hideBalanceProvider);
+    final includeDebts = ref.watch(includeDebtsInWalletBalanceProvider);
 
     double effectiveBal(FinancialAccount a) => effectiveWalletBalance(
           acc: a,
           entries: entries,
           txs: txs,
           accounts: accounts,
+          includeDebtEffect: includeDebts,
         );
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
@@ -59,6 +62,7 @@ class FinancialAccountsScreen extends ConsumerWidget {
                   accounts: accounts,
                   entries: entries,
                   txs: txs,
+                  includeDebtEffect: includeDebts,
                   hidden: hidden,
                   onReport: () =>
                       showAppSnackBar(context, 'تقرير المحافظ — قريباً'),
@@ -119,8 +123,8 @@ class FinancialAccountsScreen extends ConsumerWidget {
               ],
             ),
             PositionedDirectional(
-              bottom: 16 + bottomPad,
-              end: 16,
+              bottom: 8 + bottomPad,
+              end: 8,
               child: FloatingActionButton.extended(
                 heroTag: 'financial_accounts_fab',
                 onPressed: () => Navigator.push<void>(
@@ -130,18 +134,26 @@ class FinancialAccountsScreen extends ConsumerWidget {
                   ),
                 ),
                 backgroundColor: AppColors.primary,
-                elevation: 3,
-                highlightElevation: 6,
+                elevation: 0,
+                extendedPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                extendedIconLabelSpacing: 6,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                icon: const Icon(LucideIcons.plus, color: Colors.white),
+                icon: const Icon(
+                  LucideIcons.plus,
+                  color: Colors.white,
+                  size: 19,
+                ),
                 label: const Text(
                   'إضافة محفظة',
                   style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: AppFonts.family,
+                    height: 1.2,
                   ),
                 ),
               ),
@@ -159,6 +171,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
     required this.accounts,
     required this.entries,
     required this.txs,
+    required this.includeDebtEffect,
     required this.hidden,
     required this.onReport,
     required this.onStats,
@@ -167,6 +180,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
   final List<FinancialAccount> accounts;
   final List<CashbookEntry> entries;
   final List<TransactionUi> txs;
+  final bool includeDebtEffect;
   final bool hidden;
   final VoidCallback onReport;
   final VoidCallback onStats;
@@ -198,6 +212,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
         entries: entries,
         txs: txs,
         accounts: accounts,
+        includeDebtEffect: includeDebtEffect,
       );
       totalEff += bal;
       if (bal > highestEff) highestEff = bal;
@@ -347,7 +362,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                               label: 'كاش',
                               amountText: hidden
                                   ? '****'
-                                  : '₪ ${formatShekelAmount(cashSum)}',
+                                  : '${formatShekelAmount(cashSum)} ₪',
                               countPhrase: _countPhrase(cashN),
                               captionStyle: cap,
                               valueStyle: val,
@@ -360,7 +375,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                               label: 'بنك',
                               amountText: hidden
                                   ? '****'
-                                  : '₪ ${formatShekelAmount(bankSum)}',
+                                  : '${formatShekelAmount(bankSum)} ₪',
                               countPhrase: _countPhrase(bankN),
                               captionStyle: cap,
                               valueStyle: val,
@@ -373,7 +388,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                               label: 'محفظة',
                               amountText: hidden
                                   ? '****'
-                                  : '₪ ${formatShekelAmount(walletSum)}',
+                                  : '${formatShekelAmount(walletSum)} ₪',
                               countPhrase: _countPhrase(walletN),
                               captionStyle: cap,
                               valueStyle: val,
@@ -381,21 +396,24 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('الرصيد الموحّد', style: cap.copyWith(fontSize: 11)),
-                          Text(
-                            hidden
-                                ? '  ****'
-                                : '  ₪ ${formatShekelAmount(totalEff)}',
-                            style: val.copyWith(fontSize: 12),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
+                        child: Container(
+                          height: 1,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(1),
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0),
+                                Colors.white.withValues(alpha: 0.22),
+                                Colors.white.withValues(alpha: 0),
+                              ],
+                            ),
                           ),
-                        ],
+                        ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.only(top: 10),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -403,11 +421,14 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                               'أعلى رصيد في محفظة واحدة',
                               style: cap.copyWith(fontSize: 9.5),
                             ),
-                            Text(
-                              hidden
-                                  ? '  ****'
-                                  : '  ₪ ${formatShekelAmount(highestEff)}',
-                              style: val.copyWith(fontSize: 10.5),
+                            Directionality(
+                              textDirection: TextDirection.ltr,
+                              child: Text(
+                                hidden
+                                    ? '  ****'
+                                    : '  ${formatShekelAmount(highestEff)} ₪',
+                                style: val.copyWith(fontSize: 10.5),
+                              ),
                             ),
                           ],
                         ),
@@ -432,17 +453,18 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          hidden
-                              ? '••••  ••••  ••••  ••••'
-                              : '${accounts.length} حساب · ₪ ${formatShekelAmount(totalEff)}',
-                          style: AppTextStyles.titleSmall.copyWith(
-                            color: Colors.white,
-                            letterSpacing: hidden ? 1.2 : 0.35,
-                            fontWeight: FontWeight.w600,
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Text(
+                            hidden
+                                ? '••••  ••••  ••••  ••••'
+                                : '${formatShekelAmount(totalEff)} ₪',
+                            style: AppTextStyles.titleSmall.copyWith(
+                              color: Colors.white,
+                              letterSpacing: hidden ? 1.2 : 0.6,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -546,14 +568,27 @@ class _TypeMiniPill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              amountText,
-              style: valueStyle.copyWith(fontSize: 9.5),
-              maxLines: 1,
-              textAlign: TextAlign.center,
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                    child: Text(
+                      amountText,
+                      style: valueStyle.copyWith(fontSize: 9.5),
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
           Text(
             countPhrase,
@@ -608,7 +643,7 @@ class _WalletAccountCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final amountStr = hidden
         ? '****'
-        : '₪ ${formatShekelAmount(effectiveBalance)}';
+        : '${formatShekelAmount(effectiveBalance)} ₪';
     final subtitle = _subtitle(account);
     final accent = _accent(account.type);
 

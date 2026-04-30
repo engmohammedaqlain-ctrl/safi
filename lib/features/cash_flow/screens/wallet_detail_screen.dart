@@ -20,6 +20,7 @@ import '../../sales/providers/cashbook_ui_provider.dart';
 import '../../sales/providers/unified_ledger_math.dart';
 import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
+import '../providers/include_debts_in_wallet_balance_provider.dart';
 import '../utils/wallet_balance_math.dart';
 import 'cashbook_entry_detail_screen.dart';
 import 'financial_accounts_screen.dart' show AccountFormScreen;
@@ -80,6 +81,7 @@ class WalletDetailScreen extends ConsumerWidget {
     final allEntries = ref.watch(cashbookEntriesProvider);
     final allTx = ref.watch(transactionsProvider);
     final debtors = ref.watch(debtorsUiProvider);
+    final includeDebts = ref.watch(includeDebtsInWalletBalanceProvider);
 
     final cashEntries = allEntries.where((e) {
       if (e.isDeleted) return false;
@@ -87,13 +89,15 @@ class WalletDetailScreen extends ConsumerWidget {
       return rid == acc.id;
     }).toList(growable: false);
 
-    final debtTxs = allTx
-        .where(
-          (t) =>
-              !t.isDeleted &&
-              debtPayTouchesWallet(t, acc, activeAccounts),
-        )
-        .toList(growable: false);
+    final debtTxs = includeDebts
+        ? allTx
+            .where(
+              (t) =>
+                  !t.isDeleted &&
+                  debtPayTouchesWallet(t, acc, activeAccounts),
+            )
+            .toList(growable: false)
+        : <TransactionUi>[];
 
     final cashIncome = cashEntries
         .where((e) => e.isIncome)
@@ -127,6 +131,7 @@ class WalletDetailScreen extends ConsumerWidget {
       entries: allEntries,
       txs: allTx,
       accounts: activeAccounts,
+      includeDebtEffect: includeDebts,
     );
 
     return Directionality(
@@ -332,18 +337,8 @@ abstract final class _WalletUi {
     }
   }
 
-  static String _tailDigits(String id) {
-    final only = id.replaceAll(RegExp(r'[^0-9]'), '');
-    if (only.isEmpty) return '0000';
-    final tail =
-        only.length <= 4 ? only : only.substring(only.length - 4);
-    return tail.padLeft(4, '0');
-  }
-
-  static String decorativePan(FinancialAccount a) {
-    final tail = _tailDigits(a.id);
-    return '••••  ••••  ••••  $tail';
-  }
+  static String decorativePan(FinancialAccount a) =>
+      '••••  ••••  ••••  ••••';
 }
 
 /// بطاقة بلاستيكية للرصيد وتفاصيل الحساب — مطابقة لفكرة بطاقات المحافظ.

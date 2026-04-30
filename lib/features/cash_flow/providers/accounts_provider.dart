@@ -3,7 +3,11 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/bootstrap/startup_ledger_data.dart';
+import '../../debts/providers/debts_ui_provider.dart';
+import '../../sales/providers/cashbook_ui_provider.dart';
 import '../data/financial_account_model.dart';
+import '../utils/wallet_balance_math.dart';
+import 'include_debts_in_wallet_balance_provider.dart';
 
 /// قائمة الحسابات المالية — محفوظة محليًا ومُزامَنة مع Firebase عبر [StartupLedgerData].
 class AccountsNotifier extends Notifier<List<FinancialAccount>> {
@@ -64,4 +68,23 @@ final activeAccountsProvider = Provider<List<FinancialAccount>>((ref) {
   return [
     for (final a in ref.watch(accountsProvider)) if (!a.isDeleted) a,
   ];
+});
+
+/// مجموع الرصيد الفعلي لكل المحافظ النشطة — يطابق «ملخص الأرصدة» في شاشة المحافظ.
+final walletsEffectiveTotalProvider = Provider<double>((ref) {
+  final accounts = ref.watch(activeAccountsProvider);
+  final entries = ref.watch(activeCashbookEntriesProvider);
+  final txs = ref.watch(transactionsProvider);
+  final includeDebts = ref.watch(includeDebtsInWalletBalanceProvider);
+  var s = 0.0;
+  for (final a in accounts) {
+    s += effectiveWalletBalance(
+      acc: a,
+      entries: entries,
+      txs: txs,
+      accounts: accounts,
+      includeDebtEffect: includeDebts,
+    );
+  }
+  return s;
 });

@@ -30,7 +30,7 @@ class StartupLedgerData {
   static bool _sessionLoggedIn = false;
   static bool _sessionWelcomeOnboardingDone = false;
   static String? _sessionUserName;
-  static bool _sessionMergeDebtsIntoSafiTab = false;
+  static bool _sessionIncludeDebtsInWalletBalance = true;
   static String _sessionUserRole = 'owner';
   static List<String> _sessionUserPermissions = [];
   static String? _sessionLedgerOwnerUid;
@@ -147,8 +147,8 @@ class StartupLedgerData {
     debtCategories = _decodeDebtCategories(
       p.getString(PrefsKeys.debtCategories),
     );
-    _sessionMergeDebtsIntoSafiTab =
-        p.getBool(PrefsKeys.mergeDebtsIntoSafiTab) ?? true;
+    _sessionIncludeDebtsInWalletBalance =
+        p.getBool(PrefsKeys.includeDebtsInWalletBalance) ?? true;
     _sessionUserRole = p.getString(PrefsKeys.userRole) ?? 'owner';
     _sessionUserPermissions = p.getStringList(PrefsKeys.userPermissions) ?? [];
     _sessionLedgerOwnerUid = p.getString(PrefsKeys.ledgerOwnerUid);
@@ -162,13 +162,13 @@ class StartupLedgerData {
 
   static String? get bootstrapUserName => _sessionUserName;
 
-  /// يُقرأ مع [ensureLoaded] — يغذّي [mergeDebtsIntoSafiProvider].
-  static bool get bootstrapMergeDebtsIntoSafiTab =>
-      _sessionMergeDebtsIntoSafiTab;
+  /// يُقرأ مع [ensureLoaded]؛ للواجهة: دمج تأثير الديون في رصيد المحفظة.
+  static bool get bootstrapIncludeDebtsInWalletBalance =>
+      _sessionIncludeDebtsInWalletBalance;
 
-  /// يبقي قيمة الجلسة متسقة مع [mergeDebtsIntoSafiProvider] بعد تغيير المفتاح محلياً.
-  static void cacheMergeDebtsIntoSafiTab(bool value) {
-    _sessionMergeDebtsIntoSafiTab = value;
+  /// يبقي الجلسة متسقة بعد تغيير الإعداد محلياً.
+  static void cacheIncludeDebtsInWalletBalance(bool value) {
+    _sessionIncludeDebtsInWalletBalance = value;
   }
 
   /// الدور المحفوظ محلياً منذ آخر تسجيل دخول.

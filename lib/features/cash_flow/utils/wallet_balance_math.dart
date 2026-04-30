@@ -2,23 +2,14 @@ import '../../debts/providers/debts_ui_provider.dart';
 import '../../sales/models/cashbook_entry.dart';
 import '../data/financial_account_model.dart';
 
-/// يحدّد المحفظة المرتبطة بحركة الصندوق (`accountId` أو افتراضًا أول حساب **نقدي**
-/// للحركات القديمة بلا محفظة — وليس مجرد أول عنصر في القائمة حتى لا تختفي المبالغ عن «كاش»).
+/// يحدّد المحفظة المرتبطة بحركة الصندوق (`accountId` أو fallback للمحفظة الأولى).
 String? resolvedCashAccountIdForEntry(
   CashbookEntry e,
   List<FinancialAccount> accs,
 ) {
   final a = e.accountId;
   if (a != null && a.isNotEmpty) return a;
-  if (accs.isEmpty) return null;
-  final cashFirst = [
-    for (final x in accs)
-      if (x.type == AccountType.cash) x,
-  ]..sort((x, y) => x.id.compareTo(y.id));
-  if (cashFirst.isNotEmpty) return cashFirst.first.id;
-  final sorted = List<FinancialAccount>.from(accs)
-    ..sort((x, y) => x.id.compareTo(y.id));
-  return sorted.first.id;
+  return accs.isNotEmpty ? accs.first.id : null;
 }
 
 /// هل معاملة الدين هذه على هذه المحفظة (`payMethodId` أو قيم legacy).
@@ -93,17 +84,21 @@ double netDebtSignedForWallet(
 
 double _moneyRound2(double v) => (v * 100).round() / 100;
 
-/// الرصيد الفعلي المعروض: الرصيد المخزَّن في المحفظة + تأثير كل حركات الصندوق والديون المرتبطة بها.
+/// الرصيد الفعلي المعروض: الرصيد المخزَّن في المحفظة + صافي حركات الصندوق، واختيارياً تأثير الديون.
 ///
 /// الحقل [FinancialAccount.balance] لا يُحدَّث تلقائياً عند كل إدخال حركة؛ لهذا يُضاف صافي الحركات.
+/// عند [includeDebtEffect] = false تُهمل [netDebtSignedForWallet] (إعداد المستخدم).
 double effectiveWalletBalance({
   required FinancialAccount acc,
   required List<CashbookEntry> entries,
   required List<TransactionUi> txs,
   required List<FinancialAccount> accounts,
+  bool includeDebtEffect = true,
 }) {
+  final debtPart =
+      includeDebtEffect ? netDebtSignedForWallet(acc, txs, accounts) : 0.0;
   final raw = acc.balance +
       netCashbookSignedForWallet(acc.id, entries, accounts) +
-      netDebtSignedForWallet(acc, txs, accounts);
+      debtPart;
   return _moneyRound2(raw);
 }

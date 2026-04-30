@@ -94,14 +94,11 @@ final cashbookSummaryProvider = Provider<CashbookSummary>((ref) {
   );
 });
 
-/// عرض مبلغ بالشيكل بأرقام عادية، حتى منزلتين عشريتين عند الحاجة.
 String formatShekelAmount(double v) {
-  final x = (v * 100).round() / 100;
-  final fracCents = (x * 100).round().abs() % 100;
-  if (fracCents == 0) return x.truncate().toString();
-  final two = x.toStringAsFixed(2);
-  if (two.endsWith('0')) return x.toStringAsFixed(1);
-  return two;
+  if (v == v.roundToDouble()) {
+    return '${v.toStringAsFixed(0)}.0';
+  }
+  return v.toStringAsFixed(1);
 }
 
 String obscureAmountText() => '••••';
