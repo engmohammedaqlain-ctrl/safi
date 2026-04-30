@@ -2,14 +2,23 @@ import '../../debts/providers/debts_ui_provider.dart';
 import '../../sales/models/cashbook_entry.dart';
 import '../data/financial_account_model.dart';
 
-/// يحدّد المحفظة المرتبطة بحركة الصندوق (`accountId` أو fallback للمحفظة الأولى).
+/// يحدّد المحفظة المرتبطة بحركة الصندوق (`accountId` أو افتراضًا أول حساب **نقدي**
+/// للحركات القديمة بلا محفظة — وليس مجرد أول عنصر في القائمة حتى لا تختفي المبالغ عن «كاش»).
 String? resolvedCashAccountIdForEntry(
   CashbookEntry e,
   List<FinancialAccount> accs,
 ) {
   final a = e.accountId;
   if (a != null && a.isNotEmpty) return a;
-  return accs.isNotEmpty ? accs.first.id : null;
+  if (accs.isEmpty) return null;
+  final cashFirst = [
+    for (final x in accs)
+      if (x.type == AccountType.cash) x,
+  ]..sort((x, y) => x.id.compareTo(y.id));
+  if (cashFirst.isNotEmpty) return cashFirst.first.id;
+  final sorted = List<FinancialAccount>.from(accs)
+    ..sort((x, y) => x.id.compareTo(y.id));
+  return sorted.first.id;
 }
 
 /// هل معاملة الدين هذه على هذه المحفظة (`payMethodId` أو قيم legacy).

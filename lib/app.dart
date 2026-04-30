@@ -119,9 +119,9 @@ class _SessionRoot extends ConsumerWidget {
     final phase = ref.watch(appSessionProvider);
 
     final body = switch (phase) {
+      AppSessionPhase.welcomeOnboarding => const OnboardingScreen(),
       AppSessionPhase.login => const LoginScreen(),
       AppSessionPhase.nameSetup => const NameSetupScreen(),
-      AppSessionPhase.onboarding => const OnboardingScreen(),
       AppSessionPhase.main => const _MainLoadedGate(),
     };
 

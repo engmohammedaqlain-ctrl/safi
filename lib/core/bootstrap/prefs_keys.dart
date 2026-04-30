@@ -1,6 +1,11 @@
 /// مفاتيح التخزين المحلي لمسار التطبيق
 abstract final class PrefsKeys {
   static const loggedIn = 'safi_logged_in';
+
+  /// شرائح الترحيب قبل أول إدخال لرقم الهاتف — لا تُمسح عند تسجيل الخروج.
+  static const welcomeOnboardingDone = 'safi_welcome_onboarding_done';
+
+  /// قديم: كان يُستخدم بعد الدخول؛ يُقرأ للترقية من إصدارات سابقة فقط.
   static const onboardingDone = 'safi_onboarding_done';
   static const userName = 'safi_user_name';
 

@@ -16,17 +16,17 @@ import '../../features/debts/providers/debts_ui_provider.dart';
 import '../../features/sales/providers/cashbook_ui_provider.dart';
 import '../../features/settings/providers/team_provider.dart';
 
-/// مراحل دخول المستخدم: دخول → اسم → إعداد أولي → التطبيق.
+/// مراحل دخول المستخدم: ترحيب (مرة على الجهاز) → دخول → اسم → التطبيق.
 /// لا توجد مرحلة splash داخلية — شاشة النظام تغطّي الإقلاع.
 enum AppSessionPhase {
+  /// شرائح ترحيب قبل أول طلب لرقم الهاتف (مرة واحدة لكل تثبيت)
+  welcomeOnboarding,
+
   /// تسجيل دخول (هاتف / OTP) — مرة أو بعد تسجيل خروج
   login,
 
   /// تعيين اسم المستخدم (بعد الدخول لأول مرة)
   nameSetup,
-
-  /// إعداد أولي للمحل (مرة بعد أول دخول ناجح)
-  onboarding,
 
   /// الشل الرئيسي
   main,
@@ -41,13 +41,14 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
   @override
   AppSessionPhase build() {
     // البيانات مُحمّلة قبل runApp في `main()` — نحسم المرحلة فوراً بدون انتظار.
+    final welcomeDone = StartupLedgerData.bootstrapWelcomeOnboardingDone;
+    if (!welcomeDone) return AppSessionPhase.welcomeOnboarding;
+
     final logged = StartupLedgerData.bootstrapLoggedIn;
     final nameRaw = StartupLedgerData.bootstrapUserName?.trim();
     final hasName = nameRaw != null && nameRaw.isNotEmpty;
-    final done = StartupLedgerData.bootstrapOnboardingDone;
     if (!logged) return AppSessionPhase.login;
     if (!hasName) return AppSessionPhase.nameSetup;
-    if (!done) return AppSessionPhase.onboarding;
     return AppSessionPhase.main;
   }
 
@@ -123,11 +124,8 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
   /// تحديث منطق المرحلة بعد أي تغيير في الاسم المخزّن.
   Future<void> _advanceAfterName(SharedPreferences p) async {
     final name = (p.getString(PrefsKeys.userName) ?? '').trim();
-    final ob = p.getBool(PrefsKeys.onboardingDone) ?? false;
     if (name.isEmpty) {
       state = AppSessionPhase.nameSetup;
-    } else if (!ob) {
-      state = AppSessionPhase.onboarding;
     } else {
       state = AppSessionPhase.main;
     }
@@ -155,11 +153,11 @@ class AppSessionNotifier extends Notifier<AppSessionPhase> {
     ref.invalidate(main_shell_router.storeCardDisplayProvider);
   }
 
-  /// عند الضغط على «إنهاء» في الإعداد الأولي
-  Future<void> onOnboardingComplete() async {
+  /// بعد إنهاء شرائح الترحيب (قبل إدخال رقم الهاتف).
+  Future<void> onWelcomeOnboardingComplete() async {
     final p = await SharedPreferences.getInstance();
-    await p.setBool(PrefsKeys.onboardingDone, true);
-    state = AppSessionPhase.main;
+    await p.setBool(PrefsKeys.welcomeOnboardingDone, true);
+    state = AppSessionPhase.login;
   }
 
   /// تسجيل خروج — يمسح المحتوى المحلي المرتبط بالحساب ويعيد لوحة إدخال الرقم.

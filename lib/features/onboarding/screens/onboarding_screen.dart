@@ -130,7 +130,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         curve: Curves.easeOutCubic,
       );
     } else {
-      await ref.read(appSessionProvider.notifier).onOnboardingComplete();
+      await ref.read(appSessionProvider.notifier).onWelcomeOnboardingComplete();
     }
   }
 

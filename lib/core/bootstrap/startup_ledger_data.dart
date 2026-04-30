@@ -28,7 +28,7 @@ class StartupLedgerData {
   static List<DebtCategory> debtCategories = [];
 
   static bool _sessionLoggedIn = false;
-  static bool _sessionOnboardingDone = false;
+  static bool _sessionWelcomeOnboardingDone = false;
   static String? _sessionUserName;
   static bool _sessionMergeDebtsIntoSafiTab = false;
   static String _sessionUserRole = 'owner';
@@ -110,7 +110,14 @@ class StartupLedgerData {
   static Future<void> load() async {
     final p = await SharedPreferences.getInstance();
     _sessionLoggedIn = p.getBool(PrefsKeys.loggedIn) ?? false;
-    _sessionOnboardingDone = p.getBool(PrefsKeys.onboardingDone) ?? false;
+    final legacyOnboardingDone = p.getBool(PrefsKeys.onboardingDone) ?? false;
+    _sessionWelcomeOnboardingDone =
+        p.getBool(PrefsKeys.welcomeOnboardingDone) ?? false;
+    if (!_sessionWelcomeOnboardingDone &&
+        (_sessionLoggedIn || legacyOnboardingDone)) {
+      await p.setBool(PrefsKeys.welcomeOnboardingDone, true);
+      _sessionWelcomeOnboardingDone = true;
+    }
     _sessionUserName = p.getString(PrefsKeys.userName);
     debtors = _decodeDebtors(p.getString(PrefsKeys.debtors));
     transactions = _decodeTransactions(p.getString(PrefsKeys.transactions));
@@ -150,7 +157,8 @@ class StartupLedgerData {
   /// تُقرأ مع [ensureLoaded] في نفس جولة [SharedPreferences] لتفادي انتظار إضافي عند فتح الجلسة.
   static bool get bootstrapLoggedIn => _sessionLoggedIn;
 
-  static bool get bootstrapOnboardingDone => _sessionOnboardingDone;
+  static bool get bootstrapWelcomeOnboardingDone =>
+      _sessionWelcomeOnboardingDone;
 
   static String? get bootstrapUserName => _sessionUserName;
 

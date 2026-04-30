@@ -10,6 +10,7 @@ void main() {
   testWidgets('Safi app loads with Arabic shell after session gate', (WidgetTester tester) async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
+      PrefsKeys.welcomeOnboardingDone: true,
       PrefsKeys.loggedIn: true,
       PrefsKeys.onboardingDone: true,
       PrefsKeys.userName: 'مستخدم',

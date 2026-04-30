@@ -433,12 +433,16 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '••••  ••••  ••••  ${accounts.length.toString().padLeft(4, '0')}',
+                          hidden
+                              ? '••••  ••••  ••••  ••••'
+                              : '${accounts.length} حساب · ₪ ${formatShekelAmount(totalEff)}',
                           style: AppTextStyles.titleSmall.copyWith(
                             color: Colors.white,
-                            letterSpacing: 1.2,
+                            letterSpacing: hidden ? 1.2 : 0.35,
                             fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -542,11 +546,14 @@ class _TypeMiniPill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          Text(
-            amountText,
-            style: valueStyle.copyWith(fontSize: 9.5),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              amountText,
+              style: valueStyle.copyWith(fontSize: 9.5),
+              maxLines: 1,
+              textAlign: TextAlign.center,
+            ),
           ),
           Text(
             countPhrase,
