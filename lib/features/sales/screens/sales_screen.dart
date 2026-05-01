@@ -9,6 +9,7 @@ import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../cash_flow/providers/accounts_provider.dart';
+import '../../cash_flow/providers/include_debts_in_wallet_balance_provider.dart';
 import '../../cash_flow/screens/cash_entry_screen.dart';
 import '../../cash_flow/screens/cashbook_entry_detail_screen.dart';
 import '../../cash_flow/screens/cash_flow_screen.dart';
@@ -35,6 +36,10 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
   UnifiedLedgerListFilter _listFilter = UnifiedLedgerListFilter.all;
 
   void _showFilterSheet() {
+    final includeDebts = ref.read(includeDebtsInWalletBalanceProvider);
+    if (!includeDebts && _listFilter == UnifiedLedgerListFilter.debtsOnly) {
+      setState(() => _listFilter = UnifiedLedgerListFilter.all);
+    }
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
@@ -64,6 +69,8 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                     ),
                   ),
                   _filterTile(UnifiedLedgerListFilter.all),
+                  if (includeDebts)
+                    _filterTile(UnifiedLedgerListFilter.debtsOnly),
                   _filterTile(UnifiedLedgerListFilter.cashIncomeOnly),
                   _filterTile(UnifiedLedgerListFilter.cashExpenseOnly),
                 ],
@@ -98,10 +105,12 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final includeDebts = ref.watch(includeDebtsInWalletBalanceProvider);
     final baseRows = ref.watch(safiCashOnlyLedgerRowsProvider);
-    final effFilter = _listFilter == UnifiedLedgerListFilter.debtsOnly
-        ? UnifiedLedgerListFilter.all
-        : _listFilter;
+    final effFilter =
+        (!includeDebts && _listFilter == UnifiedLedgerListFilter.debtsOnly)
+            ? UnifiedLedgerListFilter.all
+            : _listFilter;
     final unifiedRows =
         UnifiedLedgerMath.applyListFilter(baseRows, effFilter);
     final netSigned = ref.watch(walletsEffectiveTotalProvider);
@@ -169,7 +178,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'حركات الصندوق',
+                    includeDebts ? 'المعاملات' : 'حركات الصندوق',
                     style: TextStyle(
                       fontFamily: AppFonts.family,
                       color: AppColors.primary.withValues(alpha: 0.85),
