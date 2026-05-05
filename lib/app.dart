@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'main.dart' show bootstrapCompleteNotifier;
 import 'core/bootstrap/app_session.dart';
 import 'core/bootstrap/prefs_keys.dart';
 import 'core/router/main_shell.dart';
 import 'core/sync/ledger_firestore_sync.dart';
 import 'core/sync/ledger_sync_host.dart';
 import 'core/sync/post_login_loading.dart';
+import 'core/theme/app_colors.dart';
+import 'core/theme/app_text_styles.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/name_setup_screen.dart';
@@ -110,12 +113,72 @@ class _SafiAppState extends ConsumerState<SafiApp> {
   }
 }
 
-/// جذر الجلسة: ينقل بين المراحل بانتقال متناغم مع اتجاه RTL.
-class _SessionRoot extends ConsumerWidget {
+/// جذر الجلسة: يعرض شاشة إقلاع خفيفة حتى تكتمل التهيئة الأساسية، ثم ينقل بين المراحل.
+class _SessionRoot extends ConsumerStatefulWidget {
   const _SessionRoot();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SessionRoot> createState() => _SessionRootState();
+}
+
+class _SessionRootState extends ConsumerState<_SessionRoot> {
+  bool _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ready = bootstrapCompleteNotifier.value;
+    if (!_ready) {
+      bootstrapCompleteNotifier.addListener(_onBootstrapDone);
+    }
+  }
+
+  void _onBootstrapDone() {
+    if (!bootstrapCompleteNotifier.value) return;
+    bootstrapCompleteNotifier.removeListener(_onBootstrapDone);
+    if (!mounted) return;
+    // أعد حساب المرحلة بعد اكتمال تحميل البيانات
+    ref.invalidate(appSessionProvider);
+    setState(() => _ready = true);
+  }
+
+  @override
+  void dispose() {
+    bootstrapCompleteNotifier.removeListener(_onBootstrapDone);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_ready) {
+      // شاشة إقلاع خفيفة — نفس ألوان native splash
+      return Scaffold(
+        backgroundColor: const Color(0xFFF3EFF7),
+        body: Center(
+          child: Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              'ص',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.onPrimary,
+                fontSize: 52,
+                fontWeight: FontWeight.w900,
+                fontFamily: AppFonts.family,
+                height: 1,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final phase = ref.watch(appSessionProvider);
 
     final body = switch (phase) {

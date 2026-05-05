@@ -10,11 +10,13 @@ import 'firebase_options.dart';
 
 import 'core/services/notification_service.dart';
 
+/// يُخبر [SafiApp] أن التهيئة الأولية اكتملت — يتحوّل من شاشة الإقلاع للمحتوى.
+final bootstrapCompleteNotifier = ValueNotifier<bool>(false);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await NotificationService().init();
-
+  // ▸ فقط Firebase يجب أن ينتهي قبل runApp (يحتاجه Provider الداخلي)
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   FirebaseFirestore.instance.settings = const Settings(
@@ -22,10 +24,18 @@ Future<void> main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
-  await syncFirebaseAuthWithPrefs();
+  // ▸ نعرض التطبيق فوراً — المستخدم يرى شاشة الإقلاع بدل شاشة بيضاء
+  runApp(const ProviderScope(child: SafiApp()));
 
-  await StartupLedgerData.ensureLoaded();
+  // ▸ باقي التهيئة تُنفَّذ بالتوازي بعد عرض الواجهة
+  await Future.wait([
+    NotificationService().init(),
+    StartupLedgerData.ensureLoaded(),
+    syncFirebaseAuthWithPrefs(),
+  ]);
+
   await syncLedgerOwnerUidWithFirebaseAuth();
 
-  runApp(const ProviderScope(child: SafiApp()));
+  // ▸ نُخبر التطبيق أن كل شيء جاهز
+  bootstrapCompleteNotifier.value = true;
 }
