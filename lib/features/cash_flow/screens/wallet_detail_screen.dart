@@ -11,7 +11,6 @@ import '../../../core/router/main_shell.dart' show hideBalanceProvider;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/utils/app_snackbar.dart';
 import '../../../core/widgets/vault_branded_shell.dart';
 import '../../debts/providers/debts_ui_provider.dart';
 import '../../debts/screens/customer_detail_screen.dart';
@@ -24,6 +23,7 @@ import '../providers/include_debts_in_wallet_balance_provider.dart';
 import '../utils/wallet_balance_math.dart';
 import 'cashbook_entry_detail_screen.dart';
 import 'financial_accounts_screen.dart' show AccountFormScreen;
+import 'wallet_report_screen.dart';
 
 /// تفاصيل محفظة واحدة:
 /// - بطاقة الرصيد مع ملخص الدخل والمصروف وعدد الحركات، ومعلومات الحساب
@@ -190,7 +190,12 @@ class WalletDetailScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'تقرير المحفظة',
             onPressed: () {
-              showAppSnackBar(context, 'تقرير المحفظة — قريباً');
+              Navigator.push<void>(
+                context,
+                AppPageRoute<void>(
+                  builder: (_) => WalletReportScreen(accountId: acc.id),
+                ),
+              );
             },
             icon: Icon(
               LucideIcons.fileText,

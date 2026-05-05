@@ -2,6 +2,7 @@ import 'package:characters/characters.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
+import '../../cash_flow/data/financial_account_model.dart';
 import '../../debts/providers/debts_ui_provider.dart';
 import '../../sales/models/cashbook_entry.dart';
 import '../../sales/providers/unified_ledger_math.dart';
@@ -860,6 +861,161 @@ class AppReportPdfBuilder {
     final g2 =
         tg.draw(page: page, bounds: Rect.fromLTWH(0, y, W, 0)) ??
         (throw StateError('تعذّر رسم الجدول.'));
+
+    _footer(g2.page, W, H, fR7);
+
+    final bytes = await doc.save();
+    doc.dispose();
+    return Uint8List.fromList(bytes);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PUBLIC: Per-wallet report
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static Future<Uint8List> buildWalletReport({
+    required FinancialAccount account,
+    required DateTime fromInclusive,
+    required DateTime toInclusive,
+    required List<CashbookEntry> cashEntries,
+    required List<TransactionUi> debtTxs,
+    required List<DebtorUi> debtors,
+    required double effectiveBalance,
+    String? storeName,
+  }) async {
+    await _fonts();
+    final fR7 = _r(7);
+    final fR8 = _r(8);
+    final fR9 = _r(9);
+    final fB9 = _b(9);
+    final fB11 = _b(11);
+    final fB17 = _b(17);
+
+    // Filter by date range
+    final cashF = [
+      for (final e in cashEntries)
+        if (!e.isDeleted && _inRange(e.date, fromInclusive, toInclusive)) e,
+    ]..sort((a, b) => b.date.compareTo(a.date));
+
+    final debtF = [
+      for (final t in debtTxs)
+        if (!t.isDeleted && _inRange(t.date, fromInclusive, toInclusive)) t,
+    ]..sort((a, b) => b.date.compareTo(a.date));
+
+    var cashIn = 0.0, cashOut = 0.0;
+    for (final e in cashF) {
+      if (e.isIncome) {
+        cashIn += e.amount;
+      } else {
+        cashOut += e.amount;
+      }
+    }
+    var debtIn = 0.0, debtOut = 0.0;
+    for (final t in debtF) {
+      if (t.type == TransactionType.received) {
+        debtIn += t.amount;
+      } else {
+        debtOut += t.amount;
+      }
+    }
+
+    final totalIn = cashIn + debtIn;
+    final totalOut = cashOut + debtOut;
+    final net = totalIn - totalOut;
+
+    final walletName = _safe(account.name, max: 50);
+    final typeLbl = switch (account.type) {
+      AccountType.cash => 'كاش',
+      AccountType.bank => 'بنك',
+      AccountType.wallet => 'محفظة إلكترونية',
+    };
+
+    // Document
+    final doc = PdfDocument();
+    doc.pageSettings
+      ..margins.all = 32
+      ..size = PdfPageSize.a4;
+
+    var page = doc.pages.add();
+    final W = page.getClientSize().width;
+    final H = page.getClientSize().height;
+
+    // Header
+    _drawHeader(
+      page,
+      W,
+      'تقرير محفظة: $walletName',
+      (storeName != null && storeName.trim().isNotEmpty)
+          ? _safe(storeName, max: 50)
+          : 'تطبيق الصافي',
+      'من ${_date(fromInclusive)}  إلى  ${_date(toInclusive)}',
+      fB17,
+      _b(10),
+      fR8,
+    );
+
+    // Wallet info card
+    double y = _hdrH + 12;
+    const cardH = 68.0;
+    final g = page.graphics;
+
+    _rect(
+      g,
+      Rect.fromLTWH(0, y, W, cardH),
+      fill: PdfSolidBrush(_cWhite),
+      border: PdfPen(_cPurpleBdr, width: 1.0),
+    );
+    _rect(g, Rect.fromLTWH(W - 4, y, 4, cardH), fill: PdfSolidBrush(_cPurple));
+    _rect(g, Rect.fromLTWH(0, y, W, 2), fill: PdfSolidBrush(_cPurplePale));
+
+    double iy = y + 8;
+    iy = _infoLine(g, iy, W - 16, 'المحفظة', walletName, fR8, fB9);
+    iy = _infoLine(g, iy, W - 16, 'النوع', typeLbl, fR8, fR9);
+    final balColor = effectiveBalance >= 0 ? _cGreen : _cRed;
+    iy = _infoLine(
+      g,
+      iy,
+      W - 16,
+      'الرصيد الفعلي',
+      '${_amt(effectiveBalance)} ش',
+      fR8,
+      fB9,
+      valueColor: balColor,
+    );
+
+    y = y + cardH + 12;
+
+    // KPI row
+    _drawKpiRow(page, y, W, totalIn, totalOut, net, fR8, fB11, fR8);
+    y += _kpiH + 16;
+
+    // Cash entries section
+    y = _sectionBar(
+      page,
+      y,
+      W,
+      'حركات الصندوق  (${cashF.length} حركة)',
+      fB9,
+    );
+    final cg = _cashGrid(cashF, fB9, fR9);
+    final g1 =
+        cg.draw(page: page, bounds: Rect.fromLTWH(0, y, W, 0)) ??
+        (throw StateError('تعذّر رسم جدول الصندوق.'));
+    y = g1.bounds.bottom + 18;
+    page = g1.page;
+
+    // Debt transactions section
+    y = _sectionBar(
+      page,
+      y,
+      W,
+      'حركات الديون على المحفظة  (${debtF.length} معاملة)',
+      fB9,
+    );
+    final dg = _debtGrid(debtF, debtors, fB9, fR9);
+    final g2 =
+        dg.draw(page: page, bounds: Rect.fromLTWH(0, y, W, 0)) ??
+        (throw StateError('تعذّر رسم جدول الديون.'));
 
     _footer(g2.page, W, H, fR7);
 

@@ -18,6 +18,7 @@ import '../data/financial_account_model.dart';
 import '../providers/accounts_provider.dart';
 import '../providers/include_debts_in_wallet_balance_provider.dart';
 import '../utils/wallet_balance_math.dart';
+import '../../reports/screens/unified_reports_screen.dart';
 import 'wallet_detail_screen.dart';
 
 /// شاشة المحافظ والبنوك — إطار الخزينة وبطاقات بنكية كما في الأونبوردينغ
@@ -65,8 +66,12 @@ class FinancialAccountsScreen extends ConsumerWidget {
                   txs: txs,
                   includeDebtEffect: includeDebts,
                   hidden: hidden,
-                  onReport: () =>
-                      showAppSnackBar(context, 'تقرير المحافظ — قريباً'),
+                  onReport: () => Navigator.push<void>(
+                    context,
+                    AppPageRoute<void>(
+                      builder: (_) => const UnifiedReportsScreen(),
+                    ),
+                  ),
                   onStats: () =>
                       showAppSnackBar(context, 'إحصائيات المحافظ — قريباً'),
                 ),
@@ -906,42 +911,28 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     const SizedBox(height: 10),
                     _SoftField(controller: _owner),
                     const SizedBox(height: 18),
-                    if (!isEdit) ...[
-                      _SectionLabel('الرصيد الحالي (ابتدائي للمحفظة)'),
-                      const SizedBox(height: 10),
-                      _SoftField(
-                        controller: _balance,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        suffix: '₪',
-                        ltr: true,
+                    _SectionLabel(isEdit ? 'الرصيد الابتدائي' : 'الرصيد الحالي (ابتدائي للمحفظة)'),
+                    const SizedBox(height: 10),
+                    _SoftField(
+                      controller: _balance,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
-                    ] else ...[
-                      _SectionLabel('الرصيد الابتدائي'),
-                      const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 14,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
+                      suffix: '₪',
+                      ltr: true,
+                    ),
+                    if (isEdit)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          'ثابت عند الإنشاء: ${widget.existingAccount!.balance == widget.existingAccount!.balance.roundToDouble() ? widget.existingAccount!.balance.toStringAsFixed(0) : widget.existingAccount!.balance.toStringAsFixed(2)} ₪\n'
                           'يتغيّر الرصيد الفعلي عبر حركات الصندوق والديون المرتبطة بهذه المحفظة.',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             height: 1.4,
-                            color: Colors.grey.shade800,
+                            color: Colors.grey.shade600,
                           ),
                         ),
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -987,9 +978,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       );
       return;
     }
-    final balance = widget.existingAccount != null
-        ? widget.existingAccount!.balance
-        : (double.tryParse(_balance.text.trim()) ?? 0);
+    final balance = double.tryParse(_balance.text.trim()) ?? 0;
 
     final acc = FinancialAccount(
       id:
