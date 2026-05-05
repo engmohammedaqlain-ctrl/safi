@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/bootstrap/startup_ledger_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../debts/providers/debts_ui_provider.dart';
+import '../services/app_report_excel.dart';
 import '../services/app_report_pdf.dart';
 
 /// شاشة تقرير زبون/بائع جملة — تتيح اختيار الفترة وتصدير PDF مُلوَّن.
@@ -121,6 +123,49 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
       name: 'safi-client-$name',
     );
     if (mounted) setState(() => _busy = false);
+  }
+
+  Future<void> _exportExcel() async {
+    if (_from.isAfter(_to)) {
+      showAppSnackBar(context, 'تاريخ البداية يجب أن يكون قبل النهاية');
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final txs = ref.read(transactionsProvider);
+      final bytes = AppReportExcelBuilder.buildClientReport(
+        client: _client,
+        fromInclusive: _from,
+        toInclusive: _to,
+        allTxs: txs,
+        storeName: StartupLedgerData.bootstrapUserName,
+      );
+      if (!mounted) return;
+      final name = _client.name.replaceAll(' ', '_');
+      final fileName =
+          'safi-client-$name-${_from.year}${_from.month}${_from.day}.xlsx';
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              bytes,
+              mimeType:
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              name: fileName,
+            ),
+          ],
+          subject: 'كشف حساب ${_client.name}',
+        ),
+      );
+      if (mounted) showAppSnackBar(context, 'تم تجهيز ملف Excel');
+    } catch (e, st) {
+      debugPrint('$e\n$st');
+      if (mounted) {
+        showAppSnackBar(context, 'تعذّر تصدير Excel: $e', isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   // ─── Build ──────────────────────────────────────────────────────────────────
@@ -324,6 +369,14 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
                             icon: LucideIcons.fileDown,
                             label: 'تصدير كشف الحساب PDF',
                             onPressed: _exportPdf,
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          _excelButton(
+                            icon: LucideIcons.fileSpreadsheet,
+                            label: 'تصدير كشف الحساب Excel',
+                            onPressed: _exportExcel,
                           ),
 
                           const SizedBox(height: 10),
@@ -547,6 +600,54 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
       boxShadow: [
         BoxShadow(
           color: AppColors.primary.withValues(alpha: 0.35),
+          blurRadius: 16,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    ),
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _busy ? null : onPressed,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _excelButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) => DecoratedBox(
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+      ),
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF2E7D32).withValues(alpha: 0.35),
           blurRadius: 16,
           offset: const Offset(0, 8),
         ),
