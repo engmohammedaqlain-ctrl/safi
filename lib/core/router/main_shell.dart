@@ -27,8 +27,9 @@ class HideBalanceNotifier extends Notifier<bool> {
   void toggle() => state = !state;
 }
 
-final hideBalanceProvider =
-    NotifierProvider<HideBalanceNotifier, bool>(HideBalanceNotifier.new);
+final hideBalanceProvider = NotifierProvider<HideBalanceNotifier, bool>(
+  HideBalanceNotifier.new,
+);
 
 final userNameProvider = FutureProvider<String>((ref) async {
   final p = await SharedPreferences.getInstance();
@@ -59,18 +60,18 @@ final displayStoreNameProvider =
 /// عنوان وبطّاقة المتجر من التخزين — يُفعَّل تجديد الواجهة بعد «إعدادات المتجر».
 final storeCardDisplayProvider =
     FutureProvider.autoDispose<({String title, String subtitle})>((ref) async {
-  final p = await SharedPreferences.getInstance();
-  final rawName = (p.getString(PrefsKeys.userName) ?? '').trim();
-  final title = rawName.isEmpty ? 'المستخدم الأول' : rawName;
+      final p = await SharedPreferences.getInstance();
+      final rawName = (p.getString(PrefsKeys.userName) ?? '').trim();
+      final title = rawName.isEmpty ? 'المستخدم الأول' : rawName;
 
-  final curRaw =
-      (p.getString(PrefsKeys.storeCurrencyLabel) ?? 'شيكل (₪)').trim();
-  final addrRaw = (p.getString(PrefsKeys.storeAddress) ?? '').trim();
-  final currency = curRaw.isEmpty ? 'شيكل (₪)' : curRaw;
-  final subtitle = [currency, if (addrRaw.isNotEmpty) addrRaw].join(' · ');
+      final curRaw = (p.getString(PrefsKeys.storeCurrencyLabel) ?? 'شيكل (₪)')
+          .trim();
+      final addrRaw = (p.getString(PrefsKeys.storeAddress) ?? '').trim();
+      final currency = curRaw.isEmpty ? 'شيكل (₪)' : curRaw;
+      final subtitle = [currency, if (addrRaw.isNotEmpty) addrRaw].join(' · ');
 
-  return (title: title, subtitle: subtitle);
-});
+      return (title: title, subtitle: subtitle);
+    });
 
 // ──────────────────────────────────────────────────────────────
 // Shell رئيسية مع PageView قابل للسحب ← تلاشٍ خفيف بين الصفحات
@@ -107,11 +108,13 @@ class _MainShellState extends ConsumerState<MainShell> {
   void _onNavTap(int index) {
     _isProgrammaticNav = true;
     ref.read(navIndexProvider.notifier).goTo(index);
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 380),
-      curve: Curves.easeInOutCubic,
-    ).then((_) => _isProgrammaticNav = false);
+    _pageController
+        .animateToPage(
+          index,
+          duration: const Duration(milliseconds: 380),
+          curve: Curves.easeInOutCubic,
+        )
+        .then((_) => _isProgrammaticNav = false);
   }
 
   /// يُستدعى عند السحب اليدوي → تحديث الـ provider بالصفحة الجديدة
@@ -166,7 +169,9 @@ class _MainShellState extends ConsumerState<MainShell> {
                                     color: Colors.white.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.18),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.18,
+                                      ),
                                     ),
                                   ),
                                   child: const SafiBrandMark(size: 26),
@@ -178,8 +183,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.right,
-                                    style:
-                                        AppTextStyles.headlineSmall.copyWith(
+                                    style: AppTextStyles.headlineSmall.copyWith(
                                       color: Colors.white,
                                       letterSpacing: 0.5,
                                       fontWeight: FontWeight.w600,
@@ -196,8 +200,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.right,
                               style: AppTextStyles.bodySmall.copyWith(
-                                color:
-                                    Colors.white.withValues(alpha: 0.78),
+                                color: Colors.white.withValues(alpha: 0.78),
                                 height: 1.25,
                               ),
                             ),
@@ -211,7 +214,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                           children: [
                             _VaultHeaderIconButton(
                               icon: LucideIcons.coins,
-                              tooltip: 'تحصيل الديون',
+                              tooltip: 'تجميع الديون',
                               onTap: () => Navigator.of(context).push<void>(
                                 AppPageRoute<void>(
                                   builder: (_) => DebtCollectionScreen(
@@ -222,32 +225,44 @@ class _MainShellState extends ConsumerState<MainShell> {
                             ),
                             Consumer(
                               builder: (context, ref, _) {
-                                final permsAsync = ref.watch(userPermissionsProvider);
+                                final permsAsync = ref.watch(
+                                  userPermissionsProvider,
+                                );
                                 final roleAsync = ref.watch(userRoleProvider);
-                                final canViewStats = permsAsync.value?.contains('view_statistics') ?? false;
+                                final canViewStats =
+                                    permsAsync.value?.contains(
+                                      'view_statistics',
+                                    ) ??
+                                    false;
                                 final isOwner = roleAsync.when(
                                   data: (r) => r == 'owner',
                                   loading: () => true,
                                   error: (_, __) => true,
                                 );
-                                
-                                if (!isOwner && !canViewStats) return const SizedBox.shrink();
-                                
+
+                                if (!isOwner && !canViewStats)
+                                  return const SizedBox.shrink();
+
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 6),
                                   child: _VaultHeaderIconButton(
                                     icon: LucideIcons.fileSpreadsheet,
                                     tooltip: 'التقارير',
-                                    onTap: () => Navigator.of(context).push<void>(
-                                      AppPageRoute<void>(
-                                        builder: (_) => UnifiedReportsScreen(
-                                          initialFilter: isSuppliersInDebts
-                                              ? AppReportDebtFilter.suppliersOnly
-                                              : AppReportDebtFilter.customersOnly,
-                                          lockDebtScope: true,
+                                    onTap: () =>
+                                        Navigator.of(context).push<void>(
+                                          AppPageRoute<void>(
+                                            builder: (_) =>
+                                                UnifiedReportsScreen(
+                                                  initialFilter:
+                                                      isSuppliersInDebts
+                                                      ? AppReportDebtFilter
+                                                            .suppliersOnly
+                                                      : AppReportDebtFilter
+                                                            .customersOnly,
+                                                  lockDebtScope: true,
+                                                ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
                                   ),
                                 );
                               },
@@ -270,18 +285,14 @@ class _MainShellState extends ConsumerState<MainShell> {
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color:
-                                      Colors.white.withValues(alpha: 0.12),
+                                  color: Colors.white.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: Colors.white
-                                        .withValues(alpha: 0.18),
+                                    color: Colors.white.withValues(alpha: 0.18),
                                   ),
                                 ),
                                 child: Icon(
-                                  hidden
-                                      ? LucideIcons.eyeOff
-                                      : LucideIcons.eye,
+                                  hidden ? LucideIcons.eyeOff : LucideIcons.eye,
                                   color: Colors.white,
                                   size: 22,
                                 ),
@@ -329,11 +340,11 @@ class _MainShellState extends ConsumerState<MainShell> {
                                 pageCount: _pageCount,
                                 onPageChanged: _onPageChanged,
                                 pages: [
-                                  const RepaintBoundary(
-                                      child: DebtsScreen()),
+                                  const RepaintBoundary(child: DebtsScreen()),
                                   RepaintBoundary(child: SalesScreen()),
                                   const RepaintBoundary(
-                                      child: MoreHomeScreen()),
+                                    child: MoreHomeScreen(),
+                                  ),
                                 ],
                               ),
                             ),
@@ -352,8 +363,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                           child: _SafiCompactBottomNav(
                             index: index,
                             onTap: _onNavTap,
-                            bottomInset:
-                                MediaQuery.paddingOf(context).bottom,
+                            bottomInset: MediaQuery.paddingOf(context).bottom,
                           ),
                         ),
                       ],
@@ -393,15 +403,9 @@ class _VaultHeaderIconButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.18),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
           ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 22,
-          ),
+          child: Icon(icon, color: Colors.white, size: 22),
         ),
       ),
     );
@@ -428,11 +432,7 @@ class _SafiCompactBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget item(
-      int i,
-      String label,
-      Widget Function(bool sel) leading,
-    ) {
+    Widget item(int i, String label, Widget Function(bool sel) leading) {
       final sel = index == i;
       return Expanded(
         child: Material(
@@ -442,8 +442,7 @@ class _SafiCompactBottomNav extends StatelessWidget {
             splashColor: AppColors.primary.withValues(alpha: 0.09),
             highlightColor: AppColors.primary.withValues(alpha: 0.05),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
@@ -457,7 +456,9 @@ class _SafiCompactBottomNav extends StatelessWidget {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       child: leading(sel),
                     ),
                   ),
@@ -594,10 +595,7 @@ class _FadingPageViewState extends State<_FadingPageView> {
       onPageChanged: widget.onPageChanged,
       itemCount: widget.pageCount,
       itemBuilder: (context, index) {
-        return Opacity(
-          opacity: _opacityFor(index),
-          child: widget.pages[index],
-        );
+        return Opacity(opacity: _opacityFor(index), child: widget.pages[index]);
       },
     );
   }
@@ -617,4 +615,3 @@ class _SmoothPagePhysics extends PageScrollPhysics {
   @override
   double get dragStartDistanceMotionThreshold => 3.5;
 }
-

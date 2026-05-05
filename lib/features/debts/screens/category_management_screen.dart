@@ -217,7 +217,7 @@ Future<void> _confirmDeleteCategory(
     builder: (ctx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: const Text('حذف التصنيف؟'),
-      content: Text('سُيزال «${c.name}» من جميع العملاء المرتبطين.'),
+      content: Text('سُيزال «${c.name}» من جميع الزبائن وبائعي الجملة المرتبطين.'),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
@@ -294,7 +294,7 @@ class _CategoryTile extends ConsumerWidget {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          '$count عميل',
+                          '$count زبون',
                           textAlign: TextAlign.start,
                           style: TextStyle(
                             color: Colors.grey.shade600,

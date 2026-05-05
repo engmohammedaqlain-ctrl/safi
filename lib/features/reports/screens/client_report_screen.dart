@@ -11,7 +11,7 @@ import '../../../core/ui/app_feedback.dart';
 import '../../debts/providers/debts_ui_provider.dart';
 import '../services/app_report_pdf.dart';
 
-/// شاشة تقرير عميل/مورد — تتيح اختيار الفترة وتصدير PDF مُلوَّن.
+/// شاشة تقرير زبون/بائع جملة — تتيح اختيار الفترة وتصدير PDF مُلوَّن.
 class ClientReportScreen extends ConsumerStatefulWidget {
   const ClientReportScreen({super.key, required this.client});
 
@@ -130,7 +130,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
     final client = _client;
     final topPad = MediaQuery.paddingOf(context).top;
     final isSupplier = client.isSupplier;
-    final typeLabel = isSupplier ? 'مورد' : 'عميل';
+    final typeLabel = isSupplier ? 'بائع جملة' : 'زبون';
 
     final balance =
         double.tryParse(client.amount.replaceAll('₪', '').trim()) ?? 0.0;
@@ -358,7 +358,7 @@ class _ClientReportScreenState extends ConsumerState<ClientReportScreen> {
                           const SizedBox(height: 16),
 
                           Text(
-                            'يتضمن التقرير معلومات العميل، ملخص الرصيد، وجدول كل المعاملات بألوان واضحة.',
+                            'يتضمن التقرير معلومات الزبون، ملخص الرصيد، وجدول كل المعاملات بألوان واضحة.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,

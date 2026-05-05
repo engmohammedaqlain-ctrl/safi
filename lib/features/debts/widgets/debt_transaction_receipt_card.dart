@@ -13,7 +13,7 @@ class DebtTransactionReceiptCard extends StatelessWidget {
     required this.amount,
     required this.type,
     required this.date,
-    this.counterpartyLabel = 'العميل',
+    this.counterpartyLabel = 'الزبون',
     this.paymentMethod,
     this.note,
   });
@@ -23,7 +23,7 @@ class DebtTransactionReceiptCard extends StatelessWidget {
   final TransactionType type;
   final DateTime date;
 
-  /// «العميل» أو «المورد»
+  /// «الزبون» أو «بائع الجملة»
   final String counterpartyLabel;
 
   final String? paymentMethod;

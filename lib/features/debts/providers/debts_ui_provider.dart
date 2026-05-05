@@ -100,13 +100,13 @@ class DebtorUi {
   final String id;
   final String name;
   final String phone;
-  final String amount; // الرصيد الصافي: موجب = العميل مدين لك
+  final String amount; // الرصيد الصافي: موجب = الزبون مدين لك
   final String status;
   final DebtUrgency urgency;
   final String? address;
   final List<String> categoryIds;
 
-  /// إذا كان المورد (true) بدلاً من العميل (false)
+  /// إذا كان بائع الجملة (true) بدلاً من الزبون (false)
   final bool isSupplier;
 
   /// أحدث وقت تعديل لتفضيل نسخة عند المزامنة
@@ -118,7 +118,7 @@ class DebtorUi {
   /// موعد استحقاق الدين
   final DateTime? dueDate;
 
-  /// ملاحظة شخصية عن العميل/المورد (تُعرض تحت الاسم)
+  /// ملاحظة شخصية عن الزبون/بائع الجملة (تُعرض تحت الاسم)
   final String? note;
 
   final bool isDeleted;
@@ -269,9 +269,9 @@ class DebtorsUiNotifier extends Notifier<List<DebtorUi>> {
     return null;
   }
 
-  /// تحديث رصيد العميل بمقدار delta
+  /// تحديث رصيد الزبون بمقدار delta
   /// delta موجب = دين جديد (الدين يزيد)، delta سالب = سداد (الدين يقل)
-  /// إزالة مُعرّف تصنيف من كل العملاء (عند حذف التصنيف)
+  /// إزالة مُعرّف تصنيف من كل الزبائن (عند حذف التصنيف)
   void stripCategoryFromAll(String categoryId) {
     state = [
       for (final d in state)
@@ -416,12 +416,12 @@ final debtorsUiProvider = NotifierProvider<DebtorsUiNotifier, List<DebtorUi>>(
   DebtorsUiNotifier.new,
 );
 
-/// عملاء فقط (isSupplier = false)
+/// زبائن فقط (isSupplier = false)
 final customersOnlyProvider = Provider<List<DebtorUi>>((ref) {
   return ref.watch(debtorsUiProvider).where((d) => !d.isSupplier && !d.isDeleted).toList();
 });
 
-/// موردون فقط (isSupplier = true)
+/// بائعو جملة فقط (isSupplier = true)
 final suppliersOnlyProvider = Provider<List<DebtorUi>>((ref) {
   return ref.watch(debtorsUiProvider).where((d) => d.isSupplier && !d.isDeleted).toList();
 });
@@ -449,12 +449,12 @@ DebtMyNumbers _computeNumbers(List<DebtorUi> list) {
   );
 }
 
-/// أرقام ملخصة للعملاء فقط
+/// أرقام ملخصة للزبائن فقط
 final customersNumbersProvider = Provider<DebtMyNumbers>((ref) {
   return _computeNumbers(ref.watch(customersOnlyProvider));
 });
 
-/// أرقام ملخصة للموردين فقط
+/// أرقام ملخصة لبائعي الجملة فقط
 final suppliersNumbersProvider = Provider<DebtMyNumbers>((ref) {
   return _computeNumbers(ref.watch(suppliersOnlyProvider));
 });
@@ -516,7 +516,7 @@ final transactionsProvider =
       TransactionsNotifier.new,
     );
 
-/// معاملات عميل محدد — مرتبة من الأحدث للأقدم
+/// معاملات زبون محدد — مرتبة من الأحدث للأقدم
 final customerTransactionsProvider =
     Provider.family<List<TransactionUi>, String>((ref, customerId) {
       final all = ref.watch(transactionsProvider);
@@ -525,19 +525,19 @@ final customerTransactionsProvider =
       return filtered;
     });
 
-/// بيانات عميل حسب المعرّف — يتحدث تلقائيًا عند تغيّر الرصيد
+/// بيانات زبون حسب المعرّف — يتحدث تلقائيًا عند تغيّر الرصيد
 final debtorByIdProvider = Provider.family<DebtorUi?, String>((ref, id) {
   final all = ref.watch(debtorsUiProvider);
   final matches = all.where((d) => d.id == id);
   return matches.isEmpty ? null : matches.first;
 });
 
-/// أرقام ملخصة عامة — كل العملاء + الموردين معًا
+/// أرقام ملخصة عامة — كل الزبائن + بائعي الجملة معًا
 final debtMyNumbersProvider = Provider<DebtMyNumbers>((ref) {
   return _computeNumbers(ref.watch(debtorsUiProvider));
 });
 
-/// تبويب شاشة دفتر الديون: 0 = العملاء، 1 = الموردين (لإجراءات الشريط العلوي المشتركة).
+/// تبويب شاشة دفتر الديون: 0 = الزبائن، 1 = بائعي الجملة (لإجراءات الشريط العلوي المشتركة).
 class DebtsLedgerTabNotifier extends Notifier<int> {
   @override
   int build() => 0;

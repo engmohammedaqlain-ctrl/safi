@@ -163,6 +163,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
         amount: amount,
         type: TransactionType.gave,
         date: tx.date,
+        counterpartyLabel: widget.forCustomer!.isSupplier ? 'بائع جملة' : 'زبون',
       ),
     );
   }

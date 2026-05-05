@@ -1179,7 +1179,7 @@ class _TransactionDetailSheet extends ConsumerWidget {
                               type: tx.type,
                               date: tx.date,
                               counterpartyLabel:
-                                  debtor.isSupplier ? 'المورد' : 'العميل',
+                                  debtor.isSupplier ? 'بائع الجملة' : 'الزبون',
                               paymentMethod: method,
                               note: tx.note.isEmpty ? null : tx.note,
                               attachmentPath: tx.imagePath,
@@ -1386,7 +1386,7 @@ class _CustomerNoteSheetState extends ConsumerState<_CustomerNoteSheet> {
   @override
   Widget build(BuildContext context) {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
-    final role = widget.debtor.isSupplier ? 'المورد' : 'العميل';
+    final role = widget.debtor.isSupplier ? 'بائع الجملة' : 'الزبون';
 
     return Container(
       margin: const EdgeInsets.only(top: 48),
@@ -1538,7 +1538,7 @@ class _CustomerInfoSheetState extends ConsumerState<_CustomerInfoSheet> {
   @override
   Widget build(BuildContext context) {
     final keyboardSpace = MediaQuery.viewInsetsOf(context).bottom;
-    final role = widget.debtor.isSupplier ? 'المورد' : 'العميل';
+    final role = widget.debtor.isSupplier ? 'بائع الجملة' : 'الزبون';
 
     return Container(
       margin: const EdgeInsetsDirectional.only(top: 48),

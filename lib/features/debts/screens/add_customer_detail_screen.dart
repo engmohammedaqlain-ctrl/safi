@@ -59,9 +59,9 @@ class _AddCustomerDetailScreenState
     return Directionality(
       textDirection: TextDirection.rtl,
       child: VaultInsetPageShell(
-        title: const Text(
-          'إضافة عميل',
-          style: TextStyle(
+        title: Text(
+          widget.isSupplier ? 'إضافة بائع جملة' : 'إضافة زبون',
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 17,
@@ -186,7 +186,9 @@ class _AddCustomerDetailScreenState
                   TextField(
                     controller: _addressCtrl,
                     decoration: InputDecoration(
-                      hintText: 'أدخل موقع أو عنوان العميل',
+                      hintText: widget.isSupplier
+                          ? 'أدخل موقع أو عنوان بائع الجملة'
+                          : 'أدخل موقع أو عنوان الزبون',
                       hintStyle: const TextStyle(color: Colors.grey),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(4),

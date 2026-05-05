@@ -62,8 +62,7 @@ class AiAssistantState {
 
 class AiAssistantNotifier extends Notifier<AiAssistantState> {
   /// مفتاح DeepSeek API (مضمّن في التطبيق — لا يُقرأ من .env).
-  static const String _deepseekApiKey =
-      'sk-6e98977c40bc44b58e9cc425f01d845f';
+  static const String _deepseekApiKey = 'sk-6e98977c40bc44b58e9cc425f01d845f';
 
   @override
   AiAssistantState build() {
@@ -95,7 +94,8 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
 
       // Sync to Firebase if online/logged in (offline resilience is via SharedPreferences)
       final ownerUid =
-          p.getString(PrefsKeys.ledgerOwnerUid) ?? FirebaseAuth.instance.currentUser?.uid;
+          p.getString(PrefsKeys.ledgerOwnerUid) ??
+          FirebaseAuth.instance.currentUser?.uid;
       if (ownerUid != null) {
         await FirebaseFirestore.instance
             .collection('users')
@@ -115,12 +115,16 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     _saveAndSyncHistory([]);
   }
 
-  Future<String> generateWhatsAppMessage(DebtorUi debtor, String customPrompt) async {
+  Future<String> generateWhatsAppMessage(
+    DebtorUi debtor,
+    String customPrompt,
+  ) async {
     try {
       final userName = StartupLedgerData.bootstrapUserName ?? 'صاحب المتجر';
-      final systemPrompt = '''
+      final systemPrompt =
+          '''
 أنت خبير مالي معتمد؛ صِغْ نصاً واحداً جاهزاً للإرسال عبر واتساب بلغة عربية فصحى مرتبة، رسمية، وهادئة، مع أسلوب مهني كما يجري في المراسلات المالية في فلسطين.
-سياق التطبيق: «الصافي». المستخدم ($userName). المقصود: العميل (${debtor.name})؛ قيمة المطلوب تذكيره بها: (${debtor.amount} شيكل).
+سياق التطبيق: «الصافي». المستخدم ($userName). المقصود: الزبون (${debtor.name})؛ قيمة المطلوب تذكيره بها: (${debtor.amount} شيكل).
 موعد السداد: ${debtor.dueDate != null ? '${debtor.dueDate!.year}/${debtor.dueDate!.month}/${debtor.dueDate!.day}' : 'غير محدد'}.
 التعليمات الإضافية من المستخدم: "$customPrompt"
 المخرجات: فقرة أو فقرتان قصيرتان فقط؛ دون عنوان أو توقيع افتراضي منك؛ دون مبالغة أو عامية؛ بلهجة مهنية ومهذبة.
@@ -137,7 +141,7 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
           'model': 'deepseek-chat',
           'messages': [
             {'role': 'system', 'content': systemPrompt},
-            {'role': 'user', 'content': 'اكتب الرسالة الآن.'}
+            {'role': 'user', 'content': 'اكتب الرسالة الآن.'},
           ],
           'temperature': 0.45,
         }),
@@ -145,7 +149,9 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
 
       if (res.statusCode == 200) {
         final data = jsonDecode(utf8.decode(res.bodyBytes));
-        final raw = data['choices'][0]['message']['content']?.trim() ?? 'عذراً، حدث خطأ.';
+        final raw =
+            data['choices'][0]['message']['content']?.trim() ??
+            'عذراً، حدث خطأ.';
         return _stripEmojiAndDecorativeSymbols(raw);
       } else {
         return 'عذراً، حدث خطأ في الاتصال.';
@@ -171,13 +177,14 @@ class AiAssistantNotifier extends Notifier<AiAssistantState> {
     try {
       final contextStr = _buildContext();
 
-      final systemPrompt = '''
+      final systemPrompt =
+          '''
 $contextStr
 
 أنت خبير مالي معتمد تتحدث بالعربية الفصحى الموجزة بأسلوب رسمي ومهني دائماً، مع فهم عملي للتجارة والتزامات الديون كما يمارَس في فلسطين.
 وضعك «محادثة وتحليل فقط»: لا تستطيع تنفيذ أي إجراء داخل التطبيق (لا إضافة ولا تعديل ولا حذف). إن طُلب منك ذلك فاشرح بلطف أن الدور يقتصر على الإرشاد وفق البيانات أعلاه، ووجّه المستخدم لإدخال البيانات من شاشات التطبيق.
-لا تخلط بين «اسم صاحب المتجر» أعلاه وبين أسماء العملاء/الموردين؛ الصفوف في قسم «تفصيل كل عميل ومورد» هي وحدها سجلات الدفتر.
-انسخ أسماء العملاء والموردين **حرفياً** كما في السياق؛ إن وُجد نص «بدون اسم» أو معرّف فأظهره كما هو ولا تستبدله بعناوين عامة مثل «عميل 1».
+لا تخلط بين «اسم صاحب المتجر» أعلاه وبين أسماء الزبائن/بائعي الجملة؛ الصفوف في قسم «تفصيل كل زبون وبائع جملة» هي وحدها سجلات الدفتر.
+انسخ أسماء الزبائن وبائعي الجملة **حرفياً** كما في السياق؛ إن وُجد نص «بدون اسم» أو معرّف فأظهره كما هو ولا تستبدله بعناوين عامة مثل «عميل 1».
 قسم «المحافظ المالية» يضم الأرصدة الابتدائية والرصيد الفعلي لكل محفظة — استخدمه للإجابة عن الصندوق والصافي.
 عند الطلب استند بالكامل إلى التفاصيل المذكورة في السياق (أسماء، أرصدة، معاملات، صندوق، محافظ) ولا تكتفي بملخص رقمي عام إن كان المستخدم يطلب التفصيل.
 قدّم إجابة واضحة ومنظّمة (فقرات قصيرة أو نقاط مرقّمة عند الحاجة). تجنّب العامية والتهريج والعبارات الترويجية أو الخفيفة.
@@ -268,12 +275,14 @@ $contextStr
   String _ymd(DateTime d) => '${d.year}/${d.month}/${d.day}';
 
   String _buildContext() {
-    final userName =
-        (StartupLedgerData.bootstrapUserName ?? '').trim().isEmpty
-            ? '(غير محدد في الإعدادات)'
-            : StartupLedgerData.bootstrapUserName!.trim();
+    final userName = (StartupLedgerData.bootstrapUserName ?? '').trim().isEmpty
+        ? '(غير محدد في الإعدادات)'
+        : StartupLedgerData.bootstrapUserName!.trim();
 
-    final debtors = ref.read(debtorsUiProvider).where((d) => !d.isDeleted).toList();
+    final debtors = ref
+        .read(debtorsUiProvider)
+        .where((d) => !d.isDeleted)
+        .toList();
 
     String debtorLabel(DebtorUi d) {
       final n = d.name.trim();
@@ -283,11 +292,9 @@ $contextStr
 
     final idToName = {for (final d in debtors) d.id: debtorLabel(d)};
 
-    final txs = ref
-        .read(transactionsProvider)
-        .where((t) => !t.isDeleted)
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    final txs =
+        ref.read(transactionsProvider).where((t) => !t.isDeleted).toList()
+          ..sort((a, b) => b.date.compareTo(a.date));
 
     final cash = List.of(ref.read(activeCashbookEntriesProvider))
       ..sort((a, b) => b.date.compareTo(a.date));
@@ -333,15 +340,15 @@ $contextStr
         totalLiabilities += amt.abs();
       }
 
-      final role = d.isSupplier ? 'مورد' : 'عميل';
-      final due =
-          d.dueDate != null ? _ymd(d.dueDate!) : 'غير محدد';
+      final role = d.isSupplier ? 'بائع جملة' : 'زبون';
+      final due = d.dueDate != null ? _ymd(d.dueDate!) : 'غير محدد';
       final phone = d.phone.trim().isEmpty ? '—' : d.phone;
       final addr = (d.address == null || d.address!.trim().isEmpty)
           ? ''
           : ' | عنوان: ${d.address}';
-      final note =
-          (d.note == null || d.note!.trim().isEmpty) ? '' : ' | ملاحظة: ${d.note}';
+      final note = (d.note == null || d.note!.trim().isEmpty)
+          ? ''
+          : ' | ملاحظة: ${d.note}';
       final displayName = debtorLabel(d);
       debtorLines.writeln(
         '- [$role] الاسم في الدفتر: $displayName | معرّف السجل: ${d.id} | هاتف: $phone$addr | الرصيد الحالي: ${d.amount} شيكل (موجب=عليهم لك دين مستحق، سالب=أنت مدين لهم) | موعد الاستحقاق: $due | بيان الحالة في التطبيق: ${d.status}$note',
@@ -353,9 +360,11 @@ $contextStr
       txLines.writeln('(لا توجد معاملات دين/سداد مسجلة في السياق الحالي.)');
     } else {
       for (final t in txs) {
-        final name = idToName[t.customerId] ?? 'غير معروف (معرّف ${t.customerId})';
-        final kind =
-            t.type == TransactionType.gave ? 'إضافة دين (بيع آجل/تدوين لهم)' : 'سداد أو تحصيل';
+        final name =
+            idToName[t.customerId] ?? 'غير معروف (معرّف ${t.customerId})';
+        final kind = t.type == TransactionType.gave
+            ? 'إضافة دين (بيع آجل/تدوين لهم)'
+            : 'سداد أو تجميع';
         final method = transactionPayMethodLabel(t.payMethodId);
         final note = t.note.trim().isEmpty ? '—' : t.note.trim();
         txLines.writeln(
@@ -371,10 +380,9 @@ $contextStr
       for (final e in cash) {
         final kind = e.isIncome ? 'وارد (دخل)' : 'صادر (مصروف)';
         final note = e.note.trim().isEmpty ? '' : ' | ملاحظة: ${e.note}';
-        final cat =
-            (e.category == null || e.category!.trim().isEmpty)
-                ? ''
-                : ' | تصنيف: ${e.category}';
+        final cat = (e.category == null || e.category!.trim().isEmpty)
+            ? ''
+            : ' | تصنيف: ${e.category}';
         cashLines.writeln(
           '- ${_ymd(e.date)} | ${e.title} | $kind | ${e.amount} شيكل$cat$note',
         );
@@ -382,13 +390,13 @@ $contextStr
     }
 
     final debtBlock = debtorCount == 0
-        ? '(لا يوجد عملاء أو موردون غير محذوفين في الدفتر.)'
+        ? '(لا يوجد زبائن أو بائعو جملة غير محذوفين في الدفتر.)'
         : debtorLines.toString().trim();
 
     return '''
 ### سياق دفتر «الصافي» — بيانات فعلية من التطبيق (للقراءة فقط؛ لا تُخترع أرقاماً خارجها):
-- اسم صاحب المتجر من الإعدادات فقط (**ليس** أحد سجلات العملاء أو الموردين في الدفتر): $userName
-- عدد سجلات العملاء/الموردين (غير محذوفة): $debtorCount
+- اسم صاحب المتجر من الإعدادات فقط (**ليس** أحد سجلات الزبائن أو بائعي الجملة في الدفتر): $userName
+- عدد سجلات الزبائن/بائعي الجملة (غير محذوفة): $debtorCount
 - إجمالي المبالغ المستحقة للمستخدم (رصيد موجب لدى الغير): $totalReceivables شيكل
 - إجمالي مطلوبات المستخدم تجاه الغير (رصيد سالب مجمّع كقيمة مطلقة): $totalLiabilities شيكل
 - **مجموع أرصدة المحافظ الفعلية** (الرصيد المبدئي لكل محفظة + حركات الصندوق المعنونة لها + تأثير الديون حسب إعداد التطبيق): $totalWalletsEffective شيكل
@@ -397,7 +405,7 @@ $contextStr
 #### المحافظ المالية (كل محفظة نشطة):
 ${accLines.toString().trim()}
 
-#### تفصيل كل عميل / مورد (أسماء من الدفتر فقط):
+#### تفصيل كل زبون / بائع جملة (أسماء من الدفتر فقط):
 $debtBlock
 
 #### سجل معاملات الدين والسداد (من الأحدث للأقدم):

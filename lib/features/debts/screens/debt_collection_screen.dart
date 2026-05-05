@@ -14,11 +14,12 @@ import '../../../core/services/notification_service.dart';
 class DebtCollectionScreen extends ConsumerStatefulWidget {
   const DebtCollectionScreen({super.key, this.suppliersOnly = false});
 
-  /// عند `true` تُعرض فقط الموردون الذين عليهم دين لك؛ وإلا العملاء فقط.
+  /// عند `true` تُعرض فقط بائعو الجملة الذين عليهم دين لك؛ وإلا الزبائن فقط.
   final bool suppliersOnly;
 
   @override
-  ConsumerState<DebtCollectionScreen> createState() => _DebtCollectionScreenState();
+  ConsumerState<DebtCollectionScreen> createState() =>
+      _DebtCollectionScreenState();
 }
 
 class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
@@ -67,7 +68,7 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
     );
-    
+
     if (pickedDate != null && mounted) {
       // Ask for time (optional)
       final pickedTime = await showTimePicker(
@@ -77,7 +78,7 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
         cancelText: 'تخطي',
         confirmText: 'تأكيد',
       );
-      
+
       DateTime finalDateTime = pickedDate;
       if (pickedTime != null) {
         finalDateTime = DateTime(
@@ -89,11 +90,19 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
         );
       }
 
-      ref.read(debtorsUiProvider.notifier).updateCustomerDueDate(debtor.id, finalDateTime);
-      
-      final amt = double.tryParse(debtor.amount.replaceAll('₪', '').trim()) ?? 0;
-      await NotificationService().scheduleDebtReminder(debtor.id, debtor.name, amt, finalDateTime);
-      
+      ref
+          .read(debtorsUiProvider.notifier)
+          .updateCustomerDueDate(debtor.id, finalDateTime);
+
+      final amt =
+          double.tryParse(debtor.amount.replaceAll('₪', '').trim()) ?? 0;
+      await NotificationService().scheduleDebtReminder(
+        debtor.id,
+        debtor.name,
+        amt,
+        finalDateTime,
+      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم تحديد موعد السداد بنجاح')),
@@ -125,10 +134,10 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
       return amt > 0;
     }).toList();
 
-    final searchHint = scopeSuppliers ? 'ابحث عن مورد...' : 'ابحث عن عميل...';
+    final searchHint = scopeSuppliers ? 'ابحث عن بائع جملة...' : 'ابحث عن زبون...';
     final emptyMessage = scopeSuppliers
-        ? 'لا يوجد موردون عليهم ديون حالياً'
-        : 'لا يوجد عملاء عليهم ديون حالياً';
+        ? 'لا يوجد بائعو جملة عليهم ديون حالياً'
+        : 'لا يوجد زبائن عليهم ديون حالياً';
 
     final filtered = debtorsWithDebt.where((d) {
       if (_query.isEmpty) return true;
@@ -143,14 +152,14 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
       }
       if (a.dueDate != null) return -1;
       if (b.dueDate != null) return 1;
-      
+
       final amtA = double.tryParse(a.amount.replaceAll('₪', '').trim()) ?? 0;
       final amtB = double.tryParse(b.amount.replaceAll('₪', '').trim()) ?? 0;
       return amtB.compareTo(amtA);
     });
 
     return VaultSubpageScaffold(
-      title: 'تحصيل الديون',
+      title: 'تجميع الديون',
       body: Column(
         children: [
           Padding(
@@ -160,7 +169,10 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
                 hintText: searchHint,
-                prefixIcon: const Icon(LucideIcons.search, color: AppColors.textMuted),
+                prefixIcon: const Icon(
+                  LucideIcons.search,
+                  color: AppColors.textMuted,
+                ),
                 filled: true,
                 fillColor: AppColors.surfaceVariant,
                 border: OutlineInputBorder(
@@ -180,13 +192,19 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     itemCount: filtered.length,
-                    separatorBuilder: (context, _) => const SizedBox(height: 12),
+                    separatorBuilder: (context, _) =>
+                        const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final d = filtered[index];
-                      final isOverdue = d.dueDate != null && d.dueDate!.isBefore(DateTime.now());
-                      
+                      final isOverdue =
+                          d.dueDate != null &&
+                          d.dueDate!.isBefore(DateTime.now());
+
                       return Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -231,7 +249,9 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
                                   Icon(
                                     LucideIcons.calendarClock,
                                     size: 16,
-                                    color: isOverdue ? AppColors.flowOut : AppColors.textSecondary,
+                                    color: isOverdue
+                                        ? AppColors.flowOut
+                                        : AppColors.textSecondary,
                                   ),
                                   const SizedBox(width: 6),
                                   Expanded(
@@ -239,8 +259,12 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
                                       'موعد السداد: ${d.dueDate!.year}/${d.dueDate!.month}/${d.dueDate!.day} ${_formatTime(d.dueDate!)}\n'
                                       '(${_formatTimeRemaining(d.dueDate!)})',
                                       style: AppTextStyles.labelMedium.copyWith(
-                                        color: isOverdue ? AppColors.flowOut : AppColors.textSecondary,
-                                        fontWeight: isOverdue ? FontWeight.w600 : FontWeight.w400,
+                                        color: isOverdue
+                                            ? AppColors.flowOut
+                                            : AppColors.textSecondary,
+                                        fontWeight: isOverdue
+                                            ? FontWeight.w600
+                                            : FontWeight.w400,
                                       ),
                                     ),
                                   ),
@@ -252,11 +276,16 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
                                 Expanded(
                                   child: OutlinedButton.icon(
                                     onPressed: () => _selectDueDate(d),
-                                    icon: const Icon(LucideIcons.calendar, size: 18),
+                                    icon: const Icon(
+                                      LucideIcons.calendar,
+                                      size: 18,
+                                    ),
                                     label: const Text('الموعد'),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: AppColors.primary,
-                                      side: const BorderSide(color: AppColors.primary),
+                                      side: const BorderSide(
+                                        color: AppColors.primary,
+                                      ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -266,11 +295,17 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: ElevatedButton.icon(
-                                    onPressed: () => _openWhatsAppSheet(context, d),
-                                    icon: const Icon(LucideIcons.messageCircle, size: 18),
+                                    onPressed: () =>
+                                        _openWhatsAppSheet(context, d),
+                                    icon: const Icon(
+                                      LucideIcons.messageCircle,
+                                      size: 18,
+                                    ),
                                     label: const Text('تذكير'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF25D366), // WhatsApp Green
+                                      backgroundColor: const Color(
+                                        0xFF25D366,
+                                      ), // WhatsApp Green
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
@@ -302,7 +337,9 @@ class _WhatsAppSheet extends ConsumerStatefulWidget {
 }
 
 class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
-  final _promptController = TextEditingController(text: 'اكتب رسالة تذكير مهذبة ومختصرة');
+  final _promptController = TextEditingController(
+    text: 'اكتب رسالة تذكير مهذبة ومختصرة',
+  );
   final _messageController = TextEditingController();
   bool _isLoading = false;
 
@@ -332,19 +369,19 @@ class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
 
     final phone = widget.debtor.phone.trim();
     if (phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رقم الهاتف غير مسجل')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('رقم الهاتف غير مسجل')));
       return;
     }
 
-    // نفس الأرقام التي خُزّنت عند إضافة العميل — بدون إضافة مقدمة دولة من التطبيق.
+    // نفس الأرقام التي خُزّنت عند إضافة الزبون — بدون إضافة مقدمة دولة من التطبيق.
     // مخزون الجهات يكون غالباً "+" ثم أرقام؛ واتساب يطلب الرقم الدولي أرقاماً فقط بلا +.
     final digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
     if (digitsOnly.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رقم الهاتف غير صالح')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('رقم الهاتف غير صالح')));
       return;
     }
 
@@ -385,7 +422,9 @@ class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
               const SizedBox(width: 8),
               Text(
                 'توليد رسالة بالذكاء الاصطناعي',
-                style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.w600),
+                style: AppTextStyles.titleMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -406,13 +445,19 @@ class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
           ElevatedButton.icon(
             onPressed: _isLoading ? null : _generateMessage,
             icon: _isLoading
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(LucideIcons.wand2, size: 18),
             label: Text(_isLoading ? 'جاري التوليد...' : 'توليد الرسالة'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.aiPurple,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -436,7 +481,9 @@ class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
               backgroundColor: const Color(0xFF25D366),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ],

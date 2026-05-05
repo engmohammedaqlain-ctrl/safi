@@ -72,8 +72,8 @@ dependencies:
   mobile_scanner: ^6.x
 
   # SMS
-  telephony: ^0.2.x          # Android فقط
-  url_launcher: ^6.x         # iOS بديل
+  telephony: ^0.2.x # Android فقط
+  url_launcher: ^6.x # iOS بديل
 
   # AI / HTTP
   http: ^1.x
@@ -597,6 +597,7 @@ auth/
 ```
 
 **المنطق:**
+
 - تسجيل برقم الهاتف + OTP عبر Firebase Phone Auth
 - حفظ بيانات المستخدم في `users/{uid}`
 - ربط المستخدم بـ `shopId` عند التسجيل الأول
@@ -612,6 +613,7 @@ onboarding/
 ```
 
 **الخطوات الأربع:**
+
 1. أضف منتجك الأول (بالباركود أو يدوياً)
 2. سجّل أول بيعة
 3. أضف زبون مدين
@@ -635,6 +637,7 @@ sales/
 ```
 
 **المنطق الأساسي:**
+
 1. المستخدم يضغط زر الباركود → `BarcodeScannerWidget` يفتح
 2. يمسح الباركود → يبحث في Hive أولاً، ثم Firestore
 3. يضيف المنتج للسلة
@@ -657,6 +660,7 @@ inventory/
 ```
 
 **ربط الباركود بالمنتج:**
+
 ```dart
 // عند إضافة منتج جديد
 void _scanBarcode() async {
@@ -700,6 +704,7 @@ ai_assistant/
 ```
 
 **وظائف الـ AI:**
+
 - كتابة رسائل SMS للديون (ودي / رسمي / حازم)
 - تحليل المبيعات ("ليش نقصت مبيعاتي؟")
 - اقتراح المنتجات الأكثر ربحية
@@ -828,7 +833,7 @@ class AIService {
     required String currency,
   }) async {
     final prompt = '''
-أنت مساعد لكتابة رسائل تحصيل ديون للتجار.
+أنت مساعد لكتابة رسائل تجميع ديون للتجار.
 اكتب رسالة SMS قصيرة (أقل من 160 حرف) بنبرة $tone باللغة العربية العامية.
 الزبون: $customerName
 المبلغ: $amount $currency
@@ -869,6 +874,7 @@ class AIService {
 ## 📏 ترتيب التطوير (مراحل)
 
 ### المرحلة 1 — الأساس (أسبوع 1-2)
+
 - [ ] إعداد Firebase (Auth, Firestore, FCM)
 - [ ] هيكل المجلدات كاملاً
 - [ ] `local_db_service.dart` + Hive init
@@ -877,23 +883,27 @@ class AIService {
 - [ ] `core/router/` — go_router كامل
 
 ### المرحلة 2 — القلب (أسبوع 3-4)
+
 - [ ] `shared/models/` — Product, Sale, Debt, Customer
 - [ ] `shared/repositories/` — Firestore + Hive
 - [ ] `inventory/` — إضافة منتجات + مسح الباركود
 - [ ] `barcode_service.dart` — مستخرج من flutter_billing_app
 
 ### المرحلة 3 — البيع والديون (أسبوع 5-6)
+
 - [ ] `sales/` — سلة البيع السريع + 3 خطوات
 - [ ] `debts/` — قائمة الديون + تتبع الدفعات
 - [ ] `sms_service.dart` — إرسال تذكيرات
 
 ### المرحلة 4 — الذكاء والتقارير (أسبوع 7-8)
+
 - [ ] `ai_assistant/` — SMS ذكي + تحليل
 - [ ] `reports/` — رسوم بيانية + تدفق نقدي
 - [ ] `sync_provider.dart` — مزامنة Offline↔Online
 - [ ] `fcm_service.dart` — إشعارات
 
 ### المرحلة 5 — الإنهاء (أسبوع 9-10)
+
 - [ ] `onboarding/` — تجربة أول مستخدم
 - [ ] `settings/` — الفريق والصلاحيات
 - [ ] اختبار شامل + تحسين الأداء
@@ -903,17 +913,17 @@ class AIService {
 
 ## ⚡ نقاط مهمة
 
-| الموضوع | القرار |
-|---------|--------|
-| State Management | Riverpod 2 (Annotation) |
-| Navigation | go_router + ShellRoute |
-| Offline | Hive أولاً، Firestore مزامنة |
-| Barcode | mobile_scanner (مستوحى من flutter_billing_app) |
-| AI | OpenAI GPT-4o-mini |
-| SMS | telephony (Android) / url_launcher (iOS) |
-| Charts | fl_chart |
-| Auth | Firebase Phone Auth + OTP |
-| Security | Firestore Rules مبنية على shopId |
+| الموضوع          | القرار                                         |
+| ---------------- | ---------------------------------------------- |
+| State Management | Riverpod 2 (Annotation)                        |
+| Navigation       | go_router + ShellRoute                         |
+| Offline          | Hive أولاً، Firestore مزامنة                   |
+| Barcode          | mobile_scanner (مستوحى من flutter_billing_app) |
+| AI               | OpenAI GPT-4o-mini                             |
+| SMS              | telephony (Android) / url_launcher (iOS)       |
+| Charts           | fl_chart                                       |
+| Auth             | Firebase Phone Auth + OTP                      |
+| Security         | Firestore Rules مبنية على shopId               |
 
 ---
 

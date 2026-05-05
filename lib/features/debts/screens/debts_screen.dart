@@ -131,9 +131,9 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
       error: (_, __) => true,
     );
 
-    final entityLabel = isSuppliersTab ? 'الموردين' : 'العملاء';
-    final emptyLabel = isSuppliersTab ? 'لا يوجد موردون' : 'لا يوجد عملاء';
-    final fabLabel = isSuppliersTab ? 'إضافة مورد' : 'إضافة عميل';
+    final entityLabel = isSuppliersTab ? 'بائعي الجملة' : 'الزبائن';
+    final emptyLabel = isSuppliersTab ? 'لا يوجد بائعي جملة' : 'لا يوجد زبائن';
+    final fabLabel = isSuppliersTab ? 'إضافة بائع جملة' : 'إضافة زبون';
     final summaryCountLabel = '$entityLabel: ${hidden ? '**' : my.debtorCount}';
 
     return Scaffold(
@@ -151,7 +151,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
               children: [
                 Expanded(
                   child: _TabButton(
-                    title: 'العملاء',
+                    title: 'الزبائن',
                     icon: LucideIcons.user,
                     isSelected: _selectedTab == 0,
                     onTap: () {
@@ -162,7 +162,7 @@ class _DebtsScreenState extends ConsumerState<DebtsScreen> {
                 ),
                 Expanded(
                   child: _TabButton(
-                    title: 'الموردين',
+                    title: 'بائعي الجملة',
                     icon: LucideIcons.truck,
                     isSelected: _selectedTab == 1,
                     onTap: () {

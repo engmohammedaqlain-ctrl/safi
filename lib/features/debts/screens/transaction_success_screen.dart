@@ -17,12 +17,14 @@ class TransactionSuccessScreen extends StatefulWidget {
     required this.amount,
     required this.type,
     required this.date,
+    this.counterpartyLabel = 'الزبون',
   });
 
   final String customerName;
   final double amount;
   final TransactionType type;
   final DateTime date;
+  final String counterpartyLabel;
 
   /// انتقال بنمط تأكيد بنكي: تلاشي + انزلاق من الأسفح
   static Route<bool> route({
@@ -30,6 +32,7 @@ class TransactionSuccessScreen extends StatefulWidget {
     required double amount,
     required TransactionType type,
     required DateTime date,
+    String counterpartyLabel = 'الزبون',
   }) {
     return PageRouteBuilder<bool>(
       pageBuilder: (context, animation, secondaryAnimation) => TransactionSuccessScreen(
@@ -37,6 +40,7 @@ class TransactionSuccessScreen extends StatefulWidget {
         amount: amount,
         type: type,
         date: date,
+        counterpartyLabel: counterpartyLabel,
       ),
       transitionDuration: const Duration(milliseconds: 420),
       reverseTransitionDuration: const Duration(milliseconds: 320),
@@ -201,6 +205,7 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
                             amount: widget.amount,
                             type: widget.type,
                             date: widget.date,
+                            counterpartyLabel: widget.counterpartyLabel,
                           ),
                         ),
                       ),
@@ -220,7 +225,7 @@ class _TransactionSuccessScreenState extends State<TransactionSuccessScreen>
                                   amount: widget.amount,
                                   type: widget.type,
                                   date: widget.date,
-                                  counterpartyLabel: 'العميل',
+                                  counterpartyLabel: widget.counterpartyLabel,
                                 );
                               },
                               style: OutlinedButton.styleFrom(

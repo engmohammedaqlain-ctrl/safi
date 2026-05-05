@@ -98,19 +98,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       miniKind: _OnboardingMiniKind.debts,
     ),
     _OnboardingSlide(
-      headline: 'عملاؤك ومديونيتهم',
-      body: 'أضف من تتعامل معهم، وتابع رصيد كل عميل وحركات السداد بتفاصيلها.',
+      headline: 'زبائنك ومديونيتهم',
+      body: 'أضف من تتعامل معهم، وتابع رصيد كل زبون وحركات السداد بتفاصيلها.',
       icon: LucideIcons.users,
       gradientColors: const [
         Color(0xFFB39DDB),
         Color(0xFF7E57C2),
         Color(0xFF4527A0),
       ],
-      cardTag: 'سجل العملاء',
+      cardTag: 'سجل الزبائن',
       miniKind: _OnboardingMiniKind.customers,
     ),
     _OnboardingSlide(
-      headline: 'تذكيرات ذكية للتحصيل',
+      headline: 'تذكيرات ذكية للتجميع',
       body: 'فعّل رسائل التذكير لتقليل التأخير، وتسريع استرداد حقوقك المالية.',
       icon: LucideIcons.sparkles,
       gradientColors: const [
@@ -118,7 +118,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         Color(0xFF8E24AA),
         Color(0xFF4A148C),
       ],
-      cardTag: 'التحصيل الذكي',
+      cardTag: 'التجميع الذكي',
       miniKind: _OnboardingMiniKind.reminders,
     ),
   ];
@@ -491,7 +491,7 @@ class _OnboardingMiniPreview extends StatelessWidget {
         _MiniCustomerRow(name: 'بقالة النور', amount: '٢٫١ ألف'),
         const SizedBox(height: 4),
         Text(
-          '+ ٣ عملاء في القائمة',
+          '+ ٣ زبائن في القائمة',
           textAlign: TextAlign.center,
           style: _caption.copyWith(fontSize: 9),
         ),
@@ -809,8 +809,7 @@ class _BankPlasticCard extends StatelessWidget {
                                   color: Colors.white.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color:
-                                        Colors.white.withValues(alpha: 0.18),
+                                    color: Colors.white.withValues(alpha: 0.18),
                                   ),
                                 ),
                                 child: const SafiBrandMark(size: 28),

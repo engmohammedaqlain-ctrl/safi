@@ -8,7 +8,7 @@ import '../../sales/providers/unified_ledger_math.dart';
 
 // ignore_for_file: cascade_invocations
 
-/// تصفية المعاملات الدينية ضمن نطاق زمني وحسب العملاء أو الموردين أو الكل.
+/// تصفية المعاملات الدينية ضمن نطاق زمني وحسب الزبائن أو بائعي الجملة أو الكل.
 enum AppReportDebtFilter { unifiedAll, customersOnly, suppliersOnly }
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
@@ -670,8 +670,8 @@ class AppReportPdfBuilder {
 
     final filterLbl = switch (filter) {
       AppReportDebtFilter.unifiedAll => 'صندوق + ديون',
-      AppReportDebtFilter.customersOnly => 'ديون العملاء',
-      AppReportDebtFilter.suppliersOnly => 'ديون الموردين',
+      AppReportDebtFilter.customersOnly => 'ديون الزبائن',
+      AppReportDebtFilter.suppliersOnly => 'ديون بائعي الجملة',
     };
 
     final cashSorted = [...cashF]..sort((a, b) => b.date.compareTo(a.date));
@@ -783,7 +783,7 @@ class AppReportPdfBuilder {
 
     final balance =
         double.tryParse(client.amount.replaceAll('₪', '').trim()) ?? 0.0;
-    final clientType = client.isSupplier ? 'مورد' : 'عميل';
+    final clientType = client.isSupplier ? 'بائع جملة' : 'زبون';
     final clientName = _safe(client.name, max: 50);
     final balColor = balance >= 0 ? _cRed : _cGreen;
     final balLabel = balance > 0

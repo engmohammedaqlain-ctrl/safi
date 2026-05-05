@@ -239,6 +239,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
         type: TransactionType.received,
 
         date: tx.date,
+        counterpartyLabel: widget.forCustomer!.isSupplier ? 'بائع جملة' : 'زبون',
       ),
     );
   }

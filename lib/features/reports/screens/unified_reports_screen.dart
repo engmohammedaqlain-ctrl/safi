@@ -75,9 +75,9 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
   String get _heroTitle {
     if (widget.lockDebtScope) {
       return switch (_filter) {
-        AppReportDebtFilter.customersOnly => 'تقارير العملاء',
+        AppReportDebtFilter.customersOnly => 'تقارير الزبائن',
 
-        AppReportDebtFilter.suppliersOnly => 'تقارير الموردين',
+        AppReportDebtFilter.suppliersOnly => 'تقارير بائعي الجملة',
 
         AppReportDebtFilter.unifiedAll => 'التقارير',
       };
@@ -91,7 +91,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
       return 'حركات الذمم خلال الفترة التي تختارها — تصدير PDF منسّق';
     }
 
-    return 'صندوق + ديون في تقرير واحد، أو تفريق العملاء عن الموردين';
+    return 'صندوق + ديون في تقرير واحد، أو تفريق الزبائن عن بائعي الجملة';
   }
 
   Future<void> _pickFrom() async {
@@ -326,7 +326,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
                                   const SizedBox(height: 8),
 
                                   _filterTile(
-                                    'ديون العملاء فقط',
+                                    'ديون الزبائن فقط',
 
                                     AppReportDebtFilter.customersOnly,
                                   ),
@@ -334,7 +334,7 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
                                   const SizedBox(height: 8),
 
                                   _filterTile(
-                                    'ديون الموردين فقط',
+                                    'ديون بائعي الجملة فقط',
 
                                     AppReportDebtFilter.suppliersOnly,
                                   ),
@@ -480,9 +480,9 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
 
   String _scopeBadge() {
     return switch (_filter) {
-      AppReportDebtFilter.customersOnly => 'نطاق: العملاء',
+      AppReportDebtFilter.customersOnly => 'نطاق: الزبائن',
 
-      AppReportDebtFilter.suppliersOnly => 'نطاق: الموردين',
+      AppReportDebtFilter.suppliersOnly => 'نطاق: بائعي الجملة',
 
       AppReportDebtFilter.unifiedAll => 'نطاق: الكل',
     };

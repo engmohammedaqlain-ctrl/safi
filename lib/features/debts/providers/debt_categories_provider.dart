@@ -63,7 +63,7 @@ final activeDebtCategoriesProvider = Provider<List<DebtCategory>>((ref) {
   ];
 });
 
-/// عدد العملاء المرتبطين بتصنيف (للعناوين الفرعية في إدارة التصنيفات)
+/// عدد الزبائن المرتبطين بتصنيف (للعناوين الفرعية في إدارة التصنيفات)
 final categoryCustomerCountProvider = Provider.family<int, String>((
   ref,
   categoryId,

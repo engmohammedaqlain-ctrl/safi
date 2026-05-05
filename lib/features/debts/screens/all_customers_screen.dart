@@ -13,7 +13,7 @@ import 'add_debt_screen.dart';
 import 'customer_detail_screen.dart';
 import 'package:safi/core/router/app_page_route.dart';
 
-/// كل العملاء — من «المزيد» أو للمراجعة السريعة
+/// كل الزبائن — من «المزيد» أو للمراجعة السريعة
 class AllCustomersScreen extends ConsumerStatefulWidget {
   const AllCustomersScreen({super.key});
 
@@ -38,10 +38,10 @@ class _AllCustomersScreenState extends ConsumerState<AllCustomersScreen> {
     final list = filterDebtors(all, _q);
 
     return ReportsStylePage(
-      title: 'عملائي',
-      subtitle: 'كل العملاء والموردين وذممهم في مكان واحد',
+      title: 'زبائني',
+      subtitle: 'كل الزبائن وبائعي الجملة وذممهم في مكان واحد',
       headerTrailing: IconButton(
-        tooltip: 'تسجيل دين لعميل',
+        tooltip: 'تسجيل دين لزبون',
         onPressed: () {
           Navigator.push<void>(
             context,
@@ -71,7 +71,7 @@ class _AllCustomersScreenState extends ConsumerState<AllCustomersScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            '${list.length} عميل',
+            '${list.length} زبون/بائع جملة',
             style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.textMuted,
             ),
@@ -82,7 +82,7 @@ class _AllCustomersScreenState extends ConsumerState<AllCustomersScreen> {
               padding: const EdgeInsets.only(top: 24),
               child: Center(
                 child: Text(
-                  'لا نتائج. جرّب كلمات أخرى أو أضف عميلاً من تسجيل دين.',
+                  'لا نتائج. جرّب كلمات أخرى أو أضف زبوناً من تسجيل دين.',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
