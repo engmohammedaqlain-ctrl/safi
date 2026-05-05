@@ -11,7 +11,7 @@ import 'startup_ledger_data.dart';
 /// بدون هذا الانتظار، قد يكون [FirebaseAuth.instance.currentUser] ما زال `null` لبضع مئات الملّي ثانية
 /// فيُعامَل المستخدم كغير مسجّل بينما [PrefsKeys.loggedIn] ما زال `true` — ولا تعمل المزامنة.
 Future<User?> waitForRestoredFirebaseUser({
-  Duration timeout = const Duration(seconds: 2),
+  Duration timeout = const Duration(milliseconds: 500),
 }) async {
   var u = FirebaseAuth.instance.currentUser;
   if (u != null) return u;

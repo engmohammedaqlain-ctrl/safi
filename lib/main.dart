@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'dart:async';
+
 import 'app.dart';
 import 'core/bootstrap/auth_prefs_sync.dart';
 import 'core/bootstrap/startup_ledger_data.dart';
@@ -27,15 +29,17 @@ Future<void> main() async {
   // ▸ نعرض التطبيق فوراً — المستخدم يرى شاشة الإقلاع بدل شاشة بيضاء
   runApp(const ProviderScope(child: SafiApp()));
 
-  // ▸ باقي التهيئة تُنفَّذ بالتوازي بعد عرض الواجهة
-  await Future.wait([
-    NotificationService().init(),
-    StartupLedgerData.ensureLoaded(),
-    syncFirebaseAuthWithPrefs(),
-  ]);
+  // ▸ تحميل البيانات المحلية فقط (سريع جداً — SharedPreferences)
+  await StartupLedgerData.ensureLoaded();
 
-  await syncLedgerOwnerUidWithFirebaseAuth();
-
-  // ▸ نُخبر التطبيق أن كل شيء جاهز
+  // ▸ نُخبر التطبيق أن كل شيء جاهز — السبلاش ينتهي هنا
   bootstrapCompleteNotifier.value = true;
+
+  // ▸ مزامنة المصادقة والإشعارات في الخلفية (لا تُعطّل الواجهة)
+  unawaited(
+    Future.wait([
+      NotificationService().init(),
+      syncFirebaseAuthWithPrefs(),
+    ]).then((_) => syncLedgerOwnerUidWithFirebaseAuth()),
+  );
 }

@@ -1,12 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- شعار السبلاش: مربع أرجواني صلب يطابق AppColors.primary (بدون أيقونات إضافية) -->
+<!-- شعار السبلاش: مربع أرجواني مدوّر الزوايا مع حرف «ص» أبيض -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="144dp"
     android:height="144dp"
     android:viewportWidth="100"
     android:viewportHeight="100">
 
+    <!-- Purple rounded square -->
     <path
-        android:pathData="M22,22 L78,22 L78,78 L22,78 Z"
+        android:pathData="M34,22 L66,22 Q78,22 78,34 L78,66 Q78,78 66,78 L34,78 Q22,78 22,66 L22,34 Q22,22 34,22 Z"
         android:fillColor="#FF6A1B9A"/>
+
+    <!-- White ص — bowl -->
+    <path
+        android:pathData="M36,48 C36,57 42,62 50,62 C58,62 64,57 64,48"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
+
+    <!-- White ص — tooth -->
+    <path
+        android:pathData="M56,48 L56,37"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
 </vector>
