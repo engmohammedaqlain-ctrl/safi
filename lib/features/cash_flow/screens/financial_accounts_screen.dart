@@ -33,12 +33,12 @@ class FinancialAccountsScreen extends ConsumerWidget {
     final includeDebts = ref.watch(includeDebtsInWalletBalanceProvider);
 
     double effectiveBal(FinancialAccount a) => effectiveWalletBalance(
-          acc: a,
-          entries: entries,
-          txs: txs,
-          accounts: accounts,
-          includeDebtEffect: includeDebts,
-        );
+      acc: a,
+      entries: entries,
+      txs: txs,
+      accounts: accounts,
+      includeDebtEffect: includeDebts,
+    );
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
@@ -114,8 +114,7 @@ class FinancialAccountsScreen extends ConsumerWidget {
                       onTap: () => Navigator.push<void>(
                         context,
                         AppPageRoute<void>(
-                          builder: (_) =>
-                              WalletDetailScreen(accountId: a.id),
+                          builder: (_) => WalletDetailScreen(accountId: a.id),
                         ),
                       ),
                     ),
@@ -130,14 +129,14 @@ class FinancialAccountsScreen extends ConsumerWidget {
                 heroTag: 'financial_accounts_fab',
                 onPressed: () => Navigator.push<void>(
                   context,
-                  AppPageRoute<void>(
-                    builder: (_) => const AccountFormScreen(),
-                  ),
+                  AppPageRoute<void>(builder: (_) => const AccountFormScreen()),
                 ),
                 backgroundColor: AppColors.primary,
                 elevation: 0,
-                extendedPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                extendedPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 extendedIconLabelSpacing: 6,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -200,9 +199,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var cashSum = 0.0,
-        bankSum = 0.0,
-        walletSum = 0.0;
+    var cashSum = 0.0, bankSum = 0.0, walletSum = 0.0;
     var cashN = 0, bankN = 0, walletN = 0;
     var totalEff = 0.0;
     var highestEff = 0.0;
@@ -268,9 +265,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.22),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
       ),
       child: Stack(
         clipBehavior: Clip.none,
@@ -331,15 +326,9 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  _GlassIconButton(
-                    icon: LucideIcons.fileText,
-                    onTap: onReport,
-                  ),
+                  _GlassIconButton(icon: LucideIcons.fileText, onTap: onReport),
                   const SizedBox(width: 8),
-                  _GlassIconButton(
-                    icon: LucideIcons.barChart2,
-                    onTap: onStats,
-                  ),
+                  _GlassIconButton(icon: LucideIcons.barChart2, onTap: onStats),
                 ],
               ),
               const SizedBox(height: 12),
@@ -492,10 +481,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
 }
 
 class _GlassIconButton extends StatelessWidget {
-  const _GlassIconButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _GlassIconButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -513,9 +499,7 @@ class _GlassIconButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.14),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.2),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
           child: Icon(
             icon,
@@ -556,11 +540,7 @@ class _TypeMiniPill extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 12,
-            color: Colors.white.withValues(alpha: 0.88),
-          ),
+          Icon(icon, size: 12, color: Colors.white.withValues(alpha: 0.88)),
           const SizedBox(height: 2),
           Text(
             label,
@@ -590,10 +570,7 @@ class _TypeMiniPill extends StatelessWidget {
               );
             },
           ),
-          Text(
-            countPhrase,
-            style: captionStyle.copyWith(fontSize: 8),
-          ),
+          Text(countPhrase, style: captionStyle.copyWith(fontSize: 8)),
         ],
       ),
     );
@@ -781,7 +758,9 @@ class _WalletAccountCard extends StatelessWidget {
                             Icon(
                               LucideIcons.chevronLeft,
                               size: 18,
-                              color: AppColors.textMuted.withValues(alpha: 0.65),
+                              color: AppColors.textMuted.withValues(
+                                alpha: 0.65,
+                              ),
                             ),
                           ],
                         ),
@@ -809,7 +788,7 @@ class _WalletAccountCard extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  صفحة إضافة/تعديل محفظة — نفس ثيم «إضافة عميل»
+//  صفحة إضافة/تعديل محفظة — نفس ثيم «إضافة زبون»
 // ════════════════════════════════════════════════════════════════
 class AccountFormScreen extends ConsumerStatefulWidget {
   const AccountFormScreen({super.key, this.existingAccount});
@@ -838,8 +817,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       text: acc == null || acc.balance == 0
           ? ''
           : (acc.balance == acc.balance.roundToDouble()
-              ? acc.balance.toStringAsFixed(0)
-              : acc.balance.toStringAsFixed(2)),
+                ? acc.balance.toStringAsFixed(0)
+                : acc.balance.toStringAsFixed(2)),
     );
     _type = acc?.type ?? AccountType.wallet;
   }
@@ -1013,7 +992,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         : (double.tryParse(_balance.text.trim()) ?? 0);
 
     final acc = FinancialAccount(
-      id: widget.existingAccount?.id ??
+      id:
+          widget.existingAccount?.id ??
           DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
       type: _type,
@@ -1103,8 +1083,7 @@ class _SoftField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: AppColors.primary, width: 1.4),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
         ),
       ),
     );

@@ -97,7 +97,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
     };
 
     return VaultSubpageScaffold(
-      title: widget.isSupplier ? 'إضافة مورد' : 'إضافة عميل',
+      title: widget.isSupplier ? 'إضافة بائع جملة' : 'إضافة زبون',
       body: Column(
         children: [
           Padding(
@@ -124,7 +124,9 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                   );
                 },
                 child: Text(
-                  widget.isSupplier ? 'إضافة مورد جديد' : 'إضافة عميل جديد',
+                  widget.isSupplier
+                      ? 'إضافة بائع جملة جديد'
+                      : 'إضافة زبون جديد',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -215,13 +217,16 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                       final phone = contact.phones.isNotEmpty
                           ? contact.phones.first.number
                           : '';
-                      final sanitizedName =
-                          sanitizeCustomerName(contact.displayName);
-                      final name =
-                          sanitizedName.isEmpty ? phone : sanitizedName;
+                      final sanitizedName = sanitizeCustomerName(
+                        contact.displayName,
+                      );
+                      final name = sanitizedName.isEmpty
+                          ? phone
+                          : sanitizedName;
 
                       final contactDigits = phone.replaceAll(RegExp(r'\D'), '');
-                      final isAlreadyAdded = contactDigits.isNotEmpty &&
+                      final isAlreadyAdded =
+                          contactDigits.isNotEmpty &&
                           existingPhoneDigits.contains(contactDigits);
 
                       return ListTile(
@@ -274,8 +279,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                                   context,
                                   AppPageRoute(
                                     builder: (_) => AddCustomerDetailScreen(
-                                      initialName:
-                                          name.isEmpty ? null : name,
+                                      initialName: name.isEmpty ? null : name,
                                       initialPhone: phone,
                                       isSupplier: widget.isSupplier,
                                     ),

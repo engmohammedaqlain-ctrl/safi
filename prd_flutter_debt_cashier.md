@@ -1,4 +1,5 @@
 # PRD — تطبيق الديون والكاشير (Debt & Cashier App)
+
 **Flutter Mobile Application — Product Requirements Document**  
 Version: 1.0 | Date: 2026-04-26 | Direction: RTL (Arabic)
 
@@ -72,7 +73,7 @@ lib/
 │   │   └── presentation/
 │   │       ├── screens/
 │   │       │   ├── debts_home_screen.dart      # قائمة العملاء المدينين
-│   │       │   ├── customer_detail_screen.dart  # ملف عميل + سجل الديون
+│   │       │   ├── customer_detail_screen.dart  # ملف زبون + سجل الديون
 │   │       │   ├── add_debt_screen.dart         # إضافة دين جديد
 │   │       │   ├── add_payment_screen.dart      # تسجيل سداد
 │   │       │   └── alerts_screen.dart           # تنبيهات الديون المتأخرة
@@ -177,7 +178,7 @@ class SaleModel {
   final double paid;
   final double change;
   final DateTime date;
-  final String? customerId; // إذا اشترى عميل مدين
+  final String? customerId; // إذا اشترى زبون مدين
 }
 ```
 
@@ -188,25 +189,29 @@ class SaleModel {
 ### ── تبويب الديون ──
 
 #### 5.1 `debts_home_screen.dart` — قائمة العملاء المدينين
+
 - Header card: إجمالي الديون الكلي (أحمر) + عدد العملاء
 - Search bar: بحث بالاسم أو الرقم
-- ListView: بطاقة لكل عميل (الاسم + المبلغ المتبقي + آخر حركة)
-- FAB: زر إضافة عميل جديد / دين جديد
+- ListView: بطاقة لكل زبون (الاسم + المبلغ المتبقي + آخر حركة)
+- FAB: زر إضافة زبون جديد / دين جديد
 - Badge: تنبيه مرئي على العملاء المتأخرين
 
-#### 5.2 `customer_detail_screen.dart` — ملف العميل
-- Header: اسم العميل + رقمه + إجمالي دينه
+#### 5.2 `customer_detail_screen.dart` — ملف الزبون
+
+- Header: اسم الزبون + رقمه + إجمالي دينه
 - Tabs داخلية: الديون / المدفوعات
 - Timeline: قائمة زمنية للحركات (دين + سداد)
 - Buttons: إضافة دين جديد | تسجيل سداد
 
 #### 5.3 `add_debt_screen.dart` — إضافة دين
+
 - Input: المبلغ (numpad)
 - Input: الملاحظة (اختياري)
 - DatePicker: تاريخ الاستحقاق (اختياري)
 - Customer selector إذا فُتحت من الرئيسية
 
 #### 5.4 `alerts_screen.dart` — التنبيهات
+
 - List: الديون التي تجاوزت تاريخ الاستحقاق
 - مرتبة من الأقدم إلى الأحدث
 - زر اتصال سريع (phone_launcher)
@@ -216,6 +221,7 @@ class SaleModel {
 ### ── تبويب المحل ──
 
 #### 5.5 `cashier_screen.dart` — الكاشير
+
 - Search bar علوي: بحث عن منتج بالاسم
 - زر كاميرا: يفتح `barcode_scanner_screen`
 - ListView: السلة الحالية مع الكميات
@@ -223,6 +229,7 @@ class SaleModel {
 - Numpad: لإدخال الكميات أو مبلغ مخصص
 
 #### 5.6 `barcode_scanner_screen.dart` — مسح الباركود
+
 - Camera preview ممتلئ الشاشة
 - Overlay: إطار مسح مرئي + خط متحرك
 - يستخدم: `mobile_scanner` package
@@ -230,6 +237,7 @@ class SaleModel {
 - إذا لم يُعرف الباركود: نافذة لإضافة منتج جديد
 
 #### 5.7 `receipt_screen.dart` — الإيصال
+
 - عرض تفاصيل الفاتورة: المنتجات + الكميات + الأسعار
 - الإجمالي + المبلغ المدفوع + الباقي
 - زر: مشاركة (WhatsApp / Screenshot)
@@ -240,15 +248,18 @@ class SaleModel {
 ### ── تبويب المزيد ──
 
 #### 5.8 `shop_info_screen.dart` — معلومات المحل
+
 - اسم المحل، رقم الهاتف، العنوان
 - رفع شعار المحل (يظهر في الإيصال)
 
 #### 5.9 `general_settings_screen.dart` — الإعدادات العامة
+
 - اختيار العملة (₪ / $ / د.أ / ر.س)
 - تنبيهات الديون: تشغيل/إيقاف + عدد الأيام
 - لون التطبيق الرئيسي (اختياري)
 
 #### 5.10 `backup_screen.dart` — النسخ الاحتياطي
+
 - تصدير البيانات (JSON)
 - استيراد من ملف
 - مشاركة الملف عبر التطبيقات
@@ -265,7 +276,7 @@ dependencies:
     sdk: flutter
 
   # State Management
-  flutter_riverpod: ^2.5.0       # أو provider حسب التفضيل
+  flutter_riverpod: ^2.5.0 # أو provider حسب التفضيل
 
   # Local Storage
   hive_flutter: ^1.1.0
@@ -278,12 +289,12 @@ dependencies:
   go_router: ^13.0.0
 
   # UI Utilities
-  flutter_slidable: ^3.1.0       # سحب لحذف/تعديل
-  intl: ^0.19.0                  # تنسيق التاريخ والأرقام العربية
-  
+  flutter_slidable: ^3.1.0 # سحب لحذف/تعديل
+  intl: ^0.19.0 # تنسيق التاريخ والأرقام العربية
+
   # Share & Launch
   share_plus: ^9.0.0
-  url_launcher: ^6.3.0           # اتصال سريع
+  url_launcher: ^6.3.0 # اتصال سريع
 
   # Image Picker (شعار المحل)
   image_picker: ^1.1.0
@@ -305,7 +316,7 @@ Pattern: Riverpod (StateNotifier)
 
 Providers:
   - debtListProvider        → قائمة العملاء + إجماليات
-  - customerDetailProvider  → ملف عميل واحد
+  - customerDetailProvider  → ملف زبون واحد
   - cartProvider            → سلة الكاشير الحالية
   - settingsProvider        → إعدادات التطبيق
   - alertsProvider          → الديون المتأخرة
@@ -334,12 +345,12 @@ Providers:
 
 ## 9. مراحل التطوير / Milestones
 
-| المرحلة | الميزات | الوقت التقديري |
-|---------|---------|---------------|
-| MVP     | الديون الأساسية (إضافة/سداد/قائمة) | أسبوعان |
-| v1.1    | الكاشير + مسح الباركود | أسبوع |
-| v1.2    | التنبيهات + الإعدادات + النسخ الاحتياطي | أسبوع |
-| v2.0    | طباعة بلوتوث + مزامنة سحابية | مرحلة مستقبلية |
+| المرحلة | الميزات                                 | الوقت التقديري |
+| ------- | --------------------------------------- | -------------- |
+| MVP     | الديون الأساسية (إضافة/سداد/قائمة)      | أسبوعان        |
+| v1.1    | الكاشير + مسح الباركود                  | أسبوع          |
+| v1.2    | التنبيهات + الإعدادات + النسخ الاحتياطي | أسبوع          |
+| v2.0    | طباعة بلوتوث + مزامنة سحابية            | مرحلة مستقبلية |
 
 ---
 
@@ -353,4 +364,4 @@ Providers:
 
 ---
 
-*PRD generated for: تطبيق الديون والكاشير | Flutter MVP*
+_PRD generated for: تطبيق الديون والكاشير | Flutter MVP_

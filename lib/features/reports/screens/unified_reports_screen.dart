@@ -37,11 +37,11 @@ class UnifiedReportsScreen extends ConsumerStatefulWidget {
     this.lockDebtScope = false,
   });
 
-  /// عند القدوم من «دفتر الديون»: يُستخدم التبويب (عملاء / موردين) فقط — دون خطوة اختيار نطاق.
+  /// عند القدوم من «دفتر الديون»: يُستخدم التبويب (عملاء / بائع جملةين) فقط — دون خطوة اختيار نطاق.
 
   final AppReportDebtFilter initialFilter;
 
-  /// إخفاء نطاق «كل التطبيق / عملاء / موردين» واعتماد [initialFilter] فقط.
+  /// إخفاء نطاق «كل التطبيق / عملاء / بائع جملةين» واعتماد [initialFilter] فقط.
 
   final bool lockDebtScope;
 
@@ -228,184 +228,243 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
           backgroundColor: ReportsStyleSurfaces.bodyBackdrop,
 
           body: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
 
-              children: [
-                ReportsStyleHeaderBand(
-                  topPadding: topPad,
+                children: [
+                  ReportsStyleHeaderBand(
+                    topPadding: topPad,
 
-                  title: _heroTitle,
+                    title: _heroTitle,
 
-                  subtitle: _heroSubtitle,
+                    subtitle: _heroSubtitle,
 
-                  onBack: () => Navigator.maybePop(context),
+                    onBack: () => Navigator.maybePop(context),
 
-                  filterBadgeLabel:
-                      widget.lockDebtScope ? _scopeBadge() : null,
-                ),
+                    filterBadgeLabel: widget.lockDebtScope
+                        ? _scopeBadge()
+                        : null,
+                  ),
 
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
 
-                    child: AbsorbPointer(
-                      absorbing: _busy,
+                      child: AbsorbPointer(
+                        absorbing: _busy,
 
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
 
-                        children: [
-                          _whiteCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-
-                              children: [
-                                const _SectionTitle(
-                                  icon: LucideIcons.calendarDays,
-
-                                  label: 'فترة التقرير',
-                                ),
-
-                                const SizedBox(height: 12),
-
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _dateTile(
-                                        label: 'من',
-
-                                        value:
-                                            '${_from.year}/${_from.month}/${_from.day}',
-
-                                        onTap: _pickFrom,
-                                      ),
-                                    ),
-
-                                    const SizedBox(width: 10),
-
-                                    Expanded(
-                                      child: _dateTile(
-                                        label: 'إلى',
-
-                                        value:
-                                            '${_to.year}/${_to.month}/${_to.day}',
-
-                                        onTap: _pickTo,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          if (!widget.lockDebtScope) ...[
-                            const SizedBox(height: 14),
-
+                          children: [
                             _whiteCard(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
 
                                 children: [
                                   const _SectionTitle(
-                                    icon: LucideIcons.layers,
+                                    icon: LucideIcons.calendarDays,
 
-                                    label: 'نطاق التقرير',
+                                    label: 'فترة التقرير',
                                   ),
 
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: 12),
 
-                                  _filterTile(
-                                    'كل التطبيق (صندوق + ديون)',
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _dateTile(
+                                          label: 'من',
 
-                                    AppReportDebtFilter.unifiedAll,
-                                  ),
+                                          value:
+                                              '${_from.year}/${_from.month}/${_from.day}',
 
-                                  const SizedBox(height: 8),
+                                          onTap: _pickFrom,
+                                        ),
+                                      ),
 
-                                  _filterTile(
-                                    'ديون الزبائن فقط',
+                                      const SizedBox(width: 10),
 
-                                    AppReportDebtFilter.customersOnly,
-                                  ),
+                                      Expanded(
+                                        child: _dateTile(
+                                          label: 'إلى',
 
-                                  const SizedBox(height: 8),
+                                          value:
+                                              '${_to.year}/${_to.month}/${_to.day}',
 
-                                  _filterTile(
-                                    'ديون بائعي الجملة فقط',
-
-                                    AppReportDebtFilter.suppliersOnly,
+                                          onTap: _pickTo,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                          ],
 
-                          const SizedBox(height: 18),
+                            if (!widget.lockDebtScope) ...[
+                              const SizedBox(height: 14),
 
-                          _primaryGradientButton(
-                            icon: LucideIcons.fileDown,
+                              _whiteCard(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
 
-                            label: 'تصدير PDF',
+                                  children: [
+                                    const _SectionTitle(
+                                      icon: LucideIcons.layers,
 
-                            onPressed: _exportPdf,
-                          ),
+                                      label: 'نطاق التقرير',
+                                    ),
 
-                          const SizedBox(height: 10),
+                                    const SizedBox(height: 10),
 
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.primary,
+                                    _filterTile(
+                                      'كل التطبيق (صندوق + ديون)',
 
-                              side: BorderSide(
-                                color: AppColors.primary.withValues(
-                                  alpha: 0.45,
+                                      AppReportDebtFilter.unifiedAll,
+                                    ),
+
+                                    const SizedBox(height: 8),
+
+                                    _filterTile(
+                                      'ديون الزبائن فقط',
+
+                                      AppReportDebtFilter.customersOnly,
+                                    ),
+
+                                    const SizedBox(height: 8),
+
+                                    _filterTile(
+                                      'ديون بائعي الجملة فقط',
+
+                                      AppReportDebtFilter.suppliersOnly,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+
+                            const SizedBox(height: 18),
+
+                            _primaryGradientButton(
+                              icon: LucideIcons.fileDown,
+
+                              label: 'تصدير PDF',
+
+                              onPressed: _exportPdf,
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+
+                                side: BorderSide(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                ),
+
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+
+                                  horizontal: 16,
+                                ),
+
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
 
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
+                              onPressed: _previewPdf,
 
-                                horizontal: 16,
-                              ),
+                              icon: const Icon(LucideIcons.eye, size: 20),
 
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                              label: const Text(
+                                'معاينة قبل الطباعة',
+
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
 
-                            onPressed: _previewPdf,
+                            const SizedBox(height: 16),
 
-                            icon: const Icon(LucideIcons.eye, size: 20),
+                            Text(
+                              'يُنشأ الملف بجداول وخط عربي مضمّن، ويمكن مشاركته من نافذة النظام.',
 
-                            label: const Text(
-                              'معاينة قبل الطباعة',
+                              textAlign: TextAlign.center,
 
                               style: TextStyle(
-                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
 
-                                fontSize: 15,
+                                height: 1.5,
+
+                                color: Colors.grey.shade600,
+
+                                fontWeight: FontWeight.w500,
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              if (_busy)
+                const Positioned.fill(
+                  child: IgnorePointer(
+                    child: ModalBarrier(
+                      color: Color(0x33000000),
+
+                      dismissible: false,
+                    ),
+                  ),
+                ),
+
+              if (_busy)
+                const Center(
+                  child: Card(
+                    elevation: 8,
+
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+
+                        children: [
+                          SizedBox(
+                            width: 28,
+
+                            height: 28,
+
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+
+                              color: AppColors.primary,
                             ),
                           ),
 
-                          const SizedBox(height: 16),
+                          SizedBox(height: 12),
 
                           Text(
-                            'يُنشأ الملف بجداول وخط عربي مضمّن، ويمكن مشاركته من نافذة النظام.',
-
-                            textAlign: TextAlign.center,
+                            'جاري تجهيز التقرير…',
 
                             style: TextStyle(
-                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
 
-                              height: 1.5,
-
-                              color: Colors.grey.shade600,
-
-                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ],
@@ -413,67 +472,9 @@ class _UnifiedReportsScreenState extends ConsumerState<UnifiedReportsScreen> {
                     ),
                   ),
                 ),
-              ],
-            ),
-
-            if (_busy)
-              const Positioned.fill(
-                child: IgnorePointer(
-                  child: ModalBarrier(
-                    color: Color(0x33000000),
-
-                    dismissible: false,
-                  ),
-                ),
-              ),
-
-            if (_busy)
-              const Center(
-                child: Card(
-                  elevation: 8,
-
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(16)),
-                  ),
-
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-
-                      children: [
-                        SizedBox(
-                          width: 28,
-
-                          height: 28,
-
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-
-                            color: AppColors.primary,
-                          ),
-                        ),
-
-                        SizedBox(height: 12),
-
-                        Text(
-                          'جاري تجهيز التقرير…',
-
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

@@ -28,20 +28,15 @@ class UnifiedLedgerRowUi {
 }
 
 /// تصفية صفوف الدفتر الموحّد (صندوق + ديون) — نفس منطق شاشة الأرشيف.
-enum UnifiedLedgerListFilter {
-  all,
-  debtsOnly,
-  cashIncomeOnly,
-  cashExpenseOnly,
-}
+enum UnifiedLedgerListFilter { all, debtsOnly, cashIncomeOnly, cashExpenseOnly }
 
 extension UnifiedLedgerListFilterX on UnifiedLedgerListFilter {
   String get labelAr => switch (this) {
-        UnifiedLedgerListFilter.all => 'كل الحركات',
-        UnifiedLedgerListFilter.debtsOnly => 'ديون فقط',
-        UnifiedLedgerListFilter.cashIncomeOnly => 'وارد فقط',
-        UnifiedLedgerListFilter.cashExpenseOnly => 'صادر فقط',
-      };
+    UnifiedLedgerListFilter.all => 'كل الحركات',
+    UnifiedLedgerListFilter.debtsOnly => 'ديون فقط',
+    UnifiedLedgerListFilter.cashIncomeOnly => 'وارد فقط',
+    UnifiedLedgerListFilter.cashExpenseOnly => 'صادر فقط',
+  };
 }
 
 class UnifiedLedgerMath {
@@ -55,7 +50,10 @@ class UnifiedLedgerMath {
       case UnifiedLedgerListFilter.all:
         return List<UnifiedLedgerRowUi>.from(all);
       case UnifiedLedgerListFilter.debtsOnly:
-        return [for (final r in all) if (!r.isCashbook) r];
+        return [
+          for (final r in all)
+            if (!r.isCashbook) r,
+        ];
       case UnifiedLedgerListFilter.cashIncomeOnly:
         return [
           for (final r in all)
@@ -82,7 +80,7 @@ class UnifiedLedgerMath {
         return n.isEmpty ? 'بدون اسم (معرّف $id)' : n;
       }
     }
-    return 'غير مربوط بسجل عميل (معرّف $id)';
+    return 'غير مربوط بسجل زبون (معرّف $id)';
   }
 
   static List<UnifiedLedgerRowUi> buildRowsNewestFirst({
@@ -90,11 +88,7 @@ class UnifiedLedgerMath {
     required List<TransactionUi> txs,
     required List<DebtorUi> debtors,
   }) {
-    final base = _buildRowsUnsorted(
-      cash: cash,
-      txs: txs,
-      debtors: debtors,
-    );
+    final base = _buildRowsUnsorted(cash: cash, txs: txs, debtors: debtors);
     base.sort((a, b) => b.sortTime.compareTo(a.sortTime));
     return base;
   }
@@ -105,11 +99,7 @@ class UnifiedLedgerMath {
     required List<TransactionUi> txs,
     required List<DebtorUi> debtors,
   }) {
-    final base = _buildRowsUnsorted(
-      cash: cash,
-      txs: txs,
-      debtors: debtors,
-    );
+    final base = _buildRowsUnsorted(cash: cash, txs: txs, debtors: debtors);
     base.sort((a, b) => a.sortTime.compareTo(b.sortTime));
     return base;
   }
