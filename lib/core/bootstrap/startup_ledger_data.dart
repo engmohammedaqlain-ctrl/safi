@@ -268,19 +268,19 @@ class StartupLedgerData {
   static const List<FinancialAccount> _seedFinancialAccounts = [
     FinancialAccount(
       id: 'seed_cash',
-      name: 'النقدية',
+      name: 'كاش',
       type: AccountType.cash,
       balance: 0,
     ),
     FinancialAccount(
       id: 'seed_bank',
-      name: 'البنك',
+      name: 'بنك فلسطين',
       type: AccountType.bank,
       balance: 0,
     ),
     FinancialAccount(
       id: 'seed_wallet',
-      name: 'المحفظة',
+      name: 'بال بي',
       type: AccountType.wallet,
       balance: 0,
     ),

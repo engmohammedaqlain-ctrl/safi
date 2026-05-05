@@ -135,7 +135,7 @@ class CashbookEntryDetailScreen extends ConsumerWidget {
                 if (accName != null)
                   _RowData(
                     icon: accIcon,
-                    label: 'المحفظة',
+                    label: 'الحساب المالي',
                     value: accName,
                   ),
                 if (live.category != null && live.category!.isNotEmpty)
@@ -219,7 +219,7 @@ class CashbookEntryDetailScreen extends ConsumerWidget {
     final lines = <String>[
       e.isIncome ? '📥 دخل' : '📤 مصروف',
       'المبلغ: ${e.isIncome ? '+' : '−'}${formatShekelAmount(e.amount)} ₪',
-      if (accName != null) 'المحفظة: $accName',
+      if (accName != null) 'الحساب: $accName',
       if (e.category != null && e.category!.isNotEmpty)
         'التصنيف: ${e.category}',
       if (e.title.isNotEmpty) 'البيان: ${e.title}',
@@ -755,7 +755,7 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
                 const Padding(
                   padding: EdgeInsets.only(right: 4, bottom: 8),
                   child: Text(
-                    'المحفظة',
+                    'الحساب المالي',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontFamily: AppFonts.family,

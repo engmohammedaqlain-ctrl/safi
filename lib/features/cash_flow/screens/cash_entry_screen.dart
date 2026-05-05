@@ -169,7 +169,7 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
       setState(() => _isSubmitting = false);
       showAppSnackBar(
         context,
-        'أضف محفظة أولاً من «المحافظ والبنوك»',
+        'أضف حساباً أولاً من «المحافظ والبنوك»',
         backgroundColor: Colors.red,
       );
       return;
@@ -498,7 +498,7 @@ class _CashEntryScreenState extends ConsumerState<CashEntryScreen> {
                                     const Align(
                                       alignment: Alignment.centerRight,
                                       child: Text(
-                                        'اختر المحفظة',
+                                        'اختر الحساب',
                                         style: TextStyle(
                                           color: AppColors.textSecondary,
                                           fontFamily: AppFonts.family,

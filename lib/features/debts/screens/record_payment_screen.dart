@@ -195,7 +195,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     if (_payMethod == null) {
       setState(() => _isSubmitting = false);
 
-      showAppSnackBar(context, 'الرجاء اختيار محفظة التسديد');
+      showAppSnackBar(context, 'الرجاء اختيار حساب التسديد');
 
       return;
     }
@@ -530,7 +530,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                             alignment: Alignment.centerRight,
 
                             child: Text(
-                              'المحفظة',
+                              'الحساب المالي',
 
                               style: TextStyle(
                                 fontFamily: AppFonts.family,
@@ -551,7 +551,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                               padding: const EdgeInsets.only(bottom: 6),
 
                               child: Text(
-                                'لا توجد محافظ. أضف من «المحافظ والبنوك»',
+                                'لا توجد حسابات. أضف من «المحافظ والبنوك»',
 
                                 textAlign: TextAlign.right,
 

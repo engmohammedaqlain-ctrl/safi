@@ -137,7 +137,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
 
     if (_payMethod == null) {
       setState(() => _isSubmitting = false);
-      showAppSnackBar(context, 'الرجاء اختيار محفظة من القائمة');
+      showAppSnackBar(context, 'الرجاء اختيار حساب من القائمة');
       return;
     }
 
@@ -361,7 +361,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                             Align(
                               alignment: Alignment.centerRight,
                               child: Text(
-                                'المحفظة',
+                                'الحساب المالي',
                                 style: TextStyle(
                                   fontFamily: AppFonts.family,
                                   fontSize: 12,
@@ -375,7 +375,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 6),
                                 child: Text(
-                                  'لا توجد محافظ. أضف من «المحافظ والبنوك»',
+                                  'لا توجد حسابات. أضف من «المحافظ والبنوك»',
                                   textAlign: TextAlign.right,
                                   style: TextStyle(
                                     fontFamily: AppFonts.family,

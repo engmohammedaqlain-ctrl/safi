@@ -74,7 +74,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _OnboardingSlide(
       headline: 'محافظك وأرصدتك في مكان واحد',
       body:
-          'نظّم محافظك النقدية والبنكية، وتابع الوارد والصادر لصورة مالية موحّدة.',
+          'نظّم أرصدة الكاش وبنك فلسطين وبال بي، وتابع الوارد والصادر لصورة مالية موحّدة.',
       icon: LucideIcons.wallet,
       gradientColors: const [
         Color(0xFF9C27B0),
@@ -411,7 +411,7 @@ class _OnboardingMiniPreview extends StatelessWidget {
             Expanded(
               child: _MiniPill(
                 icon: LucideIcons.landmark,
-                label: 'بنك',
+                label: 'بنك فلسطين',
                 value: '٨٫٥ ألف',
               ),
             ),
@@ -419,7 +419,7 @@ class _OnboardingMiniPreview extends StatelessWidget {
             Expanded(
               child: _MiniPill(
                 icon: LucideIcons.smartphone,
-                label: 'محفظة',
+                label: 'بال بي',
                 value: '٢٫٠ ألف',
               ),
             ),

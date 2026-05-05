@@ -20,9 +20,9 @@ extension AccountTypeX on AccountType {
       case AccountType.cash:
         return 'كاش';
       case AccountType.bank:
-        return 'بنك';
+        return 'بنك فلسطين';
       case AccountType.wallet:
-        return 'محفظة إلكترونية';
+        return 'بال بي';
     }
   }
 }

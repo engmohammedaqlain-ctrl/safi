@@ -305,9 +305,9 @@ abstract final class _WalletUi {
       case AccountType.cash:
         return 'كاش';
       case AccountType.bank:
-        return 'بنك';
+        return 'بنك فلسطين';
       case AccountType.wallet:
-        return 'محفظة';
+        return 'بال بي';
     }
   }
 

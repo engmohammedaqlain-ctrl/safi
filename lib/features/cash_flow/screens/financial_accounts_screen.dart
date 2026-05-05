@@ -373,7 +373,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                           Expanded(
                             child: _TypeMiniPill(
                               icon: LucideIcons.landmark,
-                              label: 'بنك',
+                              label: 'بنك فلسطين',
                               amountText: hidden
                                   ? '****'
                                   : '${formatShekelAmount(bankSum)} ₪',
@@ -386,7 +386,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                           Expanded(
                             child: _TypeMiniPill(
                               icon: LucideIcons.smartphone,
-                              label: 'محفظة',
+                              label: 'بال بي',
                               amountText: hidden
                                   ? '****'
                                   : '${formatShekelAmount(walletSum)} ₪',
@@ -419,7 +419,7 @@ class _WalletsOverviewPlasticCard extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'أعلى رصيد في محفظة واحدة',
+                              'أعلى رصيد في حساب واحد',
                               style: cap.copyWith(fontSize: 9.5),
                             ),
                             Directionality(
@@ -633,9 +633,9 @@ class _WalletAccountCard extends StatelessWidget {
       case AccountType.cash:
         return 'كاش';
       case AccountType.bank:
-        return 'بنك';
+        return 'بنك فلسطين';
       case AccountType.wallet:
-        return 'محفظة';
+        return 'بال بي';
     }
   }
 
