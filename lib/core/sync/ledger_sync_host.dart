@@ -8,9 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../bootstrap/prefs_keys.dart';
 import '../bootstrap/app_session.dart';
-import '../theme/app_colors.dart';
-import '../theme/app_spacing.dart';
-import '../theme/app_text_styles.dart';
 import '../network/connectivity_status.dart';
 import 'ledger_firestore_sync.dart';
 import 'post_login_loading.dart';
@@ -113,53 +110,6 @@ class _LedgerSyncHostState extends ConsumerState<LedgerSyncHost> {
       }
     });
 
-    final online = ref.watch(isOnlineProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: online
-              ? const SizedBox.shrink()
-              : Material(
-                  key: const ValueKey<String>('offline'),
-                  elevation: 0,
-                  color: AppColors.warning.withValues(alpha: 0.22),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      8,
-                      AppSpacing.md,
-                      8,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.wifi_off_rounded,
-                          size: 20,
-                          color: AppColors.textPrimary.withValues(alpha: 0.85),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'لا يوجد اتصال — التعديلات تُحفظ على الجهاز وتُزامن عند استعادة الاتصال.',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary.withValues(
-                                alpha: 0.9,
-                              ),
-                              height: 1.35,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-        ),
-        Expanded(child: widget.child),
-      ],
-    );
+    return widget.child;
   }
 }
