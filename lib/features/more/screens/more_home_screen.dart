@@ -6,7 +6,7 @@ import '../../../core/router/app_page_route.dart';
 import '../../../core/router/main_shell.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/reports_style_shell.dart';
-import '../../ai_assistant/screens/ai_assistant_screen.dart';
+// import '../../ai_assistant/screens/ai_assistant_screen.dart'; // معطّل مؤقتاً
 import '../../reports/screens/unified_reports_screen.dart';
 import '../../reports/screens/statistics_screen.dart';
 import '../../settings/providers/team_provider.dart';
@@ -72,12 +72,13 @@ class MoreHomeScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
-                _MenuItem(
-                  icon: LucideIcons.sparkles,
-                  title: 'المساعد الذكي',
-                  subtitle: 'إجابات سريعة عن أعمالك',
-                  onTap: () => push(const AiAssistantScreen()),
-                ),
+                // ── المساعد الذكي معطّل مؤقتاً لتوفير استهلاك التوكنز ──
+                // _MenuItem(
+                //   icon: LucideIcons.sparkles,
+                //   title: 'المساعد الذكي',
+                //   subtitle: 'إجابات سريعة عن أعمالك',
+                //   onTap: () => push(const AiAssistantScreen()),
+                // ),
                 _MenuItem(
                   icon: LucideIcons.settings,
                   title: 'الإعدادات',

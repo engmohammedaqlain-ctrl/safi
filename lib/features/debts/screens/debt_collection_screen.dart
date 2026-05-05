@@ -8,13 +8,12 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/vault_subpage_scaffold.dart';
 import '../providers/debts_ui_provider.dart';
-import '../../ai_assistant/providers/ai_assistant_provider.dart';
+
 import '../../../core/services/notification_service.dart';
 
 class DebtCollectionScreen extends ConsumerStatefulWidget {
   const DebtCollectionScreen({super.key, this.suppliersOnly = false});
 
-  /// عند `true` تُعرض فقط بائعو الجملة الذين عليهم دين لك؛ وإلا الزبائن فقط.
   final bool suppliersOnly;
 
   @override
@@ -70,7 +69,6 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
     );
 
     if (pickedDate != null && mounted) {
-      // Ask for time (optional)
       final pickedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(current),
@@ -105,7 +103,11 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم تحديد موعد السداد بنجاح')),
+          const SnackBar(
+            content: Text('تم تحديد موعد السداد بنجاح'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.success,
+          ),
         );
       }
     }
@@ -115,11 +117,8 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => _WhatsAppSheet(debtor: debtor),
+      backgroundColor: Colors.transparent,
+      builder: (context) => _MessageSheet(debtor: debtor),
     );
   }
 
@@ -127,7 +126,7 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
   Widget build(BuildContext context) {
     final allDebtors = ref.watch(debtorsUiProvider);
     final scopeSuppliers = widget.suppliersOnly;
-    // Filter debtors who owe us money (net amount > 0)
+    
     final debtorsWithDebt = allDebtors.where((d) {
       if (d.isSupplier != scopeSuppliers) return false;
       final amt = double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
@@ -135,17 +134,13 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
     }).toList();
 
     final searchHint = scopeSuppliers ? 'ابحث عن بائع جملة...' : 'ابحث عن زبون...';
-    final emptyMessage = scopeSuppliers
-        ? 'لا يوجد بائعو جملة عليهم ديون حالياً'
-        : 'لا يوجد زبائن عليهم ديون حالياً';
-
+    
     final filtered = debtorsWithDebt.where((d) {
       if (_query.isEmpty) return true;
       return d.name.toLowerCase().contains(_query.toLowerCase()) ||
           d.phone.contains(_query);
     }).toList();
 
-    // Sort by due date (closest first), then by amount
     filtered.sort((a, b) {
       if (a.dueDate != null && b.dueDate != null) {
         return a.dueDate!.compareTo(b.dueDate!);
@@ -158,169 +153,201 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
       return amtB.compareTo(amtA);
     });
 
+    final overdueCount = filtered.where((d) => d.dueDate != null && d.dueDate!.isBefore(DateTime.now())).length;
+    
+    // Calculate total debt amount for filtered list
+    double totalDebt = 0;
+    for (var d in filtered) {
+      totalDebt += double.tryParse(d.amount.replaceAll('₪', '').trim()) ?? 0;
+    }
+
     return VaultSubpageScaffold(
       title: 'تجميع الديون',
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (v) => setState(() => _query = v),
-              decoration: InputDecoration(
-                hintText: searchHint,
-                prefixIcon: const Icon(
-                  LucideIcons.search,
-                  color: AppColors.textMuted,
+      body: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.background,
+        ),
+        child: Column(
+          children: [
+            // Header Summary
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.05),
+                    AppColors.background,
+                  ],
                 ),
-                filled: true,
-                fillColor: AppColors.surfaceVariant,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+              ),
+              child: Column(
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _SummaryTile(
+                          label: 'إجمالي الديون',
+                          value: '₪${totalDebt.toStringAsFixed(0)}',
+                          icon: LucideIcons.wallet,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        _SummaryTile(
+                          label: 'الحالات',
+                          value: filtered.length.toString(),
+                          icon: LucideIcons.users,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        _SummaryTile(
+                          label: 'متأخرات',
+                          value: overdueCount.toString(),
+                          icon: LucideIcons.alertCircle,
+                          color: AppColors.flowOut,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Search Field
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (v) => setState(() => _query = v),
+                      style: AppTextStyles.bodyMedium,
+                      decoration: InputDecoration(
+                        hintText: searchHint,
+                        hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+                        prefixIcon: const Icon(
+                          LucideIcons.search,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        suffixIcon: _query.isNotEmpty 
+                          ? IconButton(
+                              icon: const Icon(LucideIcons.x, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _query = '');
+                              },
+                            )
+                          : null,
+                        filled: true,
+                        fillColor: Colors.white,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Text(
-                      emptyMessage,
-                      style: const TextStyle(color: AppColors.textMuted),
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    itemCount: filtered.length,
-                    separatorBuilder: (context, _) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final d = filtered[index];
-                      final isOverdue =
-                          d.dueDate != null &&
-                          d.dueDate!.isBefore(DateTime.now());
 
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey.shade200),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.02),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    d.name,
-                                    style: AppTextStyles.titleSmall.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  '₪ ${d.amount}',
-                                  style: AppTextStyles.titleMedium.copyWith(
-                                    color: AppColors.flowOut,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            if (d.dueDate != null)
-                              Row(
-                                children: [
-                                  Icon(
-                                    LucideIcons.calendarClock,
-                                    size: 16,
-                                    color: isOverdue
-                                        ? AppColors.flowOut
-                                        : AppColors.textSecondary,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      'موعد السداد: ${d.dueDate!.year}/${d.dueDate!.month}/${d.dueDate!.day} ${_formatTime(d.dueDate!)}\n'
-                                      '(${_formatTimeRemaining(d.dueDate!)})',
-                                      style: AppTextStyles.labelMedium.copyWith(
-                                        color: isOverdue
-                                            ? AppColors.flowOut
-                                            : AppColors.textSecondary,
-                                        fontWeight: isOverdue
-                                            ? FontWeight.w600
-                                            : FontWeight.w400,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () => _selectDueDate(d),
-                                    icon: const Icon(
-                                      LucideIcons.calendar,
-                                      size: 18,
-                                    ),
-                                    label: const Text('الموعد'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.primary,
-                                      side: const BorderSide(
-                                        color: AppColors.primary,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: () =>
-                                        _openWhatsAppSheet(context, d),
-                                    icon: const Icon(
-                                      LucideIcons.messageCircle,
-                                      size: 18,
-                                    ),
-                                    label: const Text('تذكير'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(
-                                        0xFF25D366,
-                                      ), // WhatsApp Green
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      elevation: 0,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+            Expanded(
+              child: filtered.isEmpty
+                  ? _EmptyState(suppliersOnly: widget.suppliersOnly)
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final d = filtered[index];
+                        return _DebtCollectionCard(
+                          debtor: d,
+                          onSelectDate: () => _selectDueDate(d),
+                          onNotify: () => _openWhatsAppSheet(context, d),
+                          formatTime: _formatTime,
+                          formatTimeRemaining: _formatTimeRemaining,
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 140,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: AppTextStyles.numberLarge.copyWith(
+              color: color,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textMuted,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -328,39 +355,391 @@ class _DebtCollectionScreenState extends ConsumerState<DebtCollectionScreen> {
   }
 }
 
-class _WhatsAppSheet extends ConsumerStatefulWidget {
-  const _WhatsAppSheet({required this.debtor});
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.suppliersOnly});
+  final bool suppliersOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              suppliersOnly ? LucideIcons.truck : LucideIcons.users,
+              size: 64,
+              color: AppColors.primary.withValues(alpha: 0.2),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            suppliersOnly ? 'لا يوجد بائعي جملة حالياً' : 'لا يوجد زبائن حالياً',
+            style: AppTextStyles.titleMedium.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'جميع الديون المسجلة محصلة بالكامل',
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DebtCollectionCard extends StatelessWidget {
+  const _DebtCollectionCard({
+    required this.debtor,
+    required this.onSelectDate,
+    required this.onNotify,
+    required this.formatTime,
+    required this.formatTimeRemaining,
+  });
+
+  final DebtorUi debtor;
+  final VoidCallback onSelectDate;
+  final VoidCallback onNotify;
+  final String Function(DateTime) formatTime;
+  final String Function(DateTime) formatTimeRemaining;
+
+  @override
+  Widget build(BuildContext context) {
+    final isOverdue = debtor.dueDate != null && debtor.dueDate!.isBefore(DateTime.now());
+    final statusColor = isOverdue ? AppColors.flowOut : (debtor.dueDate == null ? AppColors.textMuted : AppColors.flowIn);
+    
+    final avatarChar = debtor.name.trim().isNotEmpty ? debtor.name.trim()[0] : '?';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            // Status Indicator Line
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 6,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.8),
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(28)),
+                ),
+              ),
+            ),
+            
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(width: 8),
+                      // Avatar
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.primary.withValues(alpha: 0.1),
+                              AppColors.primary.withValues(alpha: 0.05),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          avatarChar,
+                          style: AppTextStyles.titleMedium.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              debtor.name,
+                              style: AppTextStyles.titleMedium.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(LucideIcons.phone, size: 12, color: AppColors.textMuted),
+                                const SizedBox(width: 4),
+                                Text(
+                                  debtor.phone,
+                                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Amount
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '₪${debtor.amount}',
+                            style: AppTextStyles.numberMedium.copyWith(
+                              color: AppColors.flowOut,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          if (isOverdue)
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.errorLight,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'متأخر',
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: AppColors.error,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Due Date Info Box
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: statusColor.withValues(alpha: 0.1)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            debtor.dueDate != null ? LucideIcons.calendarClock : LucideIcons.calendarDays,
+                            size: 16,
+                            color: statusColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                debtor.dueDate != null ? 'موعد السداد المتوقع' : 'موعد السداد',
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: AppColors.textMuted,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              Text(
+                                debtor.dueDate != null 
+                                  ? '${debtor.dueDate!.year}/${debtor.dueDate!.month}/${debtor.dueDate!.day} - ${formatTime(debtor.dueDate!)}'
+                                  : 'لم يتم تحديد موعد بعد',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: debtor.dueDate != null ? statusColor : AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (debtor.dueDate != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: statusColor.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              formatTimeRemaining(debtor.dueDate!),
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: statusColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                  
+                  // Actions
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _CardActionButton(
+                          onTap: onSelectDate,
+                          icon: LucideIcons.calendarPlus,
+                          label: 'تحديد موعد',
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _CardActionButton(
+                          onTap: onNotify,
+                          icon: LucideIcons.messageCircle,
+                          label: 'إرسال تذكير',
+                          color: const Color(0xFF25D366),
+                          isWhatsApp: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CardActionButton extends StatelessWidget {
+  const _CardActionButton({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.isWhatsApp = false,
+  });
+
+  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool isWhatsApp;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _MessageSheet extends StatefulWidget {
+  const _MessageSheet({required this.debtor});
   final DebtorUi debtor;
 
   @override
-  ConsumerState<_WhatsAppSheet> createState() => _WhatsAppSheetState();
+  State<_MessageSheet> createState() => _MessageSheetState();
 }
 
-class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
-  final _promptController = TextEditingController(
-    text: 'اكتب رسالة تذكير مهذبة ومختصرة',
-  );
-  final _messageController = TextEditingController();
-  bool _isLoading = false;
+class _MessageSheetState extends State<_MessageSheet> {
+  late final TextEditingController _messageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _messageController = TextEditingController(text: _buildTemplateMessage());
+  }
 
   @override
   void dispose() {
-    _promptController.dispose();
     _messageController.dispose();
     super.dispose();
   }
 
-  Future<void> _generateMessage() async {
-    setState(() => _isLoading = true);
-    final msg = await ref
-        .read(aiAssistantProvider.notifier)
-        .generateWhatsAppMessage(widget.debtor, _promptController.text);
-    if (mounted) {
-      setState(() {
-        _messageController.text = msg;
-        _isLoading = false;
-      });
+  /// بناء رسالة قالب جاهزة من بيانات المدين
+  String _buildTemplateMessage() {
+    final amount = widget.debtor.amount.replaceAll('₪', '').trim();
+    final dueDate = widget.debtor.dueDate;
+
+    final buffer = StringBuffer();
+    buffer.writeln('السلام عليكم ورحمة الله وبركاته');
+    buffer.writeln();
+    buffer.writeln('نود تذكيركم بالمبلغ المستحق وقدره $amount شيكل.');
+    if (dueDate != null) {
+      buffer.writeln(
+        'موعد السداد المتفق عليه: ${dueDate.year}/${dueDate.month}/${dueDate.day}.',
+      );
     }
+    buffer.writeln();
+    buffer.writeln('نرجو منكم التكرم بتسوية المبلغ في أقرب وقت ممكن.');
+    buffer.writeln('شكراً لتعاونكم.');
+
+    return buffer.toString().trim();
   }
 
   Future<void> _send() async {
@@ -369,19 +748,17 @@ class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
 
     final phone = widget.debtor.phone.trim();
     if (phone.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('رقم الهاتف غير مسجل')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('رقم الهاتف غير مسجل')),
+      );
       return;
     }
 
-    // نفس الأرقام التي خُزّنت عند إضافة الزبون — بدون إضافة مقدمة دولة من التطبيق.
-    // مخزون الجهات يكون غالباً "+" ثم أرقام؛ واتساب يطلب الرقم الدولي أرقاماً فقط بلا +.
     final digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
     if (digitsOnly.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('رقم الهاتف غير صالح')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('رقم الهاتف غير صالح')),
+      );
       return;
     }
 
@@ -410,79 +787,143 @@ class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 24, 16, bottomInset + 24),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+      ),
+      padding: EdgeInsets.fromLTRB(24, 12, 24, bottomInset + 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Center(
+            child: Container(
+              width: 48,
+              height: 5,
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: AppColors.outlineSoft,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
           Row(
             children: [
-              const Icon(LucideIcons.sparkles, color: AppColors.aiPurple),
-              const SizedBox(width: 8),
-              Text(
-                'توليد رسالة بالذكاء الاصطناعي',
-                style: AppTextStyles.titleMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: AppColors.aiGradient,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.aiPurple.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(LucideIcons.sparkles, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'مساعد الذكاء الاصطناعي',
+                      style: AppTextStyles.titleMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'توليد رسالة تذكير احترافية لواتساب',
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(LucideIcons.x, color: AppColors.textMuted, size: 20),
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.surfaceVariant,
+                  padding: const EdgeInsets.all(8),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _promptController,
-            decoration: InputDecoration(
-              labelText: 'كيف تريد أن تكون الرسالة؟',
-              filled: true,
-              fillColor: AppColors.surfaceVariant,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+          const SizedBox(height: 28),
+          const SizedBox(height: 28),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'النص النهائي للمراجعة',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
+              if (_messageController.text.isNotEmpty)
+                Text(
+                  'جاهز للإرسال',
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.success, fontWeight: FontWeight.bold),
+                ),
+            ],
           ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _isLoading ? null : _generateMessage,
-            icon: _isLoading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(LucideIcons.wand2, size: 18),
-            label: Text(_isLoading ? 'جاري التوليد...' : 'توليد الرسالة'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.aiPurple,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 10),
           TextField(
             controller: _messageController,
             maxLines: 4,
+            style: AppTextStyles.bodyMedium,
             decoration: InputDecoration(
-              labelText: 'نص الرسالة النهائي',
-              alignLabelWithHint: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+              hintText: 'سيظهر النص المولد هنا، يمكنك التعديل عليه بكل سهولة...',
+              hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+              filled: true,
+              fillColor: Colors.white,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(color: AppColors.outlineSoft, width: 1.5),
               ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.all(18),
             ),
           ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _send,
-            icon: const Icon(LucideIcons.send, size: 18),
-            label: const Text('إرسال عبر واتساب'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF25D366),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 28),
+          Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF25D366).withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: ElevatedButton(
+              onPressed: _send,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF25D366),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(LucideIcons.send, size: 22),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'إرسال عبر واتساب الآن',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ],
               ),
             ),
           ),
@@ -491,3 +932,4 @@ class _WhatsAppSheetState extends ConsumerState<_WhatsAppSheet> {
     );
   }
 }
+
