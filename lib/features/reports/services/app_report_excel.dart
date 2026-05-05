@@ -72,13 +72,27 @@ class AppReportExcelBuilder {
   }
 
   static void _applyGreenStyle(Style style) {
-    style.fontColor = '#2E7D32';
+    style.fontColor = '#1B5E20';
     style.bold = true;
   }
 
   static void _applyRedStyle(Style style) {
     style.fontColor = '#B71C1C';
     style.bold = true;
+  }
+
+  /// تلوين صف كامل بخلفية خضراء فاتحة (وارد / سداد)
+  static void _applyGreenRowBg(Worksheet sheet, int row, int colCount) {
+    for (var c = 1; c <= colCount; c++) {
+      sheet.getRangeByIndex(row, c).cellStyle.backColor = '#E8F5E9';
+    }
+  }
+
+  /// تلوين صف كامل بخلفية حمراء فاتحة (صادر / دين جديد)
+  static void _applyRedRowBg(Worksheet sheet, int row, int colCount) {
+    for (var c = 1; c <= colCount; c++) {
+      sheet.getRangeByIndex(row, c).cellStyle.backColor = '#FFEBEE';
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -270,16 +284,10 @@ class AppReportExcelBuilder {
         amtCell.setText('${isIn ? '+' : '-'}${_amt(e.amount)}');
         if (isIn) {
           _applyGreenStyle(amtCell.cellStyle);
+          _applyGreenRowBg(cashSheet, cashRow, 4);
         } else {
           _applyRedStyle(amtCell.cellStyle);
-        }
-
-        // Alternate row color
-        if (cashRow.isOdd) {
-          for (var c = 1; c <= 4; c++) {
-            cashSheet.getRangeByIndex(cashRow, c).cellStyle.backColor =
-                '#FAF8FD';
-          }
+          _applyRedRowBg(cashSheet, cashRow, 4);
         }
         cashRow++;
       }
@@ -336,15 +344,10 @@ class AppReportExcelBuilder {
         amtCell.setText('${isGave ? '-' : '+'}${_amt(t.amount)}');
         if (isGave) {
           _applyRedStyle(amtCell.cellStyle);
+          _applyRedRowBg(debtSheet, debtRow, 5);
         } else {
           _applyGreenStyle(amtCell.cellStyle);
-        }
-
-        if (debtRow.isOdd) {
-          for (var c = 1; c <= 5; c++) {
-            debtSheet.getRangeByIndex(debtRow, c).cellStyle.backColor =
-                '#FAF8FD';
-          }
+          _applyGreenRowBg(debtSheet, debtRow, 5);
         }
         debtRow++;
       }
@@ -493,13 +496,10 @@ class AppReportExcelBuilder {
         ac.setText('${isIn ? '+' : '-'}${_amt(e.amount)}');
         if (isIn) {
           _applyGreenStyle(ac.cellStyle);
+          _applyGreenRowBg(cs, r, 4);
         } else {
           _applyRedStyle(ac.cellStyle);
-        }
-        if (r.isOdd) {
-          for (var c = 1; c <= 4; c++) {
-            cs.getRangeByIndex(r, c).cellStyle.backColor = '#FAF8FD';
-          }
+          _applyRedRowBg(cs, r, 4);
         }
         r++;
       }
@@ -539,13 +539,10 @@ class AppReportExcelBuilder {
       ac.setText('${isGave ? '-' : '+'}${_amt(t.amount)}');
       if (isGave) {
         _applyRedStyle(ac.cellStyle);
+        _applyRedRowBg(ds, dr, 5);
       } else {
         _applyGreenStyle(ac.cellStyle);
-      }
-      if (dr.isOdd) {
-        for (var c = 1; c <= 5; c++) {
-          ds.getRangeByIndex(dr, c).cellStyle.backColor = '#FAF8FD';
-        }
+        _applyGreenRowBg(ds, dr, 5);
       }
       dr++;
     }
@@ -710,13 +707,10 @@ class AppReportExcelBuilder {
         ac.setText('${isGave ? '-' : '+'}${_amt(t.amount)}');
         if (isGave) {
           _applyRedStyle(ac.cellStyle);
+          _applyRedRowBg(ts, r, 4);
         } else {
           _applyGreenStyle(ac.cellStyle);
-        }
-        if (r.isOdd) {
-          for (var c = 1; c <= 4; c++) {
-            ts.getRangeByIndex(r, c).cellStyle.backColor = '#FAF8FD';
-          }
+          _applyGreenRowBg(ts, r, 4);
         }
         r++;
       }
