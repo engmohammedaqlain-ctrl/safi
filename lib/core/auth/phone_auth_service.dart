@@ -37,6 +37,12 @@ class PhoneAuthService {
       return;
     }
 
+    debugPrint('╔══════════════════════════════════════════╗');
+    debugPrint('║ Firebase Phone Auth: verifyPhoneNumber   ║');
+    debugPrint('║ rawInput: "$rawPhoneDigits"');
+    debugPrint('║ normalized (E.164): "$phoneNumber"');
+    debugPrint('╚══════════════════════════════════════════╝');
+
     final done = Completer<void>();
     void markDone() {
       if (!done.isCompleted) done.complete();
@@ -48,6 +54,7 @@ class PhoneAuthService {
             phoneNumber: phoneNumber,
             forceResendingToken: forceResendingToken,
             verificationCompleted: (PhoneAuthCredential credential) async {
+              debugPrint('[PhoneAuth] ✅ Auto-verification completed');
               try {
                 final uc = await _auth.signInWithCredential(credential);
                 await onSignedIn(uc);
@@ -58,17 +65,22 @@ class PhoneAuthService {
               }
             },
             verificationFailed: (FirebaseAuthException e) {
+              debugPrint('[PhoneAuth] ❌ verificationFailed: code=${e.code}, message=${e.message}');
               onFailed(e);
               markDone();
             },
             codeSent: (verificationId, resendToken) {
+              debugPrint('[PhoneAuth] 📩 codeSent: verificationId=${verificationId.substring(0, 10)}...');
               onCodeSent(verificationId, resendToken);
               markDone();
             },
-            codeAutoRetrievalTimeout: (_) {},
+            codeAutoRetrievalTimeout: (_) {
+              debugPrint('[PhoneAuth] ⏰ codeAutoRetrievalTimeout');
+            },
             timeout: timeout,
           )
-          .catchError((Object e, StackTrace _) {
+          .catchError((Object e, StackTrace st) {
+            debugPrint('[PhoneAuth] 💥 catchError: $e\n$st');
             if (e is FirebaseAuthException) {
               onFailed(e);
             }

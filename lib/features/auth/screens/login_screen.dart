@@ -51,10 +51,85 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Timer? _resendTimer;
 
   @override
+  void initState() {
+    super.initState();
+    _phone.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
     _phone.dispose();
     _resendTimer?.cancel();
     super.dispose();
+  }
+
+  Widget _getPrefixWidget(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    String? flagText;
+    if (phone.startsWith('+')) {
+      if (phone.startsWith('+970')) {
+        flagText = '🇵🇸 +970';
+      } else if (phone.startsWith('+972')) {
+        flagText = '+972';
+      }
+    } else if (digits.length >= 2) {
+      if (digits.startsWith('05')) {
+        if (digits.length >= 3) {
+          final prefix = digits.substring(0, 3);
+          if (prefix == '059' || prefix == '056') {
+            flagText = '🇵🇸 +970';
+          } else {
+            flagText = '+972';
+          }
+        }
+      } else if (digits.startsWith('5')) {
+        if (digits.length >= 2) {
+          final prefix = digits.substring(0, 2);
+          if (prefix == '59' || prefix == '56') {
+            flagText = '🇵🇸 +970';
+          } else {
+            flagText = '+972';
+          }
+        }
+      } else if (digits.startsWith('970')) {
+        flagText = '🇵🇸 +970';
+      } else if (digits.startsWith('972')) {
+        flagText = '+972';
+      }
+    }
+
+    if (flagText != null) {
+      return Container(
+        margin: const EdgeInsetsDirectional.only(end: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          border: BorderDirectional(
+            end: BorderSide(color: AppColors.outlineSoft),
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              flagText,
+              textDirection: TextDirection.ltr,
+              style: AppTextStyles.labelLarge.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return const Icon(
+      LucideIcons.smartphone,
+      color: AppColors.primary,
+    );
   }
 
   void _startResendCountdown() {
@@ -454,12 +529,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,
                                 ],
-                                decoration: const InputDecoration(
-                                  hintText: 'مثال: 599123456 أو 9665…',
-                                  prefixIcon: Icon(
-                                    LucideIcons.smartphone,
-                                    color: AppColors.primary,
-                                  ),
+                                decoration: InputDecoration(
+                                  hintText: 'مثال: ... 970 59+',
+                                  prefixIcon: _getPrefixWidget(_phone.text),
                                 ),
                               ),
                             ] else ...[

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// تحويل رقم المستخدم إلى [E.164](https://en.wikipedia.org/wiki/E.164).
 /// يدعم أرقام فلسطين (+970) والداخل (+972).
 String phoneDigitsToE164(String raw) {
@@ -10,17 +12,22 @@ String phoneDigitsToE164(String raw) {
     if (afterPlus.length < 8) {
       throw const FormatException('too_short');
     }
-    return '+$afterPlus';
+    final result = '+$afterPlus';
+    debugPrint('[phoneDigitsToE164] raw="$raw" → "$result"');
+    return result;
   }
 
   // إذا بدأ بـ 05 (طول 10 أرقام)
   if (digitsOnly.length == 10 && digitsOnly.startsWith('05')) {
     final prefix = digitsOnly.substring(0, 3); // 05x
+    late final String result;
     if (prefix == '059' || prefix == '056') {
-      return '+970${digitsOnly.substring(1)}';
+      result = '+970${digitsOnly.substring(1)}';
     } else {
-      return '+972${digitsOnly.substring(1)}';
+      result = '+972${digitsOnly.substring(1)}';
     }
+    debugPrint('[phoneDigitsToE164] raw="$raw" → "$result"');
+    return result;
   }
 
   // إذا بدأ بـ 5 بدون 0 (طول 9 أرقام)

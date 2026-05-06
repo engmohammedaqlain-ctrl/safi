@@ -7,12 +7,21 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:182831517388:android:face6a414f12d062027c69",
+        "mobilesdk_app_id": "1:182831517388:android:8517905142308687027c69",
         "android_client_info": {
-          "package_name": "com.example.safi"
+          "package_name": "com.safi.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "182831517388-rc4fg6m6ldm4n0208rjhug4ug5idlgab.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.safi.app",
+            "certificate_hash": "bb4dffbfdd9c892c464d73463b63872f18c7e870"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAtmQ1awGIvowWRaIfM3Usbo2hMayQZbgM"
