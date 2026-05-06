@@ -1,24 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../bootstrap/prefs_keys.dart';
 import 'phone_e164.dart';
 
-/// تسجيل الدخول باسم هاتف اصطناعي (Email/Password في Firebase Auth) بعد التحقق من الرمز في الواجهة.
+/// نظام تسجيل الدخول برمز دخول مُشتق من رقم الجوال.
 ///
-/// كلمة المرور في Firebase لمستخدمي النظام الاصطناعي تكون عادة **`123456`** (نفس [otpForLogin])؛ الحسابات الأقدم
-/// قد تعمل بـ [firebaseEmailPasswordLegacy] ويُحاول التطبيقها تلقائياً.
+/// الرمز 4 خانات، يُحسب من أرقام الجوال نفسه:
+/// - الخانة 1: مجموع آخر رقمين (رقم الآحاد)
+/// - الخانة 2: الخانة الرابعة من رقم الجوال
+/// - الخانة 3: الخانة السابعة من رقم الجوال
+/// - الخانة 4: مجموع الخانة الثانية والتاسعة (رقم الآحاد)
 ///
-/// مجموعة **`registered_phones`**: لتحميل [displayName] وتصنيف «مسجّل» للواجهة؛ اختياري لنجاح Auth نفسه.
+/// مثال: `0591234567` → رمز الدخول = `3141`
 abstract final class FirestoreRegisteredPhoneAuth {
   static const registeredPhonesCollection = 'registered_phones';
 
-  /// رمز الواجهة — يُفترض أن تكون كلمة المرور المعتمدة في Firebase لمستخدمي هذا الشكل أيضاً هي نفس القيمة.
-  static const otpForLogin = '123456';
-
-  /// كلمة مرور حساب مصطنع قديم (قبل المواءمة مع otpForLogin).
-  static const firebaseEmailPasswordLegacy = 'SafiOtp123456';
+  /// كلمة مرور Firebase Auth الاصطناعية — تُستخدم داخلياً فقط.
+  static const _firebasePassword = '123456';
 
   static String documentIdFromE164(String e164DigitsAndPlus) =>
       e164DigitsAndPlus.replaceAll(RegExp(r'[^\d]'), '');
@@ -26,8 +27,84 @@ abstract final class FirestoreRegisteredPhoneAuth {
   static String emailForPhoneDoc(String documentIdDigits) =>
       '$documentIdDigits@safi-phone.firebase';
 
-  /// يُستدعى بعد نجاح [signInWithRegisteredPhoneAllowed]: يحدّث مستند الهاتف للمسجّلين (اختياري).
-  /// يُفشل صامتاً إذا منعت قواعد Firestore الكتابة.
+  // ─────────────────────────────────────────────
+  //  توليد رمز الدخول من رقم الجوال
+  // ─────────────────────────────────────────────
+
+  /// يُحوّل الرقم الخام إلى 10 أرقام محلية (مع صفر بادئ).
+  /// مثال: "+970591234567" → "0591234567"
+  ///        "591234567"    → "0591234567"
+  ///        "0591234567"   → "0591234567"
+  static String _toLocal10Digits(String rawPhoneDigits) {
+    final digits = rawPhoneDigits.trim().replaceAll(RegExp(r'\D'), '');
+
+    // إذا بدأ بـ 970 أو 972 (رقم دولي بدون +)
+    if (digits.startsWith('970') && digits.length >= 12) {
+      return '0${digits.substring(3)}';
+    }
+    if (digits.startsWith('972') && digits.length >= 12) {
+      return '0${digits.substring(3)}';
+    }
+
+    // إذا 10 أرقام وبدأ بـ 0
+    if (digits.length == 10 && digits.startsWith('0')) {
+      return digits;
+    }
+
+    // إذا 9 أرقام وبدأ بـ 5
+    if (digits.length == 9 && digits.startsWith('5')) {
+      return '0$digits';
+    }
+
+    // محاولة أخيرة: أخذ آخر 10 أرقام
+    if (digits.length >= 10) {
+      return digits.substring(digits.length - 10);
+    }
+
+    // إذا أقل من 10 أرقام — نضيف أصفار من اليسار
+    return digits.padLeft(10, '0');
+  }
+
+  /// يُولّد رمز الدخول (4 خانات) من رقم الجوال.
+  ///
+  /// الخوارزمية:
+  /// ```
+  /// الرقم المحلي: d0 d1 d2 d3 d4 d5 d6 d7 d8 d9
+  /// مثال: 0  5  9  1  2  3  4  5  6  7
+  ///
+  /// الخانة 1 = (d8 + d9) % 10  → مجموع آخر رقمين (الآحاد)
+  /// الخانة 2 = d3               → الرقم الرابع
+  /// الخانة 3 = d6               → الرقم السابع
+  /// الخانة 4 = (d1 + d8) % 10  → مجموع الثاني والتاسع (الآحاد)
+  /// ```
+  static String generateAccessCode(String rawPhoneDigits) {
+    final local = _toLocal10Digits(rawPhoneDigits);
+    final d = local.split('').map(int.parse).toList();
+
+    final c1 = (d[8] + d[9]) % 10;
+    final c2 = d[3];
+    final c3 = d[6];
+    final c4 = (d[1] + d[8]) % 10;
+
+    final code = '$c1$c2$c3$c4';
+    debugPrint('[AccessCode] phone=$rawPhoneDigits → local=$local → code=$code');
+    return code;
+  }
+
+  /// يتحقق من رمز الدخول المُدخَل مقابل الرمز المُشتق من رقم الجوال.
+  static bool verifyAccessCode({
+    required String rawPhoneDigits,
+    required String code,
+  }) {
+    final expected = generateAccessCode(rawPhoneDigits);
+    return code.trim() == expected;
+  }
+
+  // ─────────────────────────────────────────────
+  //  تسجيل الدخول بـ Email/Password (للحفاظ على UID)
+  // ─────────────────────────────────────────────
+
+  /// يُحدّث مستند الهاتف عند الدخول (اختياري).
   static Future<void> mergePhoneRegistryDocFromLogin(String rawPhoneDigits) async {
     try {
       final e164 = phoneDigitsToE164(rawPhoneDigits.trim());
@@ -45,7 +122,7 @@ abstract final class FirestoreRegisteredPhoneAuth {
     } catch (_) {}
   }
 
-  /// يتحقّق من وجود مستند اختياري في Firestore (للاسم وعبارة «مسجّل بالنظام»).
+  /// يبحث عن مستند الهاتف في [registered_phones] (للاسم).
   static Future<DocumentSnapshot<Map<String, dynamic>>?> lookupPhone(
     String rawPhoneDigits,
   ) async {
@@ -59,17 +136,7 @@ abstract final class FirestoreRegisteredPhoneAuth {
     return snap;
   }
 
-  /// أسباب «فشل بيانات الدخول» التي نعالجها بمحاولة كلمة مرور أخرى أو إنشاء حساب.
-  static bool _isRecoverableCredentialFailure(FirebaseAuthException e) {
-    return e.code == 'wrong-password' ||
-        e.code == 'invalid-credential' ||
-        e.code == 'user-not-found';
-  }
-
-  static List<String> get _passwordTryOrder =>
-      <String>[otpForLogin, firebaseEmailPasswordLegacy];
-
-  /// عندما يكون [PrefsKeys.loggedIn] لكن [FirebaseAuth.currentUser] مفقود، نعيد الجلسة بصمت باستخدام [PrefsKeys.phoneDocId].
+  /// عند [PrefsKeys.loggedIn] لكن [FirebaseAuth.currentUser] مفقود.
   static Future<User?> trySilentReauthFromPrefs() async {
     final p = await SharedPreferences.getInstance();
     if (p.getBool(PrefsKeys.loggedIn) != true) return null;
@@ -83,10 +150,7 @@ abstract final class FirestoreRegisteredPhoneAuth {
     }
   }
 
-  /// بعد التحقق من رمز الواجهة يربط نفس حساب Firebase على كل الأجهزة.
-  ///
-  /// يحاول تسجيل الدخول بـ [otpForLogin] ثم بالقديمة، ثم **إنشاء مستخدم جديد** (`createUserWithEmailAndPassword`)
-  /// إن لم يكن الحساب موجوداً — إنشاء «تقليدي» عبر واجهة Firebase.
+  /// تسجيل دخول email/password — أو إنشاء حساب جديد.
   static Future<UserCredential> signInWithRegisteredPhoneAllowed({
     required String rawPhoneDigits,
   }) async {
@@ -95,36 +159,32 @@ abstract final class FirestoreRegisteredPhoneAuth {
     final email = emailForPhoneDoc(docId);
     final auth = FirebaseAuth.instance;
 
-    Future<UserCredential> signIn(String password) => auth.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-
-    Future<UserCredential> createNew() => auth.createUserWithEmailAndPassword(
-          email: email,
-          password: otpForLogin,
-        );
-
-    for (final pw in _passwordTryOrder) {
-      try {
-        return await signIn(pw);
-      } on FirebaseAuthException catch (e) {
-        if (!_isRecoverableCredentialFailure(e)) rethrow;
-        // جرّب كلمة المرور التالية أو إنشاء حساب لاحقاً
+    // محاولة تسجيل الدخول
+    try {
+      return await auth.signInWithEmailAndPassword(
+        email: email,
+        password: _firebasePassword,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (e.code != 'user-not-found' &&
+          e.code != 'wrong-password' &&
+          e.code != 'invalid-credential') {
+        rethrow;
       }
     }
 
+    // إنشاء حساب جديد
     try {
-      return await createNew();
+      return await auth.createUserWithEmailAndPassword(
+        email: email,
+        password: _firebasePassword,
+      );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
-        for (final pw in _passwordTryOrder) {
-          try {
-            return await signIn(pw);
-          } on FirebaseAuthException catch (e2) {
-            if (!_isRecoverableCredentialFailure(e2)) rethrow;
-          }
-        }
+        return await auth.signInWithEmailAndPassword(
+          email: email,
+          password: _firebasePassword,
+        );
       }
       rethrow;
     }
