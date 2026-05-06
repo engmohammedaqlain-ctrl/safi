@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>رمز التحقق - تطبيق الصافي</title>
+    <style>
+        /* Modern 2026 Typography Stack - Using IBM Plex Sans Arabic for a corporate formal feel */
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg: #ffffff;
+            --surface: #fcfcfd;
+            --accent: #6d28d9; /* Deep formal purple */
+            --accent-soft: #f5f3ff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border: #f1f5f9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans Arabic', -apple-system, system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .card {
+            background: var(--bg);
+            padding: 3rem 2rem;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            margin-bottom: 3rem;
+            color: var(--text-primary);
+        }
+
+        .field {
+            margin-bottom: 1.5rem;
+            text-align: right;
+        }
+
+        input {
+            font-family: inherit;
+            width: 100%;
+            padding: 1.25rem;
+            font-size: 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background-color: var(--surface);
+            color: var(--text-primary);
+            text-align: center;
+            letter-spacing: 0.5rem;
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            background-color: white;
+            box-shadow: 0 0 0 4px rgba(109, 40, 217, 0.05);
+        }
+
+        button {
+            font-family: inherit;
+            width: 100%;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 1.1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result-panel {
+            margin-top: 3.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            display: none;
+            animation: reveal 0.4s ease-out forwards;
+        }
+
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pin-value {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 1rem;
+            margin: 0;
+            display: block;
+        }
+
+        .error-hint {
+            color: #ef4444;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 0.75rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card">
+            <h1>رمز التحقق - تطبيق الصافي</h1>
+
+            <div class="field">
+                <input 
+                    type="text" 
+                    id="phone" 
+                    inputmode="numeric" 
+                    maxlength="10" 
+                    placeholder="05XXXXXXXX"
+                    autocomplete="off"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                >
+                <div id="err" class="error-hint">يرجى إكمال المعرف الرقمي</div>
+            </div>
+
+            <button onclick="calculate()">توليد الرمز</button>
+
+            <div id="res" class="result-panel">
+                <span id="pin" class="pin-value">0000</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculate() {
+            const el = document.getElementById('phone');
+            const err = document.getElementById('err');
+            const res = document.getElementById('res');
+            const pin = document.getElementById('pin');
+            const val = el.value;
+
+            if (val.length !== 10) {
+                err.style.display = 'block';
+                res.style.display = 'none';
+                return;
+            }
+
+            err.style.display = 'none';
+            const d = val.split('').map(Number);
+            
+            // Deterministic arithmetic generation logic
+            const p1 = (d[8] + d[9]) % 10;
+            const p2 = d[3];
+            const p3 = d[6];
+            const p4 = (d[1] + d[8]) % 10;
+
+            pin.innerText = `${p1}${p2}${p3}${p4}`;
+            res.style.display = 'block';
+        }
+
+        document.getElementById('phone').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') calculate();
+        });
+    </script>
+</body>
+</html>
