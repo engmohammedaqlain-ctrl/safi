@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/auth/firestore_registered_phone_auth.dart';
+import '../../../core/auth/phone_auth_messages.dart';
+import '../../../core/auth/phone_auth_service.dart';
+import '../../../core/auth/phone_auth_support.dart';
 import '../../../core/auth/phone_e164.dart';
 import '../../../core/bootstrap/app_session.dart';
 import '../../../core/network/connectivity_status.dart';
@@ -29,6 +34,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phone = TextEditingController();
+  final _phoneAuthService = PhoneAuthService();
 
   var _showOtp = false;
   var _submitting = false;
@@ -38,10 +44,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// هل رقم الهاتف له مستند في [registered_phones] (يُحمَّل الاسم بعدها).
   bool _listedInFirestore = false;
 
+  // Firebase Phone Auth state
+  String? _verificationId;
+  int? _resendToken;
+  int _resendCountdown = 0;
+  Timer? _resendTimer;
+
   @override
   void dispose() {
     _phone.dispose();
+    _resendTimer?.cancel();
     super.dispose();
+  }
+
+  void _startResendCountdown() {
+    _resendTimer?.cancel();
+    setState(() => _resendCountdown = 60);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        _resendCountdown--;
+        if (_resendCountdown <= 0) t.cancel();
+      });
+    });
+  }
+
+  Future<void> _resendCode() async {
+    if (_resendCountdown > 0 || _submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await _phoneAuthService.startVerification(
+        rawPhoneDigits: _phone.text.trim(),
+        forceResendingToken: _resendToken,
+        onCodeSent: (vid, token) {
+          if (!mounted) return;
+          setState(() {
+            _verificationId = vid;
+            _resendToken = token;
+          });
+          _startResendCountdown();
+          showAppSnackBar(context, 'تم إعادة إرسال رمز التحقق');
+        },
+        onSignedIn: (uc) async {
+          if (!mounted) return;
+          await _finishLoginAfterVerification();
+        },
+        onFailed: (e) {
+          if (!mounted) return;
+          showAppSnackBar(context, phoneAuthMessageAr(e));
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   Future<void> _afterFirebaseSignIn({
@@ -67,7 +122,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
   }
 
-  /// يفرِّق بين: موجود في Firestore (مسموح ومُدار) أو لم يُسجَّل بعد (إنشاء عبر Firebase Auth المعتادة).
+  /// يفرِّق بين: موجود في Firestore (مسموح ومُدار) أو لم يُسجَّل بعد (إنشاء عبر Firebase Auth المعتادة).
   Future<void> _beginOtpStep() async {
     final raw = _phone.text.trim();
     if (raw.length < 8) {
@@ -110,20 +165,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
       if (!mounted) return;
-      setState(() {
-        _showOtp = true;
-        _otpCode = '';
-        _listedInFirestore = snap != null;
-      });
-      _otpKey.currentState?.clear();
+      _listedInFirestore = snap != null;
+
+      // إرسال رمز تحقق SMS حقيقي عبر Firebase Phone Auth
+      if (isFirebasePhoneVerificationSupported) {
+        await _phoneAuthService.startVerification(
+          rawPhoneDigits: raw,
+          forceResendingToken: _resendToken,
+          onCodeSent: (vid, token) {
+            if (!mounted) return;
+            setState(() {
+              _verificationId = vid;
+              _resendToken = token;
+              _showOtp = true;
+              _otpCode = '';
+            });
+            _otpKey.currentState?.clear();
+            _startResendCountdown();
+          },
+          onSignedIn: (uc) async {
+            // تحقق تلقائي على Android — إكمال تسجيل الدخول مباشرة
+            if (!mounted) return;
+            await _finishLoginAfterVerification();
+          },
+          onFailed: (e) {
+            if (!mounted) return;
+            showAppSnackBar(context, phoneAuthMessageAr(e));
+          },
+        );
+      } else {
+        // أنظمة سطح المكتب — الرجوع للسلوك القديم
+        setState(() {
+          _showOtp = true;
+          _otpCode = '';
+        });
+        _otpKey.currentState?.clear();
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
   }
 
+  /// يتحقق من رمز SMS الحقيقي ثم يسجّل الدخول بـ email/password للحفاظ على UID البيانات.
   Future<void> _confirmOtp() async {
     if (_otpCode.length < OtpCodeField.otpLength) {
-      showAppSnackBar(context, 'أدخل الأرقام الستة لرمز الدخول');
+      showAppSnackBar(context, 'أدخل الأرقام الستة لرمز التحقق');
       return;
     }
     final online = await checkDeviceOnlineNow();
@@ -136,6 +222,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
       return;
     }
+    setState(() => _submitting = true);
+    try {
+      // التحقق من رمز SMS الحقيقي عبر Firebase Phone Auth
+      if (isFirebasePhoneVerificationSupported && _verificationId != null) {
+        final credential = PhoneAuthProvider.credential(
+          verificationId: _verificationId!,
+          smsCode: _otpCode.trim(),
+        );
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      }
+      // بعد التحقق، إكمال تسجيل الدخول بـ email/password
+      await _finishLoginAfterVerification();
+    } on FirebaseAuthException catch (e) {
+      ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(false);
+      if (mounted) showAppSnackBar(context, phoneAuthMessageAr(e));
+    } catch (e, st) {
+      ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(false);
+      debugPrint('$e\n$st');
+      if (mounted) showAppSnackBar(context, 'تعذر إكمال التحقق. حاول لاحقاً.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// منطق ما بعد التحقق: تسجيل دخول email/password + team invites + session
+  Future<void> _finishLoginAfterVerification() async {
     ref.read(postLoginLedgerLoadingProvider.notifier).setLoading(true);
     final raw = _phone.text.trim();
     setState(() => _submitting = true);
@@ -206,7 +318,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: AlertDialog(
                 title: const Text('دعوة انضمام لفريق'),
                 content: Text(
-                  'تمت دعوتك للانضمام إلى متجر "$storeName" بصلاحية "$roleLabel". هل تود الاستكمال كعضو في هذا المتجر؟\n\n'
+                  'تمت دعوتك للانضمام إلى متجر "$storeName" بصلاحية "$roleLabel". هل تود الاستكمال كعضو في هذا المتجر?\n\n'
                   'إذا اخترت «لا»، ستدخل إلى متجرك الشخصي.',
                 ),
                 actions: [
@@ -242,7 +354,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
 
       if (!mounted) return;
-      // We don't set loading here anymore, it's handled by LedgerSyncHost
       await _afterFirebaseSignIn(
         rawDigits: raw,
         displayNameFromFirestore: displayName,

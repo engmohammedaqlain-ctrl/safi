@@ -1,9 +1,10 @@
 /// تحويل رقم المستخدم إلى [E.164](https://en.wikipedia.org/wiki/E.164).
-/// يدمج افتراضيًا بادئة **المملكة العربية السعودية (+966)** عند الإدخال المحلي فقط (يبدأ بـ `5`).
+/// يدعم أرقام فلسطين (+970) والداخل (+972).
 String phoneDigitsToE164(String raw) {
   final trimmed = raw.trim().replaceAll(RegExp(r'\s+'), '');
   var digitsOnly = trimmed.replaceAll(RegExp(r'\D'), '');
 
+  // إذا بدأ بـ + نعتبره رقم دولي جاهز
   if (trimmed.startsWith('+')) {
     final afterPlus = trimmed.substring(1).replaceAll(RegExp(r'\D'), '');
     if (afterPlus.length < 8) {
@@ -12,29 +13,39 @@ String phoneDigitsToE164(String raw) {
     return '+$afterPlus';
   }
 
-  if (digitsOnly.startsWith('966') && digitsOnly.length >= 11) {
-    return '+$digitsOnly';
-  }
-
-  if (digitsOnly.length == 12 && digitsOnly.startsWith('966')) {
-    return '+$digitsOnly';
-  }
-
+  // إذا بدأ بـ 05 (طول 10 أرقام)
   if (digitsOnly.length == 10 && digitsOnly.startsWith('05')) {
-    return '+966${digitsOnly.substring(1)}';
+    final prefix = digitsOnly.substring(0, 3); // 05x
+    if (prefix == '059' || prefix == '056') {
+      return '+970${digitsOnly.substring(1)}';
+    } else {
+      return '+972${digitsOnly.substring(1)}';
+    }
   }
 
-  if (digitsOnly.length == 10 && digitsOnly.startsWith('5')) {
-    return '+966$digitsOnly';
-  }
-
+  // إذا بدأ بـ 5 بدون 0 (طول 9 أرقام)
   if (digitsOnly.length == 9 && digitsOnly.startsWith('5')) {
-    return '+966$digitsOnly';
+    final firstTwo = digitsOnly.substring(0, 2); // 5x
+    if (firstTwo == '59' || firstTwo == '56') {
+      return '+970$digitsOnly';
+    } else {
+      return '+972$digitsOnly';
+    }
   }
 
-  if (digitsOnly.length >= 10) {
+  // إذا بدأ بالمقدمة الدولية مباشرة بدون +
+  if (digitsOnly.startsWith('970') && digitsOnly.length >= 12) {
+    return '+$digitsOnly';
+  }
+  if (digitsOnly.startsWith('972') && digitsOnly.length >= 12) {
+    return '+$digitsOnly';
+  }
+
+  // دعم أرقام أخرى كاحتياط
+  if (digitsOnly.length >= 9) {
     return '+$digitsOnly';
   }
 
   throw const FormatException('unsupported');
 }
+
