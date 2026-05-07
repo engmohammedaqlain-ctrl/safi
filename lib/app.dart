@@ -24,6 +24,8 @@ import 'features/debts/providers/debts_ui_provider.dart';
 import 'features/reports/screens/statistics_screen.dart';
 import 'features/more/screens/notifications_screen.dart';
 import 'features/settings/providers/team_provider.dart';
+import 'features/settings/providers/pin_lock_provider.dart';
+import 'features/settings/screens/pin_lock_screen.dart';
 
 class SafiApp extends ConsumerStatefulWidget {
   const SafiApp({super.key});
@@ -185,7 +187,7 @@ class _SessionRootState extends ConsumerState<_SessionRoot> {
       AppSessionPhase.welcomeOnboarding => const OnboardingScreen(),
       AppSessionPhase.login => const LoginScreen(),
       AppSessionPhase.nameSetup => const NameSetupScreen(),
-      AppSessionPhase.main => const _MainLoadedGate(),
+      AppSessionPhase.main => const _PinLockGate(),
     };
 
     return AnimatedSwitcher(
@@ -208,6 +210,58 @@ class _SessionRootState extends ConsumerState<_SessionRoot> {
         );
       },
       child: KeyedSubtree(key: ValueKey(phase), child: body),
+    );
+  }
+}
+
+/// بوابة قفل PIN — تعرض شاشة القفل فوق المحتوى إذا كان PIN مُفعّلاً
+class _PinLockGate extends ConsumerStatefulWidget {
+  const _PinLockGate();
+
+  @override
+  ConsumerState<_PinLockGate> createState() => _PinLockGateState();
+}
+
+class _PinLockGateState extends ConsumerState<_PinLockGate>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // عند فتح التطبيق لأول مرة — قفل إن كان مُفعّلاً
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(pinLockGateProvider.notifier).lockIfEnabled();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // عند العودة من الخلفية — أعد القفل
+    if (state == AppLifecycleState.resumed) {
+      ref.read(pinLockGateProvider.notifier).lockIfEnabled();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isLocked = ref.watch(pinLockGateProvider);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const _MainLoadedGate(),
+        if (isLocked)
+          const Positioned.fill(
+            child: PinLockScreen(),
+          ),
+      ],
     );
   }
 }

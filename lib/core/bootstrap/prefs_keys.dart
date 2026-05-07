@@ -39,4 +39,10 @@ abstract final class PrefsKeys {
 
   /// محادثة المساعد الذكي (محلياً + تُرفع إلى `users/{uid}/ai_history`)
   static const aiChatHistory = 'safi_ai_chat_history';
+
+  /// قفل التطبيق بـ PIN — هل مُفعّل؟
+  static const pinLockEnabled = 'safi_pin_lock_enabled';
+
+  /// رمز PIN المُخزّن (4 أرقام)
+  static const pinLockCode = 'safi_pin_lock_code';
 }

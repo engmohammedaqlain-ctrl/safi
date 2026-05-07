@@ -20,7 +20,9 @@ import '../../../core/router/main_shell.dart';
 import 'store_settings_screen.dart';
 import 'team_settings_screen.dart';
 import 'smart_features_screen.dart';
+import 'pin_setup_screen.dart';
 import '../providers/team_provider.dart';
+import '../providers/pin_lock_provider.dart';
 import '../../cash_flow/providers/include_debts_in_wallet_balance_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -171,6 +173,11 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
 
+          const SizedBox(height: AppSpacing.lg),
+
+          // ── الأمان والحماية ──
+          _SectionLabel('الأمان والحماية'),
+          _PinLockTile(),
           const SizedBox(height: AppSpacing.lg),
 
           // ── إعدادات الحساب ──
@@ -584,5 +591,115 @@ class _SettingsTile extends StatelessWidget {
       dense: true,
       minVerticalPadding: 8,
     );
+  }
+}
+
+/// بطاقة إعداد قفل PIN في الإعدادات
+class _PinLockTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pinState = ref.watch(pinLockProvider);
+    final isEnabled = pinState.isEnabled;
+
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          SwitchListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            secondary: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                LucideIcons.lock,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            title: Text(
+              'قفل التطبيق برمز PIN',
+              style: AppTextStyles.titleSmall,
+            ),
+            subtitle: Text(
+              isEnabled
+                  ? 'مفعّل — سيُطلب الرمز عند فتح التطبيق'
+                  : 'أضف رمز حماية مكوّن من 4 أرقام',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textMuted,
+              ),
+            ),
+            value: isEnabled,
+            onChanged: (v) {
+              if (v) {
+                // تفعيل: الانتقال لشاشة إعداد PIN
+                Navigator.push(
+                  context,
+                  AppPageRoute(builder: (_) => const PinSetupScreen()),
+                );
+              } else {
+                // إيقاف: تأكيد ثم حذف
+                _confirmRemovePin(context, ref);
+              }
+            },
+          ),
+          if (isEnabled) ...[
+            const Divider(height: 1, indent: 52),
+            _SettingsTile(
+              icon: LucideIcons.keyRound,
+              title: 'تغيير رمز PIN',
+              subtitle: 'تعيين رمز جديد',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  AppPageRoute(builder: (_) => const PinSetupScreen()),
+                );
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _confirmRemovePin(BuildContext context, WidgetRef ref) async {
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('إيقاف قفل التطبيق؟'),
+          content: const Text('سيتم حذف رمز PIN ولن يُطلب عند فتح التطبيق.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.error,
+              ),
+              child: const Text('إيقاف القفل'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (go == true) {
+      await ref.read(pinLockProvider.notifier).removePin();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('تم إيقاف قفل التطبيق'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    }
   }
 }
