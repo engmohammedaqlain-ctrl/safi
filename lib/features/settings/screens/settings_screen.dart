@@ -8,6 +8,7 @@ import '../../../core/auth/firestore_registered_phone_auth.dart';
 import '../../../core/auth/resolve_firebase_user.dart';
 import '../../../core/bootstrap/app_session.dart';
 import '../../../core/bootstrap/prefs_keys.dart';
+import '../../../core/network/connectivity_status.dart';
 import '../../../core/sync/firebase_sync_status.dart';
 import '../../../core/sync/ledger_firestore_sync.dart';
 import '../../../core/theme/app_colors.dart';
@@ -207,6 +208,21 @@ class SettingsScreen extends ConsumerWidget {
                   statusDotColor: ref.watch(ledgerSyncDotColorProvider),
                   onTap: () async {
                     if (!context.mounted) return;
+
+                    // ── فحص الإنترنت فوراً قبل أي شيء ──
+                    final isOnline = await checkDeviceOnlineNow();
+                    if (!context.mounted) return;
+                    if (!isOnline) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'لا يوجد اتصال بالإنترنت. تحقّق من الشبكة ثم أعد المحاولة.',
+                          ),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                      return;
+                    }
 
                     void closeLoading() {
                       if (!context.mounted) return;
@@ -413,6 +429,21 @@ Future<void> _confirmResetLedgerToFactory(
     ),
   );
   if (go != true || !context.mounted) return;
+
+  // ── فحص الإنترنت فوراً قبل البدء بالمسح ──
+  final isOnline = await checkDeviceOnlineNow();
+  if (!context.mounted) return;
+  if (!isOnline) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'لا يوجد اتصال بالإنترنت. إعادة الضبط تتطلب الإنترنت، تحقّق من الشبكة ثم أعد المحاولة.',
+        ),
+        backgroundColor: AppColors.error,
+      ),
+    );
+    return;
+  }
 
   void closeLoading() {
     if (!context.mounted) return;
