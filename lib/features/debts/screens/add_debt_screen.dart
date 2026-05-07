@@ -13,8 +13,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/vault_branded_shell.dart';
 import '../../../core/utils/app_snackbar.dart';
-import '../../cash_flow/data/financial_account_model.dart';
-import '../../cash_flow/providers/accounts_provider.dart';
+
 import '../providers/debts_ui_provider.dart';
 import '../widgets/calculator_keypad.dart';
 import 'transaction_success_screen.dart';
@@ -38,7 +37,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
 
   final _noteCtrl = TextEditingController();
   DateTime _date = DateTime.now();
-  String? _payMethod;
+
   String? _imagePath;
 
   bool get _hasInput => _displayNum.isNotEmpty && _displayNum != '0';
@@ -135,11 +134,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
       return;
     }
 
-    if (_payMethod == null) {
-      setState(() => _isSubmitting = false);
-      showAppSnackBar(context, 'الرجاء اختيار حساب من القائمة');
-      return;
-    }
+
 
     final cid = widget.forCustomer!.id;
     final tx = TransactionUi(
@@ -149,7 +144,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
       type: TransactionType.gave,
       note: _noteCtrl.text.trim(),
       date: _date,
-      payMethodId: _payMethod,
+      payMethodId: null,
       imagePath: _imagePath,
     );
     ref.read(transactionsProvider.notifier).addTransaction(tx);
@@ -180,7 +175,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
   @override
   Widget build(BuildContext context) {
     final c = widget.forCustomer;
-    final accounts = ref.watch(activeAccountsProvider);
+
     final dateStr =
         '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}';
 
@@ -357,44 +352,7 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
                                   ),
                                 ),
                             ],
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                'الحساب المالي',
-                                style: TextStyle(
-                                  fontFamily: AppFonts.family,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            if (accounts.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: Text(
-                                  'لا توجد حسابات. أضف من «المحافظ والبنوك»',
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                    fontFamily: AppFonts.family,
-                                    fontSize: 12,
-                                    color: AppColors.warning,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              )
-                            else
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
-                                alignment: WrapAlignment.start,
-                                textDirection: TextDirection.rtl,
-                                children: [
-                                  for (final a in accounts) _payChipForAccount(a),
-                                ],
-                              ),
+
                           ],
 
                         const SizedBox(height: 16),
@@ -488,37 +446,5 @@ class _AddDebtScreenState extends ConsumerState<AddDebtScreen> {
     );
   }
 
-  Widget _payChipForAccount(FinancialAccount a) {
-    final id = a.id;
-    final sel = _payMethod == id;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => setState(() => _payMethod = _payMethod == id ? null : id),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          constraints: const BoxConstraints(maxWidth: 200),
-          decoration: BoxDecoration(
-            color: sel ? AppColors.primary : AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: sel ? AppColors.primary : AppColors.outlineSoft,
-            ),
-          ),
-          child: Text(
-            a.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: AppFonts.family,
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: sel ? Colors.white : AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 }

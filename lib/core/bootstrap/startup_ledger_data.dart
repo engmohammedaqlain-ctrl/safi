@@ -420,9 +420,31 @@ class StartupLedgerData {
     'editedMs': t.editedMs,
     'isDeleted': t.isDeleted,
     'deletedMs': t.deletedMs,
+    'wasEdited': t.wasEdited,
+    'editHistory': [
+      for (final h in t.editHistory)
+        {
+          'amount': h.amount,
+          'note': h.note,
+          'date': h.date.toIso8601String(),
+          'editedAt': h.editedAt.toIso8601String(),
+          'payMethodId': h.payMethodId,
+        },
+    ],
   };
 
   static TransactionUi _transactionFromMap(Map<String, dynamic> m) {
+    final rawHistory = m['editHistory'] as List<dynamic>? ?? [];
+    final history = <EditHistoryEntry>[
+      for (final h in rawHistory)
+        EditHistoryEntry(
+          amount: (h['amount'] as num).toDouble(),
+          note: h['note'] as String? ?? '',
+          date: DateTime.parse(h['date'] as String),
+          editedAt: DateTime.parse(h['editedAt'] as String),
+          payMethodId: h['payMethodId'] as String?,
+        ),
+    ];
     return TransactionUi(
       id: m['id'] as String,
       customerId: m['customerId'] as String,
@@ -438,6 +460,8 @@ class StartupLedgerData {
       editedMs: (m['editedMs'] as num?)?.toInt() ?? 0,
       isDeleted: m['isDeleted'] as bool? ?? false,
       deletedMs: (m['deletedMs'] as num?)?.toInt() ?? 0,
+      wasEdited: m['wasEdited'] as bool? ?? false,
+      editHistory: history,
     );
   }
 

@@ -29,6 +29,22 @@ String transactionPayMethodLabel(
   };
 }
 
+/// سجل تعديل سابق لمعاملة
+class EditHistoryEntry {
+  const EditHistoryEntry({
+    required this.amount,
+    required this.note,
+    required this.date,
+    required this.editedAt,
+    this.payMethodId,
+  });
+  final double amount;
+  final String note;
+  final DateTime date;
+  final DateTime editedAt;
+  final String? payMethodId;
+}
+
 /// معاملة مالية (دين أو سداد)
 class TransactionUi {
   const TransactionUi({
@@ -43,24 +59,25 @@ class TransactionUi {
     this.editedMs = 0,
     this.isDeleted = false,
     this.deletedMs = 0,
+    this.wasEdited = false,
+    this.editHistory = const [],
   });
 
   final String id;
   final String customerId;
-  final double amount; // دائمًا موجب
-  final TransactionType type; // gave = دين جديد, received = سداد
+  final double amount;
+  final TransactionType type;
   final String note;
   final DateTime date;
-
-  /// [FinancialAccount.id] أو قيمة قديمة: cash, wallet, bank
   final String? payMethodId;
-
-  /// مسار صورة اختيارية
   final String? imagePath;
-
   final int editedMs;
   final bool isDeleted;
   final int deletedMs;
+  final bool wasEdited;
+
+  /// سجل التعديلات السابقة (من الأحدث للأقدم)
+  final List<EditHistoryEntry> editHistory;
 }
 
 /// أرقام ملخصة لرأس شاشة الديون
@@ -487,6 +504,49 @@ class TransactionsNotifier extends Notifier<List<TransactionUi>> {
     _persist();
   }
 
+  /// تعديل معاملة موجودة — يُرجع المبلغ القديم لتحديث الرصيد
+  double? editTransaction({
+    required String txId,
+    required double newAmount,
+    required String newNote,
+    required DateTime newDate,
+    String? newPayMethodId,
+    String? newImagePath,
+  }) {
+    double? oldAmount;
+    state = [
+      for (final t in state)
+        if (t.id == txId) ...[
+          () {
+            oldAmount = t.amount;
+            final historyEntry = EditHistoryEntry(
+              amount: t.amount,
+              note: t.note,
+              date: t.date,
+              editedAt: DateTime.now(),
+              payMethodId: t.payMethodId,
+            );
+            return TransactionUi(
+              id: t.id,
+              customerId: t.customerId,
+              amount: newAmount,
+              type: t.type,
+              note: newNote,
+              date: newDate,
+              payMethodId: newPayMethodId ?? t.payMethodId,
+              imagePath: newImagePath ?? t.imagePath,
+              editedMs: DateTime.now().millisecondsSinceEpoch,
+              wasEdited: true,
+              editHistory: [historyEntry, ...t.editHistory],
+            );
+          }()
+        ] else
+          t
+    ];
+    _persist();
+    return oldAmount;
+  }
+
   void removeTransactionById(String id) {
     state = [
       for (final t in state)
@@ -503,6 +563,7 @@ class TransactionsNotifier extends Notifier<List<TransactionUi>> {
             editedMs: DateTime.now().millisecondsSinceEpoch,
             isDeleted: true,
             deletedMs: DateTime.now().millisecondsSinceEpoch,
+            wasEdited: t.wasEdited,
           )
         else
           t
